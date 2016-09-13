@@ -454,9 +454,12 @@ bool Mob::DoCastSpell(uint16 spell_id, uint16 target_id, uint16 slot,
 			}
 		}
 	}
+	
+	// RebuildEQ Rank for Calculations
+        int rank = 0;
 
 	// Druid Ring Affinity - Ring spells cast 5% faster and cost 10% less mana per rank.
-        int rank = CastToClient()->GetBuildRank(DRUID, RB_DRU_RINGAFFINITY);
+        rank = CastToClient()->GetBuildRank(DRUID, RB_DRU_RINGAFFINITY);
         if (rank > 0 && (
                 spell_id == 530 || //Ring of Karana
                 spell_id == 531 || //Ring of Commons
