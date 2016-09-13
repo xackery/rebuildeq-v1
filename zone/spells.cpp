@@ -475,9 +475,9 @@ bool Mob::DoCastSpell(uint16 spell_id, uint16 target_id, uint16 slot,
                 spell_id == 2031 || //Ring of Cobalt Scar
                 spell_id == 3794 //Ring of Stonebrunt
         )) {
-                float mana_cost_reduc = 0.1f * rank * mana_cost;
-                float cast_time_reduc = 0.05f * rank * cast_time;
-                Log.Out(Logs::Detail, Logs::Spells, "Ring Affinity (Rank %d) Reduced Mana by %f and Casting Time by %f", rank, mana_cost_reduc, cast_time_reduc);
+                int mana_cost_reduc = 0.1f * rank * mana_cost;
+                int cast_time_reduc = 0.05f * rank * cast_time;
+                Log.Out(Logs::Detail, Logs::Spells, "Ring Affinity (Rank %d) Reduced Mana by %d and Casting Time by %d", rank, mana_cost_reduc, cast_time_reduc);
                 mana_cost -= mana_cost_reduc;
                 cast_time -= cast_time_reduc;
         }
