@@ -455,6 +455,33 @@ bool Mob::DoCastSpell(uint16 spell_id, uint16 target_id, uint16 slot,
 		}
 	}
 
+	// Druid Ring Affinity - Ring spells cast 5% faster and cost 10% less mana per rank.
+        int rank = CastToClient()->GetBuildRank(DRUID, RB_DRU_RINGAFFINITY);
+        if (rank > 0 && (
+                spell_id == 530 || //Ring of Karana
+                spell_id == 531 || //Ring of Commons
+                spell_id == 532 || //Ring of Butcher
+                spell_id == 533 || //Ring of Toxxulia
+                spell_id == 534 || //Ring of Lavastorm
+                spell_id == 535 || //Ring of Ro
+                spell_id == 536 || //Ring of Feerrott
+                spell_id == 537 || //Ring of Steamfont
+                spell_id == 538 || //Ring of Misty
+                spell_id == 1326 || //Ring of the Combines
+                spell_id == 1433 || //Ring of Iceclad
+                spell_id == 2021 || //Ring of Surefall Glade
+                spell_id == 2029 || //Ring of Great Divide
+                spell_id == 2030 || //Ring of Wakening Lands
+                spell_id == 2031 || //Ring of Cobalt Scar
+                spell_id == 3794 //Ring of Stonebrunt
+        )) {
+                float mana_cost_reduc = 0.1f * rank * mana_cost;
+                float cast_time_reduc = 0.05f * rank * cast_time;
+                Log.Out(Logs::Detail, Logs::Spells, "Ring Affinity (Rank %d) Reduced Mana by %f and Casting Time by %f", rank, mana_cost_reduc, cast_time_reduc);
+                mana_cost -= mana_cost_reduc;
+                cast_time -= cast_time_reduc;
+        }
+
 	if(mana_cost > GetMana())
 		mana_cost = GetMana();
 
