@@ -16,7 +16,7 @@ function event_death_complete(e)
 		eq.spawn2(90004,0,0,e.self:GetX(),e.self:GetY(),e.self:GetZ(),e.self:GetHeading());
 	elseif (chance_spawn <= 70) then
 		eq.spawn2(90005,0,0,e.self:GetX(),e.self:GetY(),e.self:GetZ(),e.self:GetHeading());
-	else
+	elseif (chance_spawn <= 95) then
 		eq.spawn2(90006,0,0,e.self:GetX(),e.self:GetY(),e.self:GetZ(),e.self:GetHeading());
 	end
 end
