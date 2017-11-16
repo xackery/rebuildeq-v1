@@ -3510,7 +3510,7 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
 			}
 			else {
 				if (lowestLevel >= 58) caster->QuickBuff(this, 2569, duration); //glamourous visage 58
-				else if (lowestLevel >= 54) caster->QuickBuff(this, 2597, duration); //beguiling visage 54
+				else if (lowestLevel >= 54) caster->QuickBuff(this, 2567, duration); //beguiling visage 54
 				else caster->QuickBuff(this, 2564, duration); //calming visage 36 (war1)
 			}
 		}
