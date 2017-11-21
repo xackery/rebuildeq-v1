@@ -8526,7 +8526,7 @@ bool Mob::DoBuffSystem(uint16 spell_id, Mob *spell_target) {
 	if (spell_id == 267 && rank > 0) {
 
 		if (spell_target->FindBuff(756) || spell_target->FindBuff(757)) {
-			CastToClient()->Message(13, "Ancestrial Aid cannot be casted while target has resurrection sickness.");
+			CastToClient()->Message(13, "Ancestrial Aid cannot be cast while target has resurrection sickness.");
 		}
 		else {
 			int duration = caster_level * 10;

@@ -1169,7 +1169,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						uint32 hate_amount = uint32(effect_value * 50);
 						rank = GetBuildRank(ENCHANTER, RB_ENC_FOCUS);
 						if (rank > 0 ) {
-							int hate_redux = int(hate_amount * rank * 0.07f);
+							int hate_redux = int(rank * 0.07f);
 							BuildEcho(StringFormat("Focus %i reduced hate from %i to %i.", rank, hate_amount, hate_amount-hate_redux));
 							hate_amount -= hate_redux;
 						}
