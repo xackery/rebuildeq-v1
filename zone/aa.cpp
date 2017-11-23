@@ -969,8 +969,12 @@ void Client::SendAlternateAdvancementRank(int aa_id, int level) {
 		if(rb_rank) {
 			aai->spell_refresh = 2 * ((5 - rb_rank) * 5 + 10);
 		}
-	}
-	else if (rank->id == aaBoastfulBellow) {
+	} else if (rank->id == aaDivineArbitration) {
+		rb_rank = GetBuildRank(CLERIC, RB_CLR_DIVINEARBITRATION);
+		if (rb_rank > 0) {
+			aai->spell_refresh = 180 - (rb_rank * 30);
+		}
+	} else if (rank->id == aaBoastfulBellow) {
 		rb_rank = GetBuildRank(BARD, RB_BRD_BOASTFULBELLOW);
 		if (rb_rank) {
 			aai->spell_refresh = rank->recast_time - (rb_rank * 2);
@@ -1356,8 +1360,12 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 	//Shin: set spell Id override
 	int spellid = rank->spell;
 	int manacost = -1;
-	int cooldown = 0;
 	uint8 rb_rank = 0;
+	//calculate cooldown
+	int cooldown = rank->recast_time - GetAlternateAdvancementCooldownReduction(rank);
+	if (cooldown < 0) {
+		cooldown = 0;
+	}
 	
 
 	if(rank_id == aaHeartofFlames) {
@@ -1421,7 +1429,10 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 			cooldown = 2 * ((5 - rb_rank) * 5 + 10);
 	} else if (rank_id == aaDivineArbitration) {
 		rb_rank = GetBuildRank(CLERIC, RB_CLR_DIVINEARBITRATION);
-		if (rb_rank > 0) cooldown = 180 - (rb_rank * 30);
+		if (rb_rank > 0) {
+			cooldown = 30;//180 - (rb_rank * 30);
+			BuildEcho(StringFormat("Divine Arbitration %u reduced cooldown by %i", rb_rank, (rb_rank * 30)));
+		}
 	} else if (rank_id == aaDivineResurrection) {
 		rb_rank = GetBuildRank(CLERIC, RB_CLR_DIVINERESURRECTION);
 		if (rb_rank > 0) {
@@ -1626,12 +1637,6 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 		}
 
 		return;
-	}
-
-	//calculate cooldown
-	cooldown = rank->recast_time - GetAlternateAdvancementCooldownReduction(rank);
-	if(cooldown < 0) {
-		cooldown = 0;
 	}
 
 	if (!IsCastWhileInvis(spellid))
