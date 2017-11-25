@@ -1455,33 +1455,36 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 	} else if (rank_id == aaLeechTouch) {
 		rb_rank = GetBuildRank(SHADOWKNIGHT, RB_SHD_LEECHTOUCH);
 		if(rb_rank) {
-			if (GetLevel() < 15) { //lifetap
+			int level = GetLevel();
+			if (level < 15) { //lifetap
 				spellid = 341;  //10
-				manacost = 8;
 				cooldown = 4;
-			}
-			else if (GetLevel() < 29) { //lifespike
+				if (level >= 25) manacost = 12;
+				else if (level >= 20) manacost = 10;
+				else manacost = 8;
+			} else if (level < 29) { //lifespike
 				spellid = 502; //19
-				manacost = 13;
 				cooldown = 4;
-			} else if (GetLevel() < 51) { //lifedraw
+				if (level >= 45) manacost = 85;
+				else if (level >= 40) manacost = 61;
+				else if (level >= 35) manacost = 37;
+				else manacost = 13;
+			} else if (level < 51) { //lifedraw
 				spellid = 445; //195
+				cooldown = 4;
 				manacost = 86;
-				cooldown = 4;
-			} else if (GetLevel() < 55) { //siphon life
+			} else if (level < 55) { //siphon life
 				spellid = 446; //250
+				cooldown = 4;
 				manacost = 115;
-				cooldown = 4;
-			}
-			else if (GetLevel() < 60) { //drain spirit
+			} else if (level < 60) { //drain spirit
 				spellid = 525; //514
+				cooldown = 4;
 				manacost = 152;
-				cooldown = 4;
-			}
-			else { //drain soul
+			} else { //drain soul
 				spellid = 447; // 656
-				manacost = 248;
 				cooldown = 4;
+				manacost = 248;
 			}
 		}		
 	} else if (rank_id == aaSpiritoftheWood || rank_id == aaNaturesBoon || rank_id == aaAncestralAid) {
