@@ -7928,15 +7928,8 @@ int Mob::ModifyManaUsage(int mana_cost, uint16 spell_id, Mob* spell_target, bool
 	
 	rank = GetBuildRank(NECROMANCER, RB_NEC_LIFEBURN);
 	if (spell_id == 2755 && rank > 0) {
-		if (GetLevel() < 3) mana_cost = 5;
-		if (GetLevel() < 14) mana_cost = 20;
-		else if (GetLevel() < 22) mana_cost = 30;
-		else if (GetLevel() < 30) mana_cost = 50;
-		else if (GetLevel() < 38) mana_cost = 100;
-		else if (GetLevel() < 46) mana_cost = 150;
-		else if (GetLevel() < 52) mana_cost = 250;
-		else if (GetLevel() < 58) mana_cost = 350;
-		else mana_cost = 400;
+		mana_cost = int(GetHP() * 0.02f * rank);
+		mana_cost /= 5;
 	}
 
 	//runes cost extra mana.

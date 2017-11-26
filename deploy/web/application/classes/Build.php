@@ -1291,13 +1291,13 @@ class Build {
 			$newSkill->title = "Dying Grasp";
 			$newSkill->desc = 'Grants the Dying Grasp AA, a high damage, fast casting lifetap. Base cooldown of 360 seconds, each rank reduces cooldown by 30 seconds.';
 			$newSkill->image = "/images/builds/icons/rb-nec-dyinggrasp.png";
-			$skills[28] = $newSkill;
+			$skills[31] = $newSkill;
 
 			$newSkill = new stdClass();
 			$newSkill->title = "Servant of Blood";
 			$newSkill->desc = 'Grants the Lesson of the Devoted AA, summoning a blood skeleton that lifetaps health to the group for 30 seconds. 10 minute recast time, each rank reduces recast by 30 seconds.';
 			$newSkill->image = "/images/builds/icons/rb-nec-servantofblood.png";
-			$skills[28] = $newSkill;
+			$skills[34] = $newSkill;
 
 			/*$newSkill = new stdClass();
 			$newSkill->title = "Life Link";

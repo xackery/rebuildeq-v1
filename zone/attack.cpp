@@ -3947,21 +3947,7 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 						spell_id == 476 //vampiric embrace
 						)) {
 					//Ratio base damage based on new curve.
-					int scale_damage = 0;
-					int attacker_level = attacker->GetLevel();
-					if (attacker_level <= 10) {
-						scale_damage = 10 + (attacker_level - 2);
-					}
-					else if (attacker_level <= 20) {
-						scale_damage = 18 + (attacker_level - 10) * (attacker_level - 10);
-					}
-					else if (attacker_level <= 60) {
-						scale_damage = 118 + ((attacker_level - 20) * 5);
-					}
-					Log(Logs::General, Logs::Spells, "Applying lifetap scale for SHD: %i to %i", damage, scale_damage);
-					if (scale_damage > damage) {
-						damage = scale_damage;
-					}
+					
 
 					rank = attacker->CastToClient()->GetBuildRank(SHADOWKNIGHT, RB_NEC_LIFEBLOOD);
 					if (attacker->IsGrouped()) {
@@ -5917,12 +5903,42 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 
 	TryCriticalHit(defender, hit, opts);
 
-	int rank;
-
 	hit.damage_done += hit.min_damage;
 	
-
 	hit.damage_done += defender->DoCripplingPresenceAndEmpathy(this, hit);
+
+	int rank = 0;
+	int proc_damage = 1;
+	float chance = 0;
+	if (IsPet() && HasOwner() && GetOwner()->IsClient()) {
+		Mob *owner = GetOwner();
+		rank = owner->GetBuildRank(NECROMANCER, RB_NEC_SHROUDOFDEATH);
+		if (rank > 0) {
+			chance = 400;
+
+			proc_damage = int(owner->GetLevel() * 0.2f * rank);
+			if (proc_damage < 10) {
+				proc_damage = 10;
+			}
+
+			if (owner->CastToClient()->BuildProcCalc(chance, hit.hand, defender, proc_damage, hit.skill)) {
+				owner->BuildEcho(StringFormat("Shroud of Death %i dealt %i damage.", rank, proc_damage));
+				//apply recourse
+				Mob * tapFocus = owner->GetTapFocus();
+				if (owner->GetBuildRank(NECROMANCER, RB_NEC_SPIRITFOCUS) > 0 && tapFocus != nullptr) {
+					float dist2 = DistanceSquared(GetPosition(), tapFocus->GetPosition());
+					float range2 = 100 * 100;
+					if (dist2 > range2) {
+						owner->ClearTapFocus();
+					}
+					else { //in range
+						owner->BuildEcho(StringFormat("Spirit Focus %i transferred %i hitpoints of the lifetap recourse to %s.", rank, proc_damage, tapFocus->GetCleanName()));
+						owner->GetTapFocus()->HealDamage(proc_damage, owner);
+					}
+				}
+			}
+		}
+	}
 
 
 	if (IsClient()) {
@@ -6001,9 +6017,6 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 
 
 		uint16 spellid = 0;
-		int proc_damage = 1;
-		float chance = 0;
-		uint32 rank;
 
 		if (hit.skill != EQEmu::skills::SkillBash &&
 			hit.skill != EQEmu::skills::SkillBackstab &&
@@ -6147,38 +6160,6 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 					break;
 				}
 			}
-
-
-			if (IsPet() && HasOwner() && GetOwner()->IsClient()) {
-				Mob *owner = GetOwner();
-				rank = owner->GetBuildRank(NECROMANCER, RB_NEC_SHROUDOFDEATH);
-				if (rank > 0) {
-					chance = 400;
-
-					proc_damage = int(owner->GetLevel() * 0.2f * rank);
-					if (proc_damage < 10) {
-						proc_damage = 10;
-					}
-					
-					if (owner->CastToClient()->BuildProcCalc(chance, hit.hand, defender, proc_damage, hit.skill)) {
-						owner->BuildEcho(StringFormat("Shroud of Death %i dealt %i damage.", rank, proc_damage));
-						//apply recourse
-						Mob * tapFocus = owner->GetTapFocus();
-						if (owner->GetBuildRank(NECROMANCER, RB_NEC_SPIRITFOCUS) > 0 && tapFocus != nullptr) {
-							float dist2 = DistanceSquared(GetPosition(), tapFocus->GetPosition());
-							float range2 = 100 * 100;
-							if (dist2 > range2) {
-								owner->ClearTapFocus();
-							}
-							else { //in range
-								owner->BuildEcho(StringFormat("Spirit Focus %i transferred %i hitpoints of the lifetap recourse to %s.", rank, proc_damage, tapFocus->GetCleanName()));
-								owner->GetTapFocus()->HealDamage(proc_damage, owner);
-							}
-						}
-					}
-				}
-			}
-			
 
 			rank = GetBuildRank(ROGUE, RB_ROG_APPRAISAL);
 			if (rank > 0) {
