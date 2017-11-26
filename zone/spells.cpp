@@ -3565,8 +3565,8 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
 
 
 		// Monk
-		else if (caster_client->GetClass() == MONK) {
-			// GRACE OF THE ORDER
+		else if (caster_client->GetClass() == NECROMANCER) {
+			// LINGERING CURSE
 			{
 				int rank = caster->CastToClient()->GetBuildRank(NECROMANCER, RB_NEC_LINGERINGCURSE);
 

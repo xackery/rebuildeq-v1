@@ -490,7 +490,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 									caster->SpellFinished(348, this);
 									casterClient->BuildEcho(StringFormat("Venom Strike %i triggered Shock of Poison on %s.", rank, GetCleanName()));
 								}
-								if (spell_id == 1415) { //acid blast, lvl 32
+								if (spell_id == 1415) { //torbas' acid blast, lvl 32
 									caster->SpellFinished(435, this);
 									casterClient->BuildEcho(StringFormat("Venom Strike %i triggered Venom of the Snake on %s.", rank, GetCleanName()));
 								}
