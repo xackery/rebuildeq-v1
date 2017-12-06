@@ -18,6 +18,7 @@
 
 #include "../common/global_define.h"
 #include "../common/eqemu_logsys.h"
+#include "../common/say_link.h"
 
 #include "../common/string_util.h"
 #include "quest_parser_collection.h"
