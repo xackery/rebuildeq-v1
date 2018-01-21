@@ -1728,16 +1728,19 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				if (rank > 0) {
 					int cureCount = 0;
 
-					//Attempt to remove all Deterimental buffs.
+					//Attempt to remove all detrimental buffs.
 					int buff_count = GetMaxTotalSlots();
 					for (int slot = 0; slot < buff_count; slot++) {
 						if (buffs[slot].spellid != SPELL_UNKNOWN &&
-							IsDetrimentalSpell(buffs[slot].spellid) &&
-							buffs[slot].spellid != 756 &&  //rez sickness
-							buffs[slot].spellid != 757) //rez sick
-						{
-							
-							if (caster && TryDispel(caster->GetLevel(), buffs[slot].casterlevel, effect_value)) {
+							IsDetrimentalSpell(buffs[slot].spellid))
+							{
+							if ((buffs[slot].spellid == 756 ||  //rez sickness
+								buffs[slot].spellid == 757) && //rez sick
+								rank < 5) {  //Don't let rez sickness get cured with less than rank 5
+								continue;
+							}
+
+							else if (caster && TryDispel(caster->GetLevel(), buffs[slot].casterlevel, effect_value)) {
 								BuffFadeBySlot(slot);
 								cureCount++;
 								if (cureCount >= rank) break;
