@@ -1,0 +1,6 @@
+Invalid login attempt. Bad password from IP: '173.239.221.3'. Username: 'Uncharted ' Password: 'rampage'.; -- N/A (23-May-17  17:45:47)
+Invalid login attempt. Bad password from IP: '173.239.221.3'. Username: 'Uncharted ' Password: 'rampage'.; -- N/A (23-May-17  17:45:50)
+UPDATE spells_new SET `Activated` = "1", `npc_no_los` = "1" WHERE id=361; -- Uncharted  (23-May-17  17:48:21)
+UPDATE spells_new SET `Activated` = "1" WHERE id=500; -- Uncharted  (23-May-17  17:48:25)
+UPDATE spells_new SET `range` = "10000" WHERE id=361; -- Uncharted  (23-May-17  17:53:32)
+UPDATE spells_new SET `Activated` = "1" WHERE id=384; -- Uncharted  (23-May-17  17:56:36)

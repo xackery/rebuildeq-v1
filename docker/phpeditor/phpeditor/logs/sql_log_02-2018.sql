@@ -1,0 +1,8 @@
+UPDATE account SET status=-2 WHERE id=80574; -- uncharted (4-Feb-18  2:22:57)
+UPDATE account SET status=0 WHERE id=80574; -- uncharted (4-Feb-18  2:23:12)
+UPDATE spells_new SET `Activated` = "1", `zonetype` = "255" WHERE id=323; -- unchaRTED (25-Feb-18  16:43:22)
+UPDATE spells_new SET `npc_category` = "3" WHERE id=323; -- unchaRTED (25-Feb-18  16:49:10)
+UPDATE spawn2 SET enabled="0" WHERE id=158160; -- unchaRTED (25-Feb-18  16:52:11)
+UPDATE spells_new SET `goodEffect` = "0", `Activated` = "1" WHERE id=960; -- unchaRTED (25-Feb-18  16:56:11)
+UPDATE spells_new SET `effect_base_value2` = "5", `effectid2` = "3" WHERE id=960; -- unchaRTED (25-Feb-18  16:57:55)
+Invalid login attempt. Bad username from IP: '82.32.164.29'. Username: '' Password: ''.; -- Guest (25-Feb-18  22:02:16)
