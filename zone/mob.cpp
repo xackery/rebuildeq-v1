@@ -76,7 +76,6 @@ Mob::Mob(const char* in_name,
 		uint32		in_drakkin_tattoo,
 		uint32		in_drakkin_details,
 		EQEmu::TintProfile	in_armor_tint,
-
 		uint8		in_aa_title,
 		uint8		in_see_invis, // see through invis/ivu
 		uint8		in_see_invis_undead,
@@ -92,24 +91,24 @@ Mob::Mob(const char* in_name,
 		uint8		in_handtexture,
 		uint8		in_legtexture,
 		uint8		in_feettexture
-		) :
+	) :
 		attack_timer(2000),
 		attack_dw_timer(2000),
 		ranged_timer(2000),
 		tic_timer(6000),
 		mana_timer(2000),
 		spellend_timer(0),
-		rewind_timer(30000), //Timer used for determining amount of time between actual player position updates for /rewind.
+		rewind_timer(30000),
 		bindwound_timer(10000),
 		stunned_timer(0),
 		spun_timer(0),
 		bardsong_timer(6000),
 		gravity_timer(1000),
 		viral_timer(0),
-		m_FearWalkTarget(-999999.0f,-999999.0f,-999999.0f),
+		m_FearWalkTarget(-999999.0f, -999999.0f, -999999.0f),
 		m_TargetLocation(glm::vec3()),
 		m_TargetV(glm::vec3()),
-		flee_timer(FLEE_CHECK_TIMER),
+		flee_timer(FLEE_CHECK_TIMER), 
 		m_Position(position),
 		tmHidden(-1),
 		mitigation_ac(0),
@@ -117,50 +116,50 @@ Mob::Mob(const char* in_name,
 		fix_z_timer(300),
 		fix_z_timer_engaged(100),
 		attack_anim_timer(1000),
-		position_update_melee_push_timer(1000)
+		position_update_melee_push_timer(500),
+		hate_list_cleanup_timer(6000)
 {
 	targeted = 0;
-	tar_ndx=0;
-	tar_vector=0;
+	tar_ndx = 0;
+	tar_vector = 0;
 	currently_fleeing = false;
 
-	last_z = 0;
-
 	last_major_update_position = m_Position;
+	is_distance_roamer = false;
 
 	AI_Init();
 	SetMoving(false);
-	moved=false;
+	moved = false;
 	m_RewindLocation = glm::vec3();
 
 	_egnode = nullptr;
-	name[0]=0;
-	orig_name[0]=0;
-	clean_name[0]=0;
-	lastname[0]=0;
-	if(in_name) {
-		strn0cpy(name,in_name,64);
-		strn0cpy(orig_name,in_name,64);
+	name[0] = 0;
+	orig_name[0] = 0;
+	clean_name[0] = 0;
+	lastname[0] = 0;
+	if (in_name) {
+		strn0cpy(name, in_name, 64);
+		strn0cpy(orig_name, in_name, 64);
 	}
-	if(in_lastname)
-		strn0cpy(lastname,in_lastname,64);
-	cur_hp		= in_cur_hp;
-	max_hp		= in_max_hp;
-	base_hp		= in_max_hp;
-	gender		= in_gender;
-	race		= in_race;
-	base_gender	= in_gender;
-	base_race	= in_race;
-	class_		= in_class;
-	bodytype	= in_bodytype;
+	if (in_lastname)
+		strn0cpy(lastname, in_lastname, 64);
+	cur_hp = in_cur_hp;
+	max_hp = in_max_hp;
+	base_hp = in_max_hp;
+	gender = in_gender;
+	race = in_race;
+	base_gender = in_gender;
+	base_race = in_race;
+	class_ = in_class;
+	bodytype = in_bodytype;
 	orig_bodytype = in_bodytype;
-	deity		= in_deity;
-	level		= in_level;
+	deity = in_deity;
+	level = in_level;
 	orig_level = in_level;
-	npctype_id	= in_npctype_id;
-	size		= in_size;
-	base_size	= size;
-	runspeed	= in_runspeed;
+	npctype_id = in_npctype_id;
+	size = in_size;
+	base_size = size;
+	runspeed = in_runspeed;
 	// neotokyo: sanity check
 	if (runspeed < 0 || runspeed > 20)
 		runspeed = 1.25f;
@@ -173,7 +172,8 @@ Mob::Mob(const char* in_name,
 		fearspeed = 0.625f;
 		base_fearspeed = 25;
 		// npcs
-	} else {
+	}
+	else {
 		base_walkspeed = base_runspeed * 100 / 265;
 		walkspeed = ((float)base_walkspeed) * 0.025f;
 		base_fearspeed = base_runspeed * 100 / 127;
@@ -185,7 +185,7 @@ Mob::Mob(const char* in_name,
 
 	current_speed = base_runspeed;
 
-	m_PlayerState	= 0;
+	m_PlayerState = 0;
 
 
 	// sanity check
@@ -197,8 +197,8 @@ Mob::Mob(const char* in_name,
 	m_Light.Type[EQEmu::lightsource::LightActive] = m_Light.Type[EQEmu::lightsource::LightInnate];
 	m_Light.Level[EQEmu::lightsource::LightActive] = m_Light.Level[EQEmu::lightsource::LightInnate];
 
-	texture		= in_texture;
-	helmtexture	= in_helmtexture;
+	texture = in_texture;
+	helmtexture = in_helmtexture;
 	armtexture = in_armtexture;
 	bracertexture = in_bracertexture;
 	handtexture = in_handtexture;
@@ -206,21 +206,21 @@ Mob::Mob(const char* in_name,
 	feettexture = in_feettexture;
 	multitexture = (armtexture || bracertexture || handtexture || legtexture || feettexture);
 
-	haircolor	= in_haircolor;
-	beardcolor	= in_beardcolor;
-	eyecolor1	= in_eyecolor1;
-	eyecolor2	= in_eyecolor2;
-	hairstyle	= in_hairstyle;
-	luclinface	= in_luclinface;
-	beard		= in_beard;
-	drakkin_heritage	= in_drakkin_heritage;
-	drakkin_tattoo		= in_drakkin_tattoo;
-	drakkin_details		= in_drakkin_details;
+	haircolor = in_haircolor;
+	beardcolor = in_beardcolor;
+	eyecolor1 = in_eyecolor1;
+	eyecolor2 = in_eyecolor2;
+	hairstyle = in_hairstyle;
+	luclinface = in_luclinface;
+	beard = in_beard;
+	drakkin_heritage = in_drakkin_heritage;
+	drakkin_tattoo = in_drakkin_tattoo;
+	drakkin_details = in_drakkin_details;
 	attack_speed = 0;
 	attack_delay = 0;
 	slow_mitigation = 0;
-	findable	= false;
-	trackable	= true;
+	findable = false;
+	trackable = true;
 	has_shieldequiped = false;
 	has_twohandbluntequiped = false;
 	has_twohanderequipped = false;
@@ -231,19 +231,19 @@ Mob::Mob(const char* in_name,
 	SpellPowerDistanceMod = 0;
 	last_los_check = false;
 
-	if(in_aa_title>0)
-		aa_title	= in_aa_title;
+	if (in_aa_title > 0)
+		aa_title = in_aa_title;
 	else
-		aa_title	=0xFF;
-	AC		= in_ac;
-	ATK		= in_atk;
-	STR		= in_str;
-	STA		= in_sta;
-	DEX		= in_dex;
-	AGI		= in_agi;
-	INT		= in_int;
-	WIS		= in_wis;
-	CHA		= in_cha;
+		aa_title = 0xFF;
+	AC = in_ac;
+	ATK = in_atk;
+	STR = in_str;
+	STA = in_sta;
+	DEX = in_dex;
+	AGI = in_agi;
+	INT = in_int;
+	WIS = in_wis;
+	CHA = in_cha;
 	MR = CR = FR = DR = PR = Corrup = 0;
 
 	ExtraHaste = 0;
@@ -264,9 +264,10 @@ Mob::Mob(const char* in_name,
 	hidden = false;
 	improved_hidden = false;
 	invulnerable = false;
-	IsFullHP	= (cur_hp == max_hp);
-	qglobal=0;
+	IsFullHP = (cur_hp == max_hp);
+	qglobal = 0;
 	spawned = false;
+	rare_spawn = false;
 
 	InitializeBuffSlots();
 
@@ -306,7 +307,7 @@ Mob::Mob(const char* in_name,
 	logging_enabled = false;
 	isgrouped = false;
 	israidgrouped = false;
-	
+
 	IsHorse = false;
 
 	entity_id_being_looted = 0;
@@ -377,13 +378,13 @@ Mob::Mob(const char* in_name,
 	}
 
 	destructibleobject = false;
-	wandertype=0;
-	pausetype=0;
+	wandertype = 0;
+	pausetype = 0;
 	cur_wp = 0;
 	m_CurrentWayPoint = glm::vec4();
 	cur_wp_pause = 0;
-	patrol=0;
-	follow=0;
+	patrol = 0;
+	follow = 0;
 	follow_dist = 100;	// Default Distance for Follow
 	no_target_hotkey = false;
 	flee_mode = false;
@@ -393,11 +394,12 @@ Mob::Mob(const char* in_name,
 	permarooted = (runspeed > 0) ? false : true;
 
 	movetimercompleted = false;
+	ForcedMovement = 0;
 	roamer = false;
 	rooted = false;
 	charmed = false;
 	has_virus = false;
-	for (i=0; i<MAX_SPELL_TRIGGER*2; i++) {
+	for (i = 0; i < MAX_SPELL_TRIGGER * 2; i++) {
 		viral_spells[i] = 0;
 	}
 	pStandingPetOrder = SPO_Follow;
@@ -428,24 +430,16 @@ Mob::Mob(const char* in_name,
 	nimbus_effect3 = 0;
 	m_targetable = true;
 
-    m_TargetRing = glm::vec3();
+	m_TargetRing = glm::vec3();
 
 	flymode = FlyMode3;
-	// Pathing
-	PathingLOSState = UnknownLOS;
-	PathingLoopCount = 0;
-	PathingLastNodeVisited = -1;
-	PathingLOSCheckTimer = new Timer(RuleI(Pathing, LOSCheckFrequency));
-	PathingRouteUpdateTimerShort = new Timer(RuleI(Pathing, RouteUpdateFrequencyShort));
-	PathingRouteUpdateTimerLong = new Timer(RuleI(Pathing, RouteUpdateFrequencyLong));
 	DistractedFromGrid = false;
-	PathingTraversedNodes = 0;
 	hate_list.SetHateOwner(this);
 
 	m_AllowBeneficial = false;
 	m_DisableMelee = false;
 	for (int i = 0; i < EQEmu::skills::HIGHEST_SKILL + 2; i++) { SkillDmgTaken_Mod[i] = 0; }
-	for (int i = 0; i < HIGHEST_RESIST+2; i++) { Vulnerability_Mod[i] = 0; }
+	for (int i = 0; i < HIGHEST_RESIST + 2; i++) { Vulnerability_Mod[i] = 0; }
 
 	emoteid = 0;
 	endur_upkeep = false;
@@ -453,6 +447,9 @@ Mob::Mob(const char* in_name,
 	PrimaryAggro = false;
 	AssistAggro = false;
 	npc_assist_cap = 0;
+
+	PathRecalcTimer.reset(new Timer(500));
+	PathingLoopCount = 0;
 }
 
 Mob::~Mob()
@@ -486,9 +483,6 @@ Mob::~Mob()
 		entity_list.DestroyTempPets(this);
 	}
 	entity_list.UnMarkNPC(GetID());
-	safe_delete(PathingLOSCheckTimer);
-	safe_delete(PathingRouteUpdateTimerShort);
-	safe_delete(PathingRouteUpdateTimerLong);
 	UninitializeBuffSlots();
 
 #ifdef BOTS
@@ -1110,7 +1104,7 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 		strn0cpy(ns->spawn.lastName, lastname, sizeof(ns->spawn.lastName));
 	}
 
-	ns->spawn.heading	= FloatToEQ19(m_Position.w);
+	ns->spawn.heading	= FloatToEQ12(m_Position.w);
 	ns->spawn.x			= FloatToEQ19(m_Position.x);//((int32)x_pos)<<3;
 	ns->spawn.y			= FloatToEQ19(m_Position.y);//((int32)y_pos)<<3;
 	ns->spawn.z			= FloatToEQ19(m_Position.z);//((int32)z_pos)<<3;
@@ -1249,6 +1243,13 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 		ns->spawn.DestructibleUnk9 = 0x00000002;	// Needs to be 2 for tents?
 
 		ns->spawn.flymode = 0;
+	}
+
+	if (RuleB(Character, AllowCrossClassTrainers) && ForWho) {
+		if (ns->spawn.class_ >= WARRIORGM && ns->spawn.class_ <= BERSERKERGM) {
+			int trainer_class = WARRIORGM + (ForWho->GetClass() - 1);
+			ns->spawn.class_ = trainer_class;
+		}
 	}
 }
 
@@ -1442,6 +1443,21 @@ void Mob::SendHPUpdate(bool skip_self /*= false*/, bool force_update_all /*= fal
 	}
 }
 
+void Mob::StopMoving() {
+	FixZ();
+	SetCurrentSpeed(0);
+	if (moved)
+		moved = false;
+}
+
+void Mob::StopMoving(float new_heading) {
+	SetHeading(new_heading);
+	FixZ();
+	SetCurrentSpeed(0);
+	if (moved)
+		moved = false;
+}
+
 /* Used for mobs standing still - this does not send a delta */
 void Mob::SendPosition() {
 	auto app = new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
@@ -1452,6 +1468,7 @@ void Mob::SendPosition() {
 	if (DistanceSquared(last_major_update_position, m_Position) >= (100 * 100)) {
 		entity_list.QueueClients(this, app, true, true);
 		last_major_update_position = m_Position;
+		is_distance_roamer = true;
 	}
 	else {
 		entity_list.QueueCloseClients(this, app, true, RuleI(Range, MobPositionUpdates), nullptr, false);
@@ -1484,6 +1501,11 @@ void Mob::SendPositionUpdate(uint8 iSendToSelf) {
 			CastToClient()->FastQueuePacket(&app, false);
 		}
 	}
+	else if (DistanceSquared(last_major_update_position, m_Position) >= (100 * 100)) {
+		entity_list.QueueClients(this, app, true, true);
+		last_major_update_position = m_Position;
+		is_distance_roamer = true;
+	}
 	else {
 		entity_list.QueueCloseClients(this, app, (iSendToSelf == 0), RuleI(Range, MobPositionUpdates), nullptr, false);
 	}
@@ -1498,12 +1520,12 @@ void Mob::MakeSpawnUpdateNoDelta(PlayerPositionUpdateServer_Struct *spu) {
 	spu->x_pos = FloatToEQ19(m_Position.x);
 	spu->y_pos = FloatToEQ19(m_Position.y);
 	spu->z_pos = FloatToEQ19(m_Position.z);
-	spu->delta_x = NewFloatToEQ13(0);
-	spu->delta_y = NewFloatToEQ13(0);
-	spu->delta_z = NewFloatToEQ13(0);
-	spu->heading = FloatToEQ19(m_Position.w);
+	spu->delta_x = FloatToEQ13(0);
+	spu->delta_y = FloatToEQ13(0);
+	spu->delta_z = FloatToEQ13(0);
+	spu->heading = FloatToEQ12(m_Position.w);
 	spu->animation = 0;
-	spu->delta_heading = NewFloatToEQ13(0);
+	spu->delta_heading = FloatToEQ10(0);
 	spu->padding0002 = 0;
 	spu->padding0006 = 7;
 	spu->padding0014 = 0x7f;
@@ -1517,10 +1539,10 @@ void Mob::MakeSpawnUpdate(PlayerPositionUpdateServer_Struct* spu) {
 	spu->x_pos = FloatToEQ19(m_Position.x);
 	spu->y_pos = FloatToEQ19(m_Position.y);
 	spu->z_pos = FloatToEQ19(m_Position.z);
-	spu->delta_x = NewFloatToEQ13(m_Delta.x);
-	spu->delta_y = NewFloatToEQ13(m_Delta.y);
-	spu->delta_z = NewFloatToEQ13(m_Delta.z);
-	spu->heading = FloatToEQ19(m_Position.w);
+	spu->delta_x = FloatToEQ13(m_Delta.x);
+	spu->delta_y = FloatToEQ13(m_Delta.y);
+	spu->delta_z = FloatToEQ13(m_Delta.z);
+	spu->heading = FloatToEQ12(m_Position.w);
 	spu->padding0002 = 0;
 	spu->padding0006 = 7;
 	spu->padding0014 = 0x7f;
@@ -1534,7 +1556,7 @@ void Mob::MakeSpawnUpdate(PlayerPositionUpdateServer_Struct* spu) {
 	else
 		spu->animation = pRunAnimSpeed;//animation;
 
-	spu->delta_heading = NewFloatToEQ13(m_Delta.w);
+	spu->delta_heading = FloatToEQ10(m_Delta.w);
 }
 
 void Mob::ShowStats(Client* client)
@@ -1663,7 +1685,6 @@ void Mob::ShowBuffList(Client* client) {
 }
 
 void Mob::GMMove(float x, float y, float z, float heading, bool SendUpdate) {
-
 	Route.clear();
 
 	if(IsNPC()) {
@@ -2074,7 +2095,7 @@ bool Mob::IsPlayerRace(uint16 in_race) {
 
 
 uint8 Mob::GetDefaultGender(uint16 in_race, uint8 in_gender) {
-	if (Mob::IsPlayerRace(in_race) || in_race == 15 || in_race == 50 || in_race == 57 || in_race == 70 || in_race == 98 || in_race == 118 || in_race == 23) {
+	if (Mob::IsPlayerRace(in_race) || in_race == 15 || in_race == 50 || in_race == 57 || in_race == 70 || in_race == 98 || in_race == 118 || in_race == 562) {
 		if (in_gender >= 2) {
 			// Male default for PC Races
 			return 0;
@@ -2449,18 +2470,18 @@ float Mob::MobAngle(Mob *other, float ourx, float oury) const {
 	float mobx = -(other->GetX());	// mob xloc (inverse because eq)
 	float moby = other->GetY();		// mob yloc
 	float heading = other->GetHeading();	// mob heading
-	heading = (heading * 360.0f) / 256.0f;	// convert to degrees
+	heading = (heading * 360.0f) / 512.0f;	// convert to degrees
 	if (heading < 270)
 		heading += 90;
 	else
 		heading -= 270;
 
 	heading = heading * 3.1415f / 180.0f;	// convert to radians
-	vectorx = mobx + (10.0f * cosf(heading));	// create a vector based on heading
-	vectory = moby + (10.0f * sinf(heading));	// of mob length 10
+	vectorx = mobx + (10.0f * std::cos(heading));	// create a vector based on heading
+	vectory = moby + (10.0f * std::sin(heading));	// of mob length 10
 
 	// length of mob to player vector
-	lengthb = (float) sqrtf(((-ourx - mobx) * (-ourx - mobx)) + ((oury - moby) * (oury - moby)));
+	lengthb = (float) std::sqrt(((-ourx - mobx) * (-ourx - mobx)) + ((oury - moby) * (oury - moby)));
 
 	// calculate dot product to get angle
 	// Handle acos domain errors due to floating point rounding errors
@@ -2473,7 +2494,7 @@ float Mob::MobAngle(Mob *other, float ourx, float oury) const {
 	else if (dotp < -1)
 		return 180.0f;
 
-	angle = acosf(dotp);
+	angle = std::acos(dotp);
 	angle = angle * 180.0f / 3.1415f;
 
 	return angle;
@@ -2642,7 +2663,7 @@ bool Mob::PlotPositionAroundTarget(Mob* target, float &x_dest, float &y_dest, fl
 			look_heading = target->GetHeading();
 
 		// Convert to sony heading to radians
-		look_heading = (look_heading / 256.0f) * 6.283184f;
+		look_heading = (look_heading / 512.0f) * 6.283184f;
 
 		float tempX = 0;
 		float tempY = 0;
@@ -2757,20 +2778,10 @@ bool Mob::HateSummon() {
 
 			entity_list.MessageClose(this, true, 500, MT_Say, "%s says,'You will not evade me, %s!' ", GetCleanName(), target->GetCleanName() );
 
-			if (target->IsClient()) {
+			if (target->IsClient())
 				target->CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), m_Position.x, m_Position.y, m_Position.z, target->GetHeading(), 0, SummonPC);
-			}
-			else {
-#ifdef BOTS
-				if(target && target->IsBot()) {
-					// set pre summoning info to return to (to get out of melee range for caster)
-					target->CastToBot()->SetHasBeenSummoned(true);
-					target->CastToBot()->SetPreSummonLocation(glm::vec3(target->GetPosition()));
-
-				}
-#endif //BOTS
+			else
 				target->GMMove(m_Position.x, m_Position.y, m_Position.z, target->GetHeading());
-			}
 
 			return true;
 		} else if(summon_level == 2) {
@@ -3457,13 +3468,18 @@ int Mob::GetHaste()
 	else // 1-25
 		h += itembonuses.haste > 10 ? 10 : itembonuses.haste;
 
-	// 60+ 100, 51-59 85, 1-50 level+25
-	if (level > 59) // 60+
-		cap = RuleI(Character, HasteCap);
-	else if (level > 50) // 51-59
-		cap = 85;
-	else // 1-50
-		cap = level + 25;
+	// mobs are different!
+	Mob *owner = nullptr;
+	if (IsPet())
+		owner = GetOwner();
+	else if (IsNPC() && CastToNPC()->GetSwarmOwner())
+		owner = entity_list.GetMobID(CastToNPC()->GetSwarmOwner());
+	if (owner) {
+		cap = 10 + level;
+		cap += std::max(0, owner->GetLevel() - 39) + std::max(0, owner->GetLevel() - 60);
+	} else {
+		cap = 150;
+	}
 
 	if(h > cap)
 		h = cap;
@@ -3497,6 +3513,19 @@ void Mob::SetTarget(Mob* mob) {
 
 	if (this->IsClient() && this->GetTarget() && this->CastToClient()->hp_other_update_throttle_timer.Check())
 		this->GetTarget()->SendHPUpdate(false, true);
+}
+
+// For when we want a Ground Z at a location we are not at yet
+// Like MoveTo.
+float Mob::FindDestGroundZ(glm::vec3 dest, float z_offset)
+{
+	float best_z = BEST_Z_INVALID;
+	if (zone->zonemap != nullptr)
+	{
+		dest.z += z_offset;
+		best_z = zone->zonemap->FindBestZ(dest, nullptr);
+	}
+	return best_z;
 }
 
 float Mob::FindGroundZ(float new_x, float new_y, float z_offset)
@@ -4717,16 +4746,16 @@ void Mob::DoKnockback(Mob *caster, uint32 pushback, uint32 pushup)
 		spu->x_pos		= FloatToEQ19(GetX());
 		spu->y_pos		= FloatToEQ19(GetY());
 		spu->z_pos		= FloatToEQ19(GetZ());
-		spu->delta_x	= NewFloatToEQ13(static_cast<float>(new_x));
-		spu->delta_y	= NewFloatToEQ13(static_cast<float>(new_y));
-		spu->delta_z	= NewFloatToEQ13(static_cast<float>(pushup));
-		spu->heading	= FloatToEQ19(GetHeading());
+		spu->delta_x	= FloatToEQ13(static_cast<float>(new_x));
+		spu->delta_y	= FloatToEQ13(static_cast<float>(new_y));
+		spu->delta_z	= FloatToEQ13(static_cast<float>(pushup));
+		spu->heading	= FloatToEQ12(GetHeading());
 		spu->padding0002	=0;
 		spu->padding0006	=7;
 		spu->padding0014	=0x7f;
 		spu->padding0018	=0x5df27;
 		spu->animation = 0;
-		spu->delta_heading = NewFloatToEQ13(0);
+		spu->delta_heading = FloatToEQ10(0);
 		outapp_push->priority = 6;
 		entity_list.QueueClients(this, outapp_push, true);
 		CastToClient()->FastQueuePacket(&outapp_push);
@@ -5048,7 +5077,7 @@ void Mob::DoGravityEffect()
 		}
 
 		if(IsClient())
-			this->CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), cur_x, cur_y, new_ground, GetHeading()*2); // I know the heading thing is weird(chance of movepc to halve the heading value, too lazy to figure out why atm)
+			this->CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), cur_x, cur_y, new_ground, GetHeading());
 		else
 			this->GMMove(cur_x, cur_y, new_ground, GetHeading());
 	}
@@ -5683,8 +5712,7 @@ bool Mob::IsFacingMob(Mob *other)
 	if (!other)
 		return false;
 	float angle = HeadingAngleToMob(other);
-	// what the client uses appears to be 2x our internal heading
-	float heading = GetHeading() * 2.0f;
+	float heading = GetHeading();
 
 	if (angle > 472.0 && heading < 40.0)
 		angle = heading;
@@ -5698,15 +5726,13 @@ bool Mob::IsFacingMob(Mob *other)
 }
 
 // All numbers derived from the client
-float Mob::HeadingAngleToMob(Mob *other)
+float Mob::HeadingAngleToMob(float other_x, float other_y)
 {
-	float mob_x = other->GetX();
-	float mob_y = other->GetY();
 	float this_x = GetX();
 	float this_y = GetY();
 
-	float y_diff = std::abs(this_y - mob_y);
-	float x_diff = std::abs(this_x - mob_x);
+	float y_diff = std::abs(this_y - other_y);
+	float x_diff = std::abs(this_x - other_x);
 	if (y_diff < 0.0000009999999974752427)
 		y_diff = 0.0000009999999974752427;
 
@@ -5714,13 +5740,13 @@ float Mob::HeadingAngleToMob(Mob *other)
 
 	// return the right thing based on relative quadrant
 	// I'm sure this could be improved for readability, but whatever
-	if (this_y >= mob_y) {
-		if (mob_x >= this_x)
+	if (this_y >= other_y) {
+		if (other_x >= this_x)
 			return (90.0f - angle + 90.0f) * 511.5f * 0.0027777778f;
-		if (mob_x <= this_x)
+		if (other_x <= this_x)
 			return (angle + 180.0f) * 511.5f * 0.0027777778f;
 	}
-	if (this_y > mob_y || mob_x > this_x)
+	if (this_y > other_y || other_x > this_x)
 		return angle * 511.5f * 0.0027777778f;
 	else
 		return (90.0f - angle + 270.0f) * 511.5f * 0.0027777778f;
@@ -6431,6 +6457,8 @@ NPCType* Mob::AdjustNPC(NPCType* npctype, bool keepSpells = true, bool isPet = f
 	}
 	
 	return npctype;
+float Mob::GetDefaultRaceSize() const {
+	return GetRaceGenderDefaultHeight(race, gender);
 }
 
 

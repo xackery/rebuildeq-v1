@@ -660,11 +660,10 @@ void EntityList::AddCorpse(Corpse *corpse, uint32 in_id)
 void EntityList::AddNPC(NPC *npc, bool SendSpawnPacket, bool dontqueue)
 {
 	npc->SetID(GetFreeID());
-	npc->SetMerchantProbability((uint8) zone->random.Int(0, 99));
 
 	parse->EventNPC(EVENT_SPAWN, npc, nullptr, "", 0);
 
-	npc->FixZ(1);
+	npc->FixZ();
 
 	uint16 emoteid = npc->GetEmoteID();
 	if (emoteid != 0)
@@ -2861,26 +2860,6 @@ void EntityList::ListPlayerCorpses(Client *client)
 	client->Message(0, "%d player corpses listed.", x);
 }
 
-void EntityList::FindPathsToAllNPCs()
-{
-	if (!zone->pathing)
-		return;
-
-	auto it = npc_list.begin();
-	while (it != npc_list.end()) {
-		glm::vec3 Node0 = zone->pathing->GetPathNodeCoordinates(0, false);
-		glm::vec3 Dest(it->second->GetX(), it->second->GetY(), it->second->GetZ());
-		std::deque<int> Route = zone->pathing->FindRoute(Node0, Dest);
-		if (Route.empty())
-			printf("Unable to find a route to %s\n", it->second->GetName());
-		else
-			printf("Found a route to %s\n", it->second->GetName());
-		++it;
-	}
-
-	fflush(stdout);
-}
-
 // returns the number of corpses deleted. A negative number indicates an error code.
 int32 EntityList::DeleteNPCCorpses()
 {
@@ -3293,7 +3272,7 @@ void EntityList::AddHealAggro(Mob *target, Mob *caster, uint16 hate)
 
 	for (auto &e : npc_list) {
 		auto &npc = e.second;
-		if (!npc->CheckAggro(target) || npc->IsFeared())
+		if (!npc->CheckAggro(target) || npc->IsFeared() || npc->IsPet())
 			continue;
 
 		if (zone->random.Roll(50)) // witness check -- place holder
@@ -4958,3 +4937,11 @@ std::map<uint16, Client *> EntityList::ListClients()
 	return clients;
 }
 
+void EntityList::ReloadMerchants() {
+	for (auto it = npc_list.begin();it != npc_list.end(); ++it) {
+		NPC *cur = it->second;
+		if (cur->MerchantType != 0) {
+			zone->LoadNewMerchantData(cur->MerchantType);
+		}
+	}
+}

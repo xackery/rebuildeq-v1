@@ -82,6 +82,7 @@ Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
 #include "string_ids.h"
 #include "worldserver.h"
 #include "nats_manager.h"
+#include "fastmath.h"
 
 #include <assert.h>
 #include <math.h>
@@ -106,6 +107,7 @@ extern Zone* zone;
 extern volatile bool is_zone_loaded;
 extern WorldServer worldserver;
 extern NatsManager nats;
+extern FastMath g_Math;
 
 using EQEmu::CastingSlot;
 
@@ -1350,6 +1352,9 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 					InterruptSpell();
 					return;
 				}
+			}
+			else if (!RuleB(Character, PetsUseReagents) && IsEffectInSpell(spell_id, SE_SummonPet)) {
+				//bypass reagent cost
 			}
 			else if (!bard_song_mode)
 			{
@@ -2892,20 +2897,18 @@ void Mob::BardPulse(uint16 spell_id, Mob *caster) {
 			action->source = caster->GetID();
 			action->target = GetID();
 			action->spell = spell_id;
-			action->sequence = (uint32) (GetHeading() * 2);	// just some random number
+			action->force = spells[spell_id].pushback;
+			action->hit_heading = GetHeading();
+			action->hit_pitch = spells[spell_id].pushup;
 			action->instrument_mod = caster->GetInstrumentMod(spell_id);
-			action->buff_unknown = 0;
-			action->level = buffs[buffs_i].casterlevel;
+			action->effect_flag = 0;
+			action->spell_level = action->level = buffs[buffs_i].casterlevel;
 			action->type = DamageTypeSpell;
 			entity_list.QueueCloseClients(this, packet, false, RuleI(Range, SongMessages), 0, true, IsClient() ? FilterPCSpells : FilterNPCSpells);
 
-			action->buff_unknown = 4;
+			action->effect_flag = 4;
 
-			if(IsEffectInSpell(spell_id, SE_TossUp))
-			{
-				action->buff_unknown = 0;
-			}
-			else if(spells[spell_id].pushback > 0 || spells[spell_id].pushup > 0)
+			if(spells[spell_id].pushback != 0.0f || spells[spell_id].pushup != 0.0f)
 			{
 				if(IsClient())
 				{
@@ -2913,38 +2916,6 @@ void Mob::BardPulse(uint16 spell_id, Mob *caster) {
 					{
 						CastToClient()->SetKnockBackExemption(true);
 
-						action->buff_unknown = 0;
-						auto outapp_push = new EQApplicationPacket(
-						    OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
-						PlayerPositionUpdateServer_Struct* spu = (PlayerPositionUpdateServer_Struct*)outapp_push->pBuffer;
-
-						double look_heading = caster->CalculateHeadingToTarget(GetX(), GetY());
-						look_heading /= 256;
-						look_heading *= 360;
-						if(look_heading > 360)
-							look_heading -= 360;
-
-						//x and y are crossed mkay
-						double new_x = spells[spell_id].pushback * sin(double(look_heading * 3.141592 / 180.0));
-						double new_y = spells[spell_id].pushback * cos(double(look_heading * 3.141592 / 180.0));
-
-						spu->spawn_id	= GetID();
-						spu->x_pos		= FloatToEQ19(GetX());
-						spu->y_pos		= FloatToEQ19(GetY());
-						spu->z_pos		= FloatToEQ19(GetZ());
-						spu->delta_x	= NewFloatToEQ13(new_x);
-						spu->delta_y	= NewFloatToEQ13(new_y);
-						spu->delta_z	= NewFloatToEQ13(spells[spell_id].pushup);
-						spu->heading	= FloatToEQ19(GetHeading());
-						spu->padding0002	=0;
-						spu->padding0006	=7;
-						spu->padding0014	=0x7f;
-						spu->padding0018	=0x5df27;
-						spu->animation = 0;
-						spu->delta_heading = NewFloatToEQ13(0);
-						outapp_push->priority = 6;
-						entity_list.QueueClients(this, outapp_push, true);
-						CastToClient()->FastQueuePacket(&outapp_push);
 					}
 				}
 			}
@@ -2965,7 +2936,9 @@ void Mob::BardPulse(uint16 spell_id, Mob *caster) {
 			cd->source = action->source;
 			cd->type = DamageTypeSpell;
 			cd->spellid = action->spell;
-			cd->meleepush_xy = action->sequence;
+			cd->force = action->force;
+			cd->hit_heading = action->hit_heading;
+			cd->hit_pitch = action->hit_pitch;
 			cd->damage = 0;
 			if(!IsEffectInSpell(spell_id, SE_BindAffinity))
 			{
@@ -3458,6 +3431,12 @@ uint32 Client::GetLastBuffSlot(bool disc, bool song)
 	if (disc)
 		return GetMaxBuffSlots() + GetMaxSongSlots() + GetCurrentDiscSlots();
 	return GetCurrentBuffSlots();
+}
+
+bool Mob::HasDiscBuff()
+{
+	int slot = GetFirstBuffSlot(true, false);
+	return buffs[slot].spellid != SPELL_UNKNOWN;
 }
 
 // returns the slot the buff was added to, -1 if it wasn't added due to
@@ -4044,12 +4023,14 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 		action->target = spelltar->GetID();
 	}
 
-	action->level = caster_level;	// caster level, for animation only
+	action->spell_level = action->level = caster_level;	// caster level, for animation only
 	action->type = 231;	// 231 means a spell
 	action->spell = spell_id;
-	action->sequence = (uint32) (GetHeading() * 2);	// just some random number
+	action->force = spells[spell_id].pushback;
+	action->hit_heading = GetHeading();
+	action->hit_pitch = spells[spell_id].pushup;
 	action->instrument_mod = GetInstrumentMod(spell_id);
-	action->buff_unknown = 0;
+	action->effect_flag = 0;
 
 	if(spelltar != this && spelltar->IsClient())	// send to target
 		spelltar->CastToClient()->QueuePacket(action_packet);
@@ -4509,53 +4490,21 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 	// NOTE: this is what causes the buff icon to appear on the client, if
 	// this is a buff - but it sortof relies on the first packet.
 	// the complete sequence is 2 actions and 1 damage message
-	action->buff_unknown = 0x04;	// this is a success flag
+	action->effect_flag = 0x04;	// this is a success flag
 
-	if(IsEffectInSpell(spell_id, SE_TossUp))
-	{
-		action->buff_unknown = 0;
-	}
-	else if(spells[spell_id].pushback > 0 || spells[spell_id].pushup > 0)
+	if(spells[spell_id].pushback != 0.0f || spells[spell_id].pushup != 0.0f)
 	{
 		if(spelltar->IsClient())
 		{
 			if(!IsBuffSpell(spell_id))
 			{
 				spelltar->CastToClient()->SetKnockBackExemption(true);
-
-				action->buff_unknown = 0;
-				auto outapp_push =
-				    new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
-				PlayerPositionUpdateServer_Struct* spu = (PlayerPositionUpdateServer_Struct*)outapp_push->pBuffer;
-
-				double look_heading = CalculateHeadingToTarget(spelltar->GetX(), spelltar->GetY());
-				look_heading /= 256;
-				look_heading *= 360;
-				if(look_heading > 360)
-					look_heading -= 360;
-
-				//x and y are crossed mkay
-				double new_x = spells[spell_id].pushback * sin(double(look_heading * 3.141592 / 180.0));
-				double new_y = spells[spell_id].pushback * cos(double(look_heading * 3.141592 / 180.0));
-
-				spu->spawn_id	= spelltar->GetID();
-				spu->x_pos		= FloatToEQ19(spelltar->GetX());
-				spu->y_pos		= FloatToEQ19(spelltar->GetY());
-				spu->z_pos		= FloatToEQ19(spelltar->GetZ());
-				spu->delta_x	= NewFloatToEQ13(new_x);
-				spu->delta_y	= NewFloatToEQ13(new_y);
-				spu->delta_z	= NewFloatToEQ13(spells[spell_id].pushup);
-				spu->heading	= FloatToEQ19(spelltar->GetHeading());
-				spu->padding0002	=0;
-				spu->padding0006	=7;
-				spu->padding0014	=0x7f;
-				spu->padding0018	=0x5df27;
-				spu->animation = 0;
-				spu->delta_heading = NewFloatToEQ13(0);
-				outapp_push->priority = 6;
-				entity_list.QueueClients(this, outapp_push, true);
-				spelltar->CastToClient()->FastQueuePacket(&outapp_push);
 			}
+		} else if (RuleB(Spells, NPCSpellPush) && !spelltar->IsRooted() && spelltar->ForcedMovement == 0) {
+			spelltar->m_Delta.x += action->force * g_Math.FastSin(action->hit_heading);
+			spelltar->m_Delta.y += action->force * g_Math.FastCos(action->hit_heading);
+			spelltar->m_Delta.z += action->hit_pitch;
+			spelltar->ForcedMovement = 6;
 		}
 	}
 
@@ -4583,7 +4532,9 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 	cd->source = action->source;
 	cd->type = action->type;
 	cd->spellid = action->spell;
-	cd->meleepush_xy = action->sequence;
+	cd->force = action->force;
+	cd->hit_heading = action->hit_heading;
+	cd->hit_pitch = action->hit_pitch;
 	cd->damage = 0;
 	if(!IsEffectInSpell(spell_id, SE_BindAffinity)){
 		entity_list.QueueCloseClients(
@@ -5002,6 +4953,36 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 	return false;
 }
 
+int Mob::GetResist(uint8 resist_type)
+{
+	switch(resist_type)
+	{
+	case RESIST_FIRE:
+		return GetFR();
+	case RESIST_COLD:
+		return GetCR();
+	case RESIST_MAGIC:
+		return GetMR();
+	case RESIST_DISEASE:
+		return GetDR();
+	case RESIST_POISON:
+		return GetPR();
+	case RESIST_CORRUPTION:
+		return GetCorrup();
+	case RESIST_PRISMATIC:
+		return (GetFR() + GetCR() + GetMR() + GetDR() + GetPR()) / 5;
+	case RESIST_CHROMATIC:
+		return std::min({GetFR(), GetCR(), GetMR(), GetDR(), GetPR()});
+	case RESIST_PHYSICAL:
+		if (IsNPC())
+			return GetPhR();
+		else
+			return 0;
+	default:
+		return 0;
+	}
+}
+
 //
 // Spell resists:
 // returns an effectiveness index from 0 to 100. for most spells, 100 means
@@ -5085,68 +5066,16 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 		return 100;
 	}
 
-	int target_resist;
-	switch(resist_type)
-	{
-	case RESIST_FIRE:
-		target_resist = GetFR();
-		break;
-	case RESIST_COLD:
-		target_resist = GetCR();
-		break;
-	case RESIST_MAGIC:
-		target_resist = GetMR();
-		break;
-	case RESIST_DISEASE:
-		target_resist = GetDR();
-		break;
-	case RESIST_POISON:
-		target_resist = GetPR();
-		break;
-	case RESIST_CORRUPTION:
-		target_resist = GetCorrup();
-		break;
-	case RESIST_PRISMATIC:
-		target_resist = (GetFR() + GetCR() + GetMR() + GetDR() + GetPR()) / 5;
-		break;
-	case RESIST_CHROMATIC:
-		{
-			target_resist = GetFR();
-			int temp = GetCR();
-			if(temp < target_resist)
-			{
-				target_resist = temp;
-			}
+	int target_resist = GetResist(resist_type);
 
-			temp = GetMR();
-			if(temp < target_resist)
-			{
-				target_resist = temp;
-			}
-
-			temp = GetDR();
-			if(temp < target_resist)
-			{
-				target_resist = temp;
-			}
-
-			temp = GetPR();
-			if(temp < target_resist)
-			{
-				target_resist = temp;
-			}
+	// JULY 24, 2002 changes
+	int level = GetLevel();
+	if (IsPetOwnerClient() && caster->IsNPC() && !caster->IsPetOwnerClient()) {
+		auto owner = GetOwner();
+		if (owner != nullptr) {
+			target_resist = std::max(target_resist, owner->GetResist(resist_type));
+			level = owner->GetLevel();
 		}
-		break;
-	case RESIST_PHYSICAL:
-		{
-			if (IsNPC())
-				target_resist = GetPhR();
-			else
-				target_resist = 0;
-		}
-	default:
-
-		target_resist = 0;
 	}
 
 	//Setup our base resist chance.
@@ -5155,7 +5084,7 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 
 	//Adjust our resist chance based on level modifiers
 	uint8 caster_level = level_override > 0 ? level_override : caster->GetLevel();
-	int temp_level_diff = GetLevel() - caster_level;
+	int temp_level_diff = level - caster_level;
 
 	if (GetTier() < caster->GetTier()) {
 		//Adjust our resist chance based on tier modifiers
@@ -5169,7 +5098,7 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 
 	else {
 
-		if(IsNPC() && GetLevel() >= RuleI(Casting,ResistFalloff))
+		if(IsNPC() && level >= RuleI(Casting,ResistFalloff))
 		{
 			int a = (RuleI(Casting,ResistFalloff)-1) - caster_level;
 			if(a > 0)
@@ -5182,7 +5111,7 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 			}
 		}
 
-		if(IsClient() && GetLevel() >= 21 && temp_level_diff > 15)
+		if(IsClient() && level >= 21 && temp_level_diff > 15)
 		{
 			temp_level_diff = 15;
 		}
@@ -5198,16 +5127,16 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 			level_mod = -level_mod;
 		}
 
-		if(IsNPC() && (caster_level - GetLevel()) < -20)
+		if(IsNPC() && (caster_level - level) < -20)
 		{
 			level_mod = 1000;
 		}
 
 		//Even more level stuff this time dealing with damage spells
-		if(IsNPC() && IsDamageSpell(spell_id) && GetLevel() >= 17)
+		if(IsNPC() && IsDamageSpell(spell_id) && level >= 17)
 		{
 			int level_diff;
-			if(GetLevel() >= RuleI(Casting,ResistFalloff))
+			if(level >= RuleI(Casting,ResistFalloff))
 			{
 				level_diff = (RuleI(Casting,ResistFalloff)-1) - caster_level;
 				if (GetTier() < caster->GetTier()) {
@@ -5221,7 +5150,7 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 			}
 			else
 			{
-				level_diff = GetLevel() - caster_level;
+				level_diff = level - caster_level;
 			}
 			level_mod += (2 * level_diff);
 		}
@@ -5332,17 +5261,17 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 
 			if(IsNPC())
 			{
-				if(GetLevel() > caster_level && GetLevel() >= 17 && caster_level <= 50)
+				if(level > caster_level && level >= 17 && caster_level <= 50)
 				{
 					partial_modifier += 5;
 				}
 
-				if(GetLevel() >= 30 && caster_level < 50)
+				if(level >= 30 && caster_level < 50)
 				{
 					partial_modifier += (caster_level - 25);
 				}
 
-				if(GetLevel() < 15)
+				if(level < 15)
 				{
 					partial_modifier -= 5;
 				}
@@ -5350,9 +5279,9 @@ float Mob::ResistSpell(uint8 resist_type, uint16 spell_id, Mob *caster, bool use
 
 			if(caster->IsNPC())
 			{
-				if((GetLevel() - caster_level) >= 20)
+				if((level - caster_level) >= 20)
 				{
-					partial_modifier += (GetLevel() - caster_level) * 1.5;
+					partial_modifier += (level - caster_level) * 1.5;
 				}
 			}
 
@@ -6323,7 +6252,7 @@ void Client::SendSpellAnim(uint16 targetid, uint16 spell_id)
 	a->source = this->GetID();
 	a->type = 231;
 	a->spell = spell_id;
-	a->sequence = 231;
+	a->hit_heading = GetHeading();
 
 	app.priority = 1;
 	entity_list.QueueCloseClients(this, &app, false, RuleI(Range, SpellParticles));
@@ -6334,8 +6263,8 @@ void Mob::CalcDestFromHeading(float heading, float distance, float MaxZDiff, flo
 	if (!distance) { return; }
 	if (!MaxZDiff) { MaxZDiff = 5; }
 
-	float ReverseHeading = 256 - heading;
-	float ConvertAngle = ReverseHeading * 1.40625f;
+	float ReverseHeading = 512 - heading;
+	float ConvertAngle = ReverseHeading * 360.0f / 512.0f;
 	if (ConvertAngle <= 270)
 		ConvertAngle = ConvertAngle + 90;
 	else
@@ -6343,8 +6272,8 @@ void Mob::CalcDestFromHeading(float heading, float distance, float MaxZDiff, flo
 
 	float Radian = ConvertAngle * (3.1415927f / 180.0f);
 
-	float CircleX = distance * cos(Radian);
-	float CircleY = distance * sin(Radian);
+	float CircleX = distance * std::cos(Radian);
+	float CircleY = distance * std::sin(Radian);
 	dX = CircleX + StartX;
 	dY = CircleY + StartY;
 	dZ = FindGroundZ(dX, dY, MaxZDiff);
@@ -6409,7 +6338,8 @@ void Mob::BeamDirectional(uint16 spell_id, int16 resist_adjust)
 				maxtarget_count++;
 			}
 
-			if (maxtarget_count >= spells[spell_id].aemaxtargets)
+			// not sure if we need this check, but probably do, need to check if it should be default limited or not
+			if (spells[spell_id].aemaxtargets && maxtarget_count >= spells[spell_id].aemaxtargets)
 				return;
 		}
 		++iter;
@@ -6424,8 +6354,10 @@ void Mob::ConeDirectional(uint16 spell_id, int16 resist_adjust)
 	if (IsBeneficialSpell(spell_id) && IsClient())
 		beneficial_targets = true;
 
-	float angle_start = spells[spell_id].directional_start + (GetHeading() * 360.0f / 256.0f);
-	float angle_end = spells[spell_id].directional_end + (GetHeading() * 360.0f / 256.0f);
+	float heading = GetHeading() * 360.0f / 512.0f; // convert to degrees
+
+	float angle_start = spells[spell_id].directional_start + heading;
+	float angle_end = spells[spell_id].directional_end + heading;
 
 	while (angle_start > 360.0f)
 		angle_start -= 360.0f;
@@ -6446,7 +6378,7 @@ void Mob::ConeDirectional(uint16 spell_id, int16 resist_adjust)
 		}
 
 		float heading_to_target =
-		    (CalculateHeadingToTarget((*iter)->GetX(), (*iter)->GetY()) * 360.0f / 256.0f);
+		    (CalculateHeadingToTarget((*iter)->GetX(), (*iter)->GetY()) * 360.0f / 512.0f);
 
 		while (heading_to_target < 0.0f)
 			heading_to_target += 360.0f;
@@ -6490,7 +6422,8 @@ void Mob::ConeDirectional(uint16 spell_id, int16 resist_adjust)
 			}
 		}
 
-		if (maxtarget_count >= spells[spell_id].aemaxtargets)
+		// my SHM breath could hit all 5 dummies I could summon in arena
+		if (spells[spell_id].aemaxtargets && maxtarget_count >= spells[spell_id].aemaxtargets)
 			return;
 
 		++iter;

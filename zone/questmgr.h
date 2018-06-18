@@ -41,6 +41,12 @@ class QuestManager {
 		bool depop_npc;
 		std::string encounter;
 	};
+
+	struct PausedTimer {
+		Mob * owner;
+		std::string name;
+		uint32 time;
+	};
 public:
 	QuestManager();
 	virtual ~QuestManager();
@@ -83,6 +89,9 @@ public:
 	void stopalltimers();
 	void stopalltimers(EQEmu::ItemInstance *inst);
 	void stopalltimers(Mob *mob);
+	void pausetimer(const char *timer_name);
+	void resumetimer(const char *timer_name);
+	bool ispausedtimer(const char *timer_name);
 	void emote(const char *str);
 	void shout(const char *str);
 	void shout2(const char *str);
@@ -92,8 +101,6 @@ public:
 	void depopall(int npc_type = 0);
 	void depopzone(bool StartSpawnTimer = true);
 	void repopzone();
-	void ConnectNodeToNode(int node1, int node2, int teleport, int doorid);
-	void AddNode(float x, float y, float z, float best_z, int32 requested_id);
 	void settarget(const char *type, int target_id);
 	void follow(int entity_id, int distance);
 	void sfollow();
@@ -151,7 +158,7 @@ public:
 	void setnexthpevent(int at);
 	void setnextinchpevent(int at);
 	void respawn(int npc_type, int grid);
-	void set_proximity(float minx, float maxx, float miny, float maxy, float minz=-999999, float maxz=999999);
+	void set_proximity(float minx, float maxx, float miny, float maxy, float minz=-999999, float maxz=999999, bool bSay = false);
 	void clear_proximity();
 	void enable_proximity_say();
 	void disable_proximity_say();
@@ -305,6 +312,7 @@ private:
 	};
 	std::list<QuestTimer>	QTimerList;
 	std::list<SignalTimer>	STimerList;
+	std::list<PausedTimer>	PTimerList;
 	size_t item_timers;
 
 };

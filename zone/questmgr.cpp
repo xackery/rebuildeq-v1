@@ -263,6 +263,8 @@ Mob* QuestManager::spawn2(int npc_type, int grid, int unused, const glm::vec4& p
 	{
 		auto npc = new NPC(tmp, nullptr, position, FlyMode3);
 		npc->AddLootTable();
+		if (npc->DropsGlobalLoot())
+			npc->CheckGlobalLootTables();
 		entity_list.AddNPC(npc,true,true);
 		if(grid > 0)
 		{
@@ -285,6 +287,8 @@ Mob* QuestManager::unique_spawn(int npc_type, int grid, int unused, const glm::v
 	{
 		auto npc = new NPC(tmp, nullptr, position, FlyMode3);
 		npc->AddLootTable();
+		if (npc->DropsGlobalLoot())
+			npc->CheckGlobalLootTables();
 		entity_list.AddNPC(npc,true,true);
 		if(grid > 0)
 		{
@@ -361,6 +365,8 @@ Mob* QuestManager::spawn_from_spawn2(uint32 spawn2_id)
 
 	found_spawn->SetNPCPointer(npc);
 	npc->AddLootTable();
+	if (npc->DropsGlobalLoot())
+		npc->CheckGlobalLootTables();
 	npc->SetSp2(found_spawn->SpawnGroupID());
 	entity_list.AddNPC(npc);
 	entity_list.LimitAddNPC(npc);
@@ -602,6 +608,107 @@ void QuestManager::stopalltimers(Mob *mob) {
 	}
 }
 
+void QuestManager::pausetimer(const char *timer_name) {
+	QuestManagerCurrentQuestVars();
+
+	std::list<QuestTimer>::iterator cur = QTimerList.begin(), end;
+	std::list<PausedTimer>::iterator pcur = PTimerList.begin(), pend;
+	PausedTimer pt;
+	uint32 milliseconds = 0;
+
+	pend = PTimerList.end();
+	while (pcur != pend)
+	{
+		if (pcur->owner && pcur->owner == owner && pcur->name == timer_name)
+		{
+			Log(Logs::General, Logs::Quests, "Timer %s is already paused for %s. Returning...", timer_name, owner->GetName());
+			return;
+		}
+		++pcur;
+	}
+
+	end = QTimerList.end();
+	while (cur != end)
+	{
+		if (cur->mob && cur->mob == owner && cur->name == timer_name)
+		{
+			milliseconds = cur->Timer_.GetRemainingTime();
+			QTimerList.erase(cur);
+			break;
+		}
+		++cur;
+	}
+
+	std::string timername = timer_name;
+	pt.name = timername;
+	pt.owner = owner;
+	pt.time = milliseconds;
+	Log(Logs::General, Logs::Quests, "Pausing timer %s for %s with %d ms remaining.", timer_name, owner->GetName(), milliseconds);
+	PTimerList.push_back(pt);
+}
+
+void QuestManager::resumetimer(const char *timer_name) {
+	QuestManagerCurrentQuestVars();
+
+	std::list<QuestTimer>::iterator cur = QTimerList.begin(), end;
+	std::list<PausedTimer>::iterator pcur = PTimerList.begin(), pend;
+	PausedTimer pt;
+	uint32 milliseconds = 0;
+
+	pend = PTimerList.end();
+	while (pcur != pend)
+	{
+		if (pcur->owner && pcur->owner == owner && pcur->name == timer_name)
+		{
+			milliseconds = pcur->time;
+			PTimerList.erase(pcur);
+			break;
+		}
+		++pcur;
+	}
+
+	if (milliseconds == 0)
+	{
+		Log(Logs::General, Logs::Quests, "Paused timer %s not found or has expired. Returning...", timer_name);
+		return;
+	}
+
+	end = QTimerList.end();
+	while (cur != end)
+	{
+		if (cur->mob && cur->mob == owner && cur->name == timer_name)
+		{
+			cur->Timer_.Enable();
+			cur->Timer_.Start(milliseconds, false);
+			Log(Logs::General, Logs::Quests, "Resuming timer %s for %s with %d ms remaining.", timer_name, owner->GetName(), milliseconds);
+			return;
+		}
+		++cur;
+	}
+
+	QTimerList.push_back(QuestTimer(milliseconds, owner, timer_name));
+	Log(Logs::General, Logs::Quests, "Creating a new timer and resuming %s for %s with %d ms remaining.", timer_name, owner->GetName(), milliseconds);
+
+}
+
+bool QuestManager::ispausedtimer(const char *timer_name) {
+	QuestManagerCurrentQuestVars();
+	
+	std::list<PausedTimer>::iterator pcur = PTimerList.begin(), pend;
+	
+	pend = PTimerList.end();
+	while (pcur != pend)
+	{
+		if (pcur->owner && pcur->owner == owner && pcur->name == timer_name)
+		{
+			return true;
+		}
+		++pcur;
+	}
+
+	return false;
+}
+
 void QuestManager::emote(const char *str) {
 	QuestManagerCurrentQuestVars();
 	if (!owner) {
@@ -722,79 +829,6 @@ void QuestManager::repopzone() {
 	}
 	else {
 		Log(Logs::General, Logs::Quests, "QuestManager::repopzone called with nullptr zone. Probably syntax error in quest file.");
-	}
-}
-
-void QuestManager::ConnectNodeToNode(int node1, int node2, int teleport, int doorid) {
-	if (!node1 || !node2)
-	{
-		Log(Logs::General, Logs::Quests, "QuestManager::ConnectNodeToNode called without node1 or node2. Probably syntax error in quest file.");
-	}
-	else
-	{
-		if (!teleport)
-		{
-			teleport = 0;
-		}
-		else if (teleport == 1 || teleport == -1)
-		{
-			teleport = -1;
-		}
-
-		if (!doorid)
-		{
-			doorid = 0;
-		}
-
-		if (!zone->pathing)
-		{
-			// if no pathing bits available, make them available.
-			zone->pathing = new PathManager();
-		}
-
-		if (zone->pathing)
-		{
-			zone->pathing->ConnectNodeToNode(node1, node2, teleport, doorid);
-			Log(Logs::Moderate, Logs::Quests, "QuestManager::ConnectNodeToNode connecting node %i to node %i.", node1, node2);
-		}
-	}
-}
-
-void QuestManager::AddNode(float x, float y, float z, float best_z, int32 requested_id)
-{
-	if (!x || !y || !z)
-	{
-		Log(Logs::General, Logs::Quests, "QuestManager::AddNode called without x, y, z. Probably syntax error in quest file.");
-	}
-
-	if (!best_z || best_z == 0)
-	{
-		if (zone->zonemap)
-		{
-			glm::vec3 loc(x, y, z);
-			best_z = zone->zonemap->FindBestZ(loc, nullptr);
-		}
-		else
-		{
-			best_z = z;
-		}
-	}
-
-	if (!requested_id)
-	{
-		requested_id = 0;
-	}
-
-	if (!zone->pathing)
-	{
-		// if no pathing bits available, make them available.
-		zone->pathing = new PathManager();
-	}
-
-	if (zone->pathing)
-	{
-		zone->pathing->AddNode(x, y, z, best_z, requested_id);
-		Log(Logs::Moderate, Logs::Quests, "QuestManager::AddNode adding node at (%i, %i, %i).", x, y, z);
 	}
 }
 
@@ -1367,9 +1401,7 @@ void QuestManager::itemlink(int item_id) {
 		linker.SetLinkType(EQEmu::saylink::SayLinkItemData);
 		linker.SetItemData(item);
 
-		auto item_link = linker.GenerateLink();
-
-		initiator->Message(0, "%s tells you, %s", owner->GetCleanName(), item_link.c_str());
+		initiator->Message(0, "%s tells you, %s", owner->GetCleanName(), linker.GenerateLink().c_str());
 	}
 }
 
@@ -1710,6 +1742,8 @@ void QuestManager::respawn(int npcTypeID, int grid) {
 	{
 		owner = new NPC(npcType, nullptr, owner->GetPosition(), FlyMode3);
 		owner->CastToNPC()->AddLootTable();
+		if (owner->CastToNPC()->DropsGlobalLoot())
+			owner->CastToNPC()->CheckGlobalLootTables();
 		entity_list.AddNPC(owner->CastToNPC(),true,true);
 		if(grid > 0)
 			owner->CastToNPC()->AssignWaypoints(grid);
@@ -1718,7 +1752,7 @@ void QuestManager::respawn(int npcTypeID, int grid) {
 	}
 }
 
-void QuestManager::set_proximity(float minx, float maxx, float miny, float maxy, float minz, float maxz) {
+void QuestManager::set_proximity(float minx, float maxx, float miny, float maxy, float minz, float maxz, bool bSay) {
 	QuestManagerCurrentQuestVars();
 	if (!owner || !owner->IsNPC())
 		return;
@@ -1731,6 +1765,7 @@ void QuestManager::set_proximity(float minx, float maxx, float miny, float maxy,
 	owner->CastToNPC()->proximity->max_y = maxy;
 	owner->CastToNPC()->proximity->min_z = minz;
 	owner->CastToNPC()->proximity->max_z = maxz;
+	owner->CastToNPC()->proximity->say = bSay;
 }
 
 void QuestManager::clear_proximity() {
@@ -2035,8 +2070,8 @@ void QuestManager::npcfeature(char *feature, int setting)
 	QuestManagerCurrentQuestVars();
 	uint16 Race = owner->GetRace();
 	uint8 Gender = owner->GetGender();
-	uint8 Texture = 0xFF;
-	uint8 HelmTexture = 0xFF;
+	uint8 Texture = owner->GetTexture();
+	uint8 HelmTexture = owner->GetHelmTexture();
 	uint8 HairColor = owner->GetHairColor();
 	uint8 BeardColor = owner->GetBeardColor();
 	uint8 EyeColor1 = owner->GetEyeColor1();
@@ -2595,9 +2630,8 @@ const char* QuestManager::varlink(char* perltext, int item_id) {
 	linker.SetLinkType(EQEmu::saylink::SayLinkItemData);
 	linker.SetItemData(item);
 
-	auto item_link = linker.GenerateLink();
-	strcpy(perltext, item_link.c_str()); // link length is currently ranged from 1 to 250 in TextLink::GenerateLink()
-	
+	strcpy(perltext, linker.GenerateLink().c_str());
+
 	return perltext;
 }
 
@@ -2819,8 +2853,7 @@ const char* QuestManager::saylink(char* Phrase, bool silent, const char* LinkNam
 		linker.SetProxyAugment1ID(sayid);
 	linker.SetProxyText(LinkName);
 
-	auto say_link = linker.GenerateLink();
-	strcpy(Phrase, say_link.c_str());  // link length is currently ranged from 1 to 250 in TextLink::GenerateLink()
+	strcpy(Phrase, linker.GenerateLink().c_str());
 
 	return Phrase;
 }

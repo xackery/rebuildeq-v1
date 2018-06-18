@@ -5886,43 +5886,6 @@ XS(XS_Mob_CalculateNewPosition)
 	XSRETURN(1);
 }
 
-XS(XS_Mob_CalculateNewPosition2); /* prototype to pass -Wmissing-prototypes */
-XS(XS_Mob_CalculateNewPosition2)
-{
-	dXSARGS;
-	if (items < 5 || items > 6)
-		Perl_croak(aTHX_ "Usage: Mob::CalculateNewPosition2(THIS, x, y, z, speed, checkZ= false)");
-	{
-		Mob *		THIS;
-		bool		RETVAL;
-		float		x = (float)SvNV(ST(1));
-		float		y = (float)SvNV(ST(2));
-		float		z = (float)SvNV(ST(3));
-		float		speed = (float)SvNV(ST(4));
-		bool		checkZ;
-
-		if (sv_derived_from(ST(0), "Mob")) {
-			IV tmp = SvIV((SV*)SvRV(ST(0)));
-			THIS = INT2PTR(Mob *,tmp);
-		}
-		else
-			Perl_croak(aTHX_ "THIS is not of type Mob");
-		if(THIS == nullptr)
-			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
-
-		if (items < 6)
-			checkZ = false;
-		else {
-			checkZ = (bool)SvTRUE(ST(5));
-		}
-
-		RETVAL = THIS->CalculateNewPosition2(x, y, z, speed, checkZ);
-		ST(0) = boolSV(RETVAL);
-		sv_2mortal(ST(0));
-	}
-	XSRETURN(1);
-}
-
 XS(XS_Mob_CalculateDistance); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_CalculateDistance)
 {
@@ -9039,6 +9002,35 @@ XS(XS_Mob_GetMeleeMitigation) {
 	XSRETURN(1);
 }
 
+XS(XS_Mob_TryMoveAlong);
+XS(XS_Mob_TryMoveAlong) {
+	dXSARGS;
+	if (items < 3 || items > 4)
+		Perl_croak(aTHX_ "Usage: Mob::TryMoveAlong(THIS, distance, angle, send?)");
+	{
+		Mob* THIS;
+		float distance = (float)SvNV(ST(1));
+		float angle = (float)SvNV(ST(2));
+		bool send = true;
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV*)SvRV(ST(0)));
+			THIS = INT2PTR(Mob *,tmp);
+		}
+		else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+		
+		if(THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+		if (items == 4)
+			send = (bool)SvTRUE(ST(3));
+
+		THIS->TryMoveAlong(distance, angle, send);
+	}
+	XSRETURN_EMPTY;
+}
+
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -9262,7 +9254,6 @@ XS(boot_Mob)
 		newXSproto(strcpy(buf, "CheckAggro"), XS_Mob_CheckAggro, file, "$$");
 		newXSproto(strcpy(buf, "CalculateHeadingToTarget"), XS_Mob_CalculateHeadingToTarget, file, "$$$");
 		newXSproto(strcpy(buf, "CalculateNewPosition"), XS_Mob_CalculateNewPosition, file, "$$$$$;$");
-		newXSproto(strcpy(buf, "CalculateNewPosition2"), XS_Mob_CalculateNewPosition2, file, "$$$$$;$");
 		newXSproto(strcpy(buf, "CalculateDistance"), XS_Mob_CalculateDistance, file, "$$$$");
 		newXSproto(strcpy(buf, "SendTo"), XS_Mob_SendTo, file, "$$$$");
 		newXSproto(strcpy(buf, "SendToFixZ"), XS_Mob_SendToFixZ, file, "$$$$");
@@ -9373,6 +9364,7 @@ XS(boot_Mob)
 		newXSproto(strcpy(buf, "IsSilenced"), XS_Mob_IsSilenced, file, "$");
 		newXSproto(strcpy(buf, "IsAmnesiad"), XS_Mob_IsAmnesiad, file, "$");
 		newXSproto(strcpy(buf, "GetMeleeMitigation"), XS_Mob_GetMeleeMitigation, file, "$");
+		newXSproto(strcpy(buf, "TryMoveAlong"), XS_Mob_TryMoveAlong, file, "$$$;$");
 	XSRETURN_YES;
 }
 

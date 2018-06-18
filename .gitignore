@@ -120,3 +120,19 @@ dailyreport.yml
 
 # OS X Indexes
 .DS_Store
+Build/
+build/
+Build32/
+build32/
+Build64/
+build64/
+Build_32/
+build_32/
+Build_64/
+build_64/
+x64/
+x86/
+log/
+logs/
+
+.idea/*

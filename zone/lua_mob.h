@@ -74,6 +74,8 @@ public:
 	void GMMove(double x, double y, double z);
 	void GMMove(double x, double y, double z, double heading);
 	void GMMove(double x, double y, double z, double heading, bool send_update);
+	void TryMoveAlong(float distance, float heading);
+	void TryMoveAlong(float distance, float heading, bool send);
 	bool HasProcs();
 	bool IsInvisible();
 	bool IsInvisible(Lua_Mob other);
@@ -240,8 +242,6 @@ public:
 	double CalculateHeadingToTarget(double in_x, double in_y);
 	bool CalculateNewPosition(double x, double y, double z, double speed);
 	bool CalculateNewPosition(double x, double y, double z, double speed, bool check_z);
-	bool CalculateNewPosition2(double x, double y, double z, double speed);
-	bool CalculateNewPosition2(double x, double y, double z, double speed, bool check_z);
 	float CalculateDistance(double x, double y, double z);
 	void SendTo(double x, double y, double z);
 	void SendToFixZ(double x, double y, double z);
@@ -304,6 +304,20 @@ public:
 	void SetRace(int in);
 	void SetGender(int in);
 	void SendIllusionPacket(luabind::adl::object illusion);
+	void ChangeRace(int in);
+	void ChangeGender(int in);
+	void ChangeTexture(int in);
+	void ChangeHelmTexture(int in);
+	void ChangeHairColor(int in);
+	void ChangeBeardColor(int in);
+	void ChangeEyeColor1(int in);
+	void ChangeEyeColor2(int in);
+	void ChangeHairStyle(int in);
+	void ChangeLuclinFace(int in);
+	void ChangeBeard(int in);
+	void ChangeDrakkinHeritage(int in);
+	void ChangeDrakkinTattoo(int in);
+	void ChangeDrakkinDetails(int in);
 	void CameraEffect(uint32 duration, uint32 intensity);
 	void CameraEffect(uint32 duration, uint32 intensity, Lua_Client c);
 	void CameraEffect(uint32 duration, uint32 intensity, Lua_Client c, bool global);

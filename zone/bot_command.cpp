@@ -63,7 +63,6 @@
 #include "guild_mgr.h"
 #include "map.h"
 #include "doors.h"
-#include "pathing.h"
 #include "qglobals.h"
 #include "queryserv.h"
 #include "quest_parser_collection.h"
@@ -1350,6 +1349,7 @@ int bot_command_init(void)
 		bot_command_add("botreport", "Orders a bot to report its readiness", 0, bot_subcommand_bot_report) ||
 		bot_command_add("botspawn", "Spawns a created bot", 0, bot_subcommand_bot_spawn) ||
 		bot_command_add("botstance", "Changes the stance of a bot", 0, bot_subcommand_bot_stance) ||
+		bot_command_add("botstopmeleelevel", "Sets the level a caster or spell-casting fighter bot will stop melee combat", 0, bot_subcommand_bot_stop_melee_level) ||
 		bot_command_add("botsummon", "Summons bot(s) to your location", 0, bot_subcommand_bot_summon) ||
 		bot_command_add("bottattoo", "Changes the Drakkin tattoo of a bot", 0, bot_subcommand_bot_tattoo) ||
 		bot_command_add("bottogglearcher", "Toggles a archer bot between melee and ranged weapon use", 0, bot_subcommand_bot_toggle_archer) ||
@@ -2605,6 +2605,7 @@ void bot_command_bot(Client *c, const Seperator *sep)
 	subcommand_list.push_back("botreport");
 	subcommand_list.push_back("botspawn");
 	subcommand_list.push_back("botstance");
+	subcommand_list.push_back("botstopmeleelevel");
 	subcommand_list.push_back("botsummon");
 	subcommand_list.push_back("bottogglearcher");
 	subcommand_list.push_back("bottogglehelm");
@@ -3047,13 +3048,7 @@ void bot_command_guard(Client *c, const Seperator *sep)
 
 	sbl.remove(nullptr);
 	for (auto bot_iter : sbl) {
-		bot_iter->WipeHateList();
-		bot_iter->SetFollowID(0);
-		if (!bot_iter->GetPet())
-			continue;
-
-		bot_iter->GetPet()->WipeHateList();
-		bot_iter->GetPet()->SetFollowID(0);
+		bot_iter->SetGuardMode();
 	}
 	if (sbl.size() == 1)
 		Bot::BotGroupSay(sbl.front(), "Guarding this position");
@@ -4798,7 +4793,7 @@ void bot_subcommand_bot_list(Client *c, const Seperator *sep)
 		return;
 	if (helper_is_help_or_usage(sep->arg[1])) {
 		c->Message(m_usage, "usage: %s ([class] [value]) ([race] [value]) ([name] [partial-full])", sep->arg[0]);
-		c->Message(m_note, "Note: filter criteria is orderless and optional");
+		c->Message(m_note, "note: filter criteria is orderless and optional");
 		return;
 	}
 
@@ -5055,7 +5050,11 @@ void bot_subcommand_bot_spawn(Client *c, const Seperator *sep)
 		return;
 	}
 
-	my_bot->Spawn(c);
+	if (!my_bot->Spawn(c)) {
+		c->Message(m_fail, "Failed to spawn bot '%s' (id: %i)", bot_name.c_str(), bot_id);
+		safe_delete(my_bot);
+		return;
+	}
 
 	static const char* bot_spawn_message[16] = {
 		"A solid weapon is my ally!", // WARRIOR / 'generic'
@@ -5128,6 +5127,53 @@ void bot_subcommand_bot_stance(Client *c, const Seperator *sep)
 	}
 }
 
+void bot_subcommand_bot_stop_melee_level(Client *c, const Seperator *sep)
+{
+	if (helper_command_alias_fail(c, "bot_subcommand_bot_stop_melee_level", sep->arg[0], "botstopmeleelevel"))
+		return;
+	if (helper_is_help_or_usage(sep->arg[1])) {
+		c->Message(m_usage, "usage: <target_bot> %s [current | reset | sync | value: 0-255]", sep->arg[0]);
+		c->Message(m_note, "note: Only caster and spell-casting fighter class bots may be modified");
+		c->Message(m_note, "note: Use [reset] to set stop melee level to server rule");
+		c->Message(m_note, "note: Use [sync] to set stop melee level to current bot level");
+		return;
+	}
+
+	auto my_bot = ActionableBots::AsTarget_ByBot(c);
+	if (!my_bot) {
+		c->Message(m_fail, "You must <target> a bot that you own to use this command");
+		return;
+	}
+	if (!IsCasterClass(my_bot->GetClass()) && !IsSpellFighterClass(my_bot->GetClass())) {
+		c->Message(m_fail, "You must <target> a caster or spell-casting fighter class bot to use this command");
+		return;
+	}
+
+	uint8 sml = RuleI(Bots, CasterStopMeleeLevel);
+
+	if (sep->IsNumber(1)) {
+		sml = atoi(sep->arg[1]);
+	}
+	else if (!strcasecmp(sep->arg[1], "sync")) {
+		sml = my_bot->GetLevel();
+	}
+	else if (!strcasecmp(sep->arg[1], "current")) {
+		c->Message(m_message, "My current melee stop level is %u", my_bot->GetStopMeleeLevel());
+		return;
+	}
+	else if (strcasecmp(sep->arg[1], "reset")) {
+		c->Message(m_fail, "A [current] or [reset] argument, or numeric [value] is required to use this command");
+		return;
+	}
+	// [reset] falls through with initialization value
+
+	my_bot->SetStopMeleeLevel(sml);
+	if (!botdb.SaveStopMeleeLevel(c->CharacterID(), my_bot->GetBotID(), sml))
+		c->Message(m_fail, "%s for '%s'", BotDatabase::fail::SaveStopMeleeLevel(), my_bot->GetCleanName());
+
+	c->Message(m_action, "Successfully set stop melee level for %s to %u", my_bot->GetCleanName(), sml);
+}
+
 void bot_subcommand_bot_summon(Client *c, const Seperator *sep)
 {
 	if (helper_command_alias_fail(c, "bot_subcommand_bot_summon", sep->arg[0], "botsummon"))
@@ -5146,10 +5192,10 @@ void bot_subcommand_bot_summon(Client *c, const Seperator *sep)
 		if (!bot_iter)
 			continue;
 
-		Bot::BotGroupSay(bot_iter, "Whee!");
+		//Bot::BotGroupSay(bot_iter, "Whee!");
 
 		bot_iter->WipeHateList();
-		bot_iter->SetTarget(bot_iter->GetBotOwner());
+		bot_iter->SetTarget(nullptr);
 		bot_iter->Warp(glm::vec3(c->GetPosition()));
 		bot_iter->DoAnim(0);
 
@@ -5157,7 +5203,7 @@ void bot_subcommand_bot_summon(Client *c, const Seperator *sep)
 			continue;
 
 		bot_iter->GetPet()->WipeHateList();
-		bot_iter->GetPet()->SetTarget(bot_iter);
+		bot_iter->GetPet()->SetTarget(nullptr);
 		bot_iter->GetPet()->Warp(glm::vec3(c->GetPosition()));
 	}
 
@@ -5811,18 +5857,22 @@ void bot_subcommand_botgroup_load(Client *c, const Seperator *sep)
 		return;
 	}
 	if (!leader_id) {
-		c->Message(m_fail, "Can not locate bot-group leader id for '%s'", botgroup_name_arg.c_str());
+		c->Message(m_fail, "Cannot locate bot-group leader id for '%s'", botgroup_name_arg.c_str());
 		return;
 	}
 
 	auto botgroup_leader = Bot::LoadBot(leader_id);
 	if (!botgroup_leader) {
-		c->Message(m_fail, "Could not spawn bot-group leader for '%s'", botgroup_name_arg.c_str());
+		c->Message(m_fail, "Could not load bot-group leader for '%s'", botgroup_name_arg.c_str());
 		safe_delete(botgroup_leader);
 		return;
 	}
 
-	botgroup_leader->Spawn(c);
+	if (!botgroup_leader->Spawn(c)) {
+		c->Message(m_fail, "Could not spawn bot-group leader %s for '%s'", botgroup_leader->GetName(), botgroup_name_arg.c_str());
+		safe_delete(botgroup_leader);
+		return;
+	}
 	
 	Group* group_inst = new Group(botgroup_leader);
 
@@ -5841,7 +5891,12 @@ void bot_subcommand_botgroup_load(Client *c, const Seperator *sep)
 			return;
 		}
 
-		botgroup_member->Spawn(c);
+		if (!botgroup_member->Spawn(c)) {
+			c->Message(m_fail, "Could not spawn bot '%s' (id: %i)", botgroup_member->GetName(), member_iter);
+			safe_delete(botgroup_member);
+			return;
+		}
+
 		Bot::AddBotToGroup(botgroup_member, group_inst);
 	}
 
@@ -7078,7 +7133,6 @@ void bot_subcommand_inventory_list(Client *c, const Seperator *sep)
 	const EQEmu::ItemData* item = nullptr;
 	bool is2Hweapon = false;
 
-	std::string item_link;
 	EQEmu::SayLinkEngine linker;
 	linker.SetLinkType(EQEmu::saylink::SayLinkItemInst);
 
@@ -7099,8 +7153,7 @@ void bot_subcommand_inventory_list(Client *c, const Seperator *sep)
 		}
 
 		linker.SetItemInst(inst);
-		item_link = linker.GenerateLink();
-		c->Message(m_message, "Using %s in my %s (slot %i)", item_link.c_str(), GetBotEquipSlotName(i), (i == 22 ? EQEmu::inventory::slotPowerSource : i));
+		c->Message(m_message, "Using %s in my %s (slot %i)", linker.GenerateLink().c_str(), GetBotEquipSlotName(i), (i == 22 ? EQEmu::inventory::slotPowerSource : i));
 
 		++inventory_count;
 	}
@@ -7243,8 +7296,8 @@ void bot_subcommand_inventory_window(Client *c, const Seperator *sep)
 
 	std::string window_text;
 	//std::string item_link;
-	//Client::TextLink linker;
-	//linker.SetLinkType(linker.linkItemInst);
+	//EQEmu::SayLinkEngine linker;
+	//linker.SetLinkType(EQEmu::saylink::SayLinkItemInst);
 
 	for (int i = EQEmu::legacy::EQUIPMENT_BEGIN; i <= (EQEmu::legacy::EQUIPMENT_END + 1); ++i) {
 		const EQEmu::ItemData* item = nullptr;

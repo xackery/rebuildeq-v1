@@ -31,6 +31,8 @@ struct struct_HateList
 	int32 hatelist_damage;
 	uint32 stored_hate_amount;
 	bool is_entity_frenzy;
+	int8 oor_count; // count on how long we've been out of range
+	uint32 last_modified; // we need to remove this if it gets higher than 10 mins
 };
 
 class HateList
@@ -71,6 +73,7 @@ public:
 	int DamageNearby(Mob * caster, int32 damage, float range, Mob * ae_center, int32 maxTargets = 0);
 
 	int InfectNearby(Mob * caster, int32 spell_id, float range, Mob * ae_center, int32 maxTargets);
+	void RemoveStaleEntries(int time_ms, float dist);
 
 	int LoseHatredNearby(Mob * caster, int hate_reduction, float range, Mob * ae_center, int32 maxTargets);
 

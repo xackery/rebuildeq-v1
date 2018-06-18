@@ -249,6 +249,7 @@ public:
 	void	AddArea(int id, int type, float min_x, float max_x, float min_y, float max_y, float min_z, float max_z);
 	void	RemoveArea(int id);
 	void	ClearAreas();
+	void	ReloadMerchants();
 	void	ProcessProximitySay(const char *Message, Client *c, uint8 language = 0);
 	void	SendAATimer(uint32 charid,UseAA_Struct* uaa);
 	Doors *FindDoor(uint8 door_id);
@@ -389,7 +390,6 @@ public:
 	void	ListNPCs(Client* client, const char* arg1 = 0, const char* arg2 = 0, uint8 searchtype = 0);
 	void	ListNPCCorpses(Client* client);
 	void	ListPlayerCorpses(Client* client);
-	void	FindPathsToAllNPCs();
 	int32	DeleteNPCCorpses();
 	int32	DeletePlayerCorpses();
 	void	CorpseFix(Client* c);

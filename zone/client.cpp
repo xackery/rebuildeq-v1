@@ -220,7 +220,7 @@ Client::Client(EQStreamInterface* ieqs)
 	linkdead_timer.Disable();
 	zonesummon_id = 0;
 	zonesummon_ignorerestrictions = 0;
-	zoning = false;
+	bZoning = false;
 	zone_mode = ZoneUnsolicited;
 	casting_spell_id = 0;
 	npcflag = false;
@@ -259,7 +259,7 @@ Client::Client(EQStreamInterface* ieqs)
 	mercSlot = 0;
 	InitializeMercInfo();
 	SetMerc(0);
-
+	if (RuleI(World, PVPMinLevel) > 0 && level >= RuleI(World, PVPMinLevel) && m_pp.pvp == 0) SetPVP(true, false);
 	logging_enabled = CLIENT_DEFAULT_LOGGING_ENABLED;
 
 	//for good measure:
@@ -341,6 +341,9 @@ Client::Client(EQStreamInterface* ieqs)
 	for (int i = 0; i < InnateSkillMax; ++i)
 		m_pp.InnateSkills[i] = InnateDisabled;
 
+	temp_pvp = false;
+	is_client_moving = false;
+
 	AI_Init();
 }
 
@@ -400,7 +403,7 @@ Client::~Client() {
 		GetTarget()->IsTargeted(-1);
 
 	//if we are in a group and we are not zoning, force leave the group
-	if(isgrouped && !zoning && is_zone_loaded)
+	if(isgrouped && !bZoning && is_zone_loaded)
 		LeaveGroup();
 
 	UpdateWho(2);
@@ -467,8 +470,8 @@ void Client::SendZoneInPackets()
 	if (!GetHideMe()) entity_list.QueueClients(this, outapp, true);
 	safe_delete(outapp);
 	SetSpawned();
-	if (GetPVP())	//force a PVP update until we fix the spawn struct
-		SendAppearancePacket(AT_PVP, GetPVP(), true, false);
+	if (GetPVP(false))	//force a PVP update until we fix the spawn struct
+		SendAppearancePacket(AT_PVP, GetPVP(false), true, false);
 
 	//Send AA Exp packet:
 	if (GetLevel() >= 51)
@@ -1261,11 +1264,6 @@ void Client::ChannelMessageSend(const char* from, const char* to, uint8 chan_num
 		EffSkill = 100;
 	cm->skill_in_language = EffSkill;
 
-	// Garble the message based on listener skill
-	if (ListenerSkill < 100) {
-		GarbleMessage(buffer, (100 - ListenerSkill));
-	}
-
 	cm->chan_num = chan_num;
 	strcpy(&cm->message[0], buffer);
 	QueuePacket(&app);
@@ -1998,7 +1996,7 @@ void Client::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 	ns->spawn.gm		= GetGM() ? 1 : 0;
 	ns->spawn.guildID	= GuildID();
 //	ns->spawn.linkdead	= IsLD() ? 1 : 0;
-//	ns->spawn.pvp		= GetPVP() ? 1 : 0;
+//	ns->spawn.pvp		= GetPVP(false) ? 1 : 0;
 	ns->spawn.show_name = true;
 
 
@@ -8099,7 +8097,7 @@ void Client::GarbleMessage(char *message, uint8 variance)
 	for (size_t i = 0; i < strlen(message); i++) {
 		// Client expects hex values inside of a text link body
 		if (message[i] == delimiter) {
-			if (!(delimiter_count & 1)) { i += EQEmu::legacy::TEXT_LINK_BODY_LENGTH; }
+			if (!(delimiter_count & 1)) { i += EQEmu::constants::SayLinkBodySize; }
 			++delimiter_count;
 			continue;
 		}
@@ -9109,9 +9107,9 @@ void Client::CheckRegionTypeChanges()
 		return;
 
 	if (last_region_type == RegionTypePVP)
-		SetPVP(true, false);
-	else if (GetPVP())
-		SetPVP(false, false);
+		temp_pvp = true;
+	else if (temp_pvp)
+		temp_pvp = false;
 }
 
 void Client::ProcessAggroMeter()

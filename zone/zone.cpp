@@ -42,7 +42,9 @@
 #include "net.h"
 #include "npc.h"
 #include "object.h"
-#include "pathing.h"
+#include "pathfinder_null.h"
+#include "pathfinder_nav_mesh.h"
+#include "pathfinder_waypoint.h"
 #include "petitions.h"
 #include "quest_parser_collection.h"
 #include "spawn2.h"
@@ -146,8 +148,17 @@ bool Zone::Bootup(uint32 iZoneID, uint32 iInstanceID, bool iStaticZone) {
 	UpdateWindowTitle();
 	zone->GetTimeSync();
 
-	/* Set Logging */
+	zone->RequestUCSServerStatus();
 
+	/**
+	 * Set Shutdown timer
+	 */
+	uint32 shutdown_timer = static_cast<uint32>(database.getZoneShutDownDelay(zone->GetZoneID(), zone->GetInstanceVersion()));
+	zone->StartShutdownTimer(shutdown_timer);
+
+	/*
+	 * Set Logging
+	 */
 	LogSys.StartFileLogs(StringFormat("%s_version_%u_inst_id_%u_port_%u", zone->GetShortName(), zone->GetInstanceVersion(), zone->GetInstanceID(), ZoneConfig::get()->ZonePort));
 
 	return true;
@@ -847,6 +858,9 @@ Zone::Zone(uint32 in_zoneid, uint32 in_instanceid, const char* in_short_name)
 		GuildBanks = new GuildBankManager;
 	else
 		GuildBanks = nullptr;
+
+	m_ucss_available = false;
+	m_last_ucss_update = 0;
 }
 
 Zone::~Zone() {
@@ -893,7 +907,7 @@ bool Zone::Init(bool iStaticZone) {
 	
 	zone->zonemap = EQEmu::Map::LoadMapFile(zone->map_name);
 	zone->watermap = WaterMap::LoadWaterMapfile(zone->map_name);
-	zone->pathing = PathManager::LoadPathFile(zone->map_name);
+	zone->pathing = IPathfinder::Load(zone->map_name);
 
 	Log(Logs::General, Logs::Status, "Loading spawn conditions...");
 	if(!spawn_conditions.LoadSpawnConditions(short_name, instanceid)) {
@@ -967,6 +981,8 @@ bool Zone::Init(bool iStaticZone) {
 	zone->LoadNPCEmotes(&NPCEmoteList);
 
 	LoadAlternateAdvancement();
+
+	database.LoadGlobalLoot();
 
 	//Load merchant data
 	zone->GetMerchantDataForZoneLoad();
@@ -1431,11 +1447,18 @@ bool Zone::HasWeather()
 void Zone::StartShutdownTimer(uint32 set_time) {
 	if (set_time > autoshutdown_timer.GetRemainingTime()) {
 		if (set_time == (RuleI(Zone, AutoShutdownDelay))) {
-			set_time = database.getZoneShutDownDelay(GetZoneID(), GetInstanceVersion());
+			set_time = static_cast<uint32>(database.getZoneShutDownDelay(GetZoneID(), GetInstanceVersion()));
 		}
 		autoshutdown_timer.SetTimer(set_time);
 		Log(Logs::General, Logs::Zone_Server, "Zone::StartShutdownTimer set to %u", set_time);
 	}
+
+	Log(Logs::Detail, Logs::Zone_Server,
+	    "Zone::StartShutdownTimer trigger - set_time: %u remaining_time: %u diff: %i",
+	    set_time,
+	    autoshutdown_timer.GetRemainingTime(),
+	    (set_time - autoshutdown_timer.GetRemainingTime())
+	);
 }
 
 bool Zone::Depop(bool StartSpawnTimer) {
@@ -1449,6 +1472,9 @@ bool Zone::Depop(bool StartSpawnTimer) {
 		delete itr->second;
 		npctable.erase(itr);
 	}
+
+	// clear spell cache
+	database.ClearNPCSpells();
 
 	return true;
 }
@@ -1528,7 +1554,7 @@ void Zone::Repop(uint32 delay) {
 void Zone::GetTimeSync()
 {
 	if (worldserver.Connected() && !zone_has_current_time) {
-		auto pack = new ServerPacket(ServerOP_GetWorldTime, 0);
+		auto pack = new ServerPacket(ServerOP_GetWorldTime, 1);
 		worldserver.SendPacket(pack);
 		safe_delete(pack);
 	}
@@ -1874,14 +1900,17 @@ bool ZoneDatabase::GetDecayTimes(npcDecayTimes_Struct* npcCorpseDecayTimes) {
 	return true;
 }
 
-void Zone::weatherSend()
+void Zone::weatherSend(Client* client)
 {
 	auto outapp = new EQApplicationPacket(OP_Weather, 8);
 	if(zone_weather>0)
 		outapp->pBuffer[0] = zone_weather-1;
 	if(zone_weather>0)
 		outapp->pBuffer[4] = zone->weather_intensity;
-	entity_list.QueueClients(0, outapp);
+	if (client)
+		client->QueuePacket(outapp);
+	else
+		entity_list.QueueClients(0, outapp);
 	safe_delete(outapp);
 }
 
@@ -2242,6 +2271,8 @@ void Zone::DoAdventureActions()
 			{
 				NPC* npc = new NPC(tmp, nullptr, glm::vec4(ds->assa_x, ds->assa_y, ds->assa_z, ds->assa_h), FlyMode3);
 				npc->AddLootTable();
+				if (npc->DropsGlobalLoot())
+					npc->CheckGlobalLootTables();
 				entity_list.AddNPC(npc);
 				npc->Shout("Rarrrgh!");
 				did_adventure_actions = true;
@@ -2345,3 +2376,22 @@ void Zone::UpdateHotzone()
     is_hotzone = atoi(row[0]) == 0 ? false: true;
 }
 
+void Zone::RequestUCSServerStatus() {
+	auto outapp = new ServerPacket(ServerOP_UCSServerStatusRequest, sizeof(UCSServerStatus_Struct));
+	auto ucsss = (UCSServerStatus_Struct*)outapp->pBuffer;
+	ucsss->available = 0;
+	ucsss->port = Config->ZonePort;
+	ucsss->unused = 0;
+	worldserver.SendPacket(outapp);
+	safe_delete(outapp);
+}
+
+void Zone::SetUCSServerAvailable(bool ucss_available, uint32 update_timestamp) {
+	if (m_last_ucss_update == update_timestamp && m_ucss_available != ucss_available) {
+		m_ucss_available = false;
+		RequestUCSServerStatus();
+		return;
+	}
+	if (m_last_ucss_update < update_timestamp)
+		m_ucss_available = ucss_available;
+}
