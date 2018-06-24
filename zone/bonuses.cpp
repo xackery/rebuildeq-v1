@@ -1873,6 +1873,11 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 						spell_id == 2479) { //20% increased recourse effect per rank
 						effect_value += rank * 0.2f * effect_value;
 					}
+					rank = caster->GetBuildRank(NECROMANCER, RB_NEC_DEATHLYAURA);
+					if (rank > 0 &&
+						spell_id == 346) { 
+						effect_value += rank * 10; // 10 attack per rank
+					}
 				}
 				new_bonus->ATK += effect_value;
 				break;
