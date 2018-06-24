@@ -9798,8 +9798,8 @@ void Client::RefreshBuild() {
 					Message(15, "You have unlocked the AA \"Dying Grasp\"! Find the hotkey in your Alternate Advancement Window.");
 				}
 
-				if (GetClass() == NECROMANCER && i == RB_NEC_DEATHBLOOM && GetAA(7703) < 1) {
-					TrainAARank(7703);
+				if (GetClass() == NECROMANCER && i == RB_NEC_DEATHBLOOM && GetAA(aaDeathBloom) < 1) {
+					TrainAARank(aaDeathBloom);
 					Message(15, "You have unlocked the AA \"Death Bloom\"! Find the hotkey in your Alternate Advancement Window.");
 				}
 

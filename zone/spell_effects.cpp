@@ -282,6 +282,11 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							caster->BuildEcho(StringFormat("Lich King increases your HP regeneration by %i.", rankEffect));
 							dmg += rankEffect;
 						}
+
+						rank = casterClient->GetBuildRank(NECROMANCER, RB_NEC_DEATHBLOOM);
+						if (rank > 0 && spell_id == 21754) {
+							dmg = 50* rank; // 50 HP per rank -> 30 Mana per tick (ticks 10 times at level 60, minimum 7 times)
+						}
 					}
 				}
 
@@ -829,7 +834,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				int mana_taken = GetMaxMana() - GetMana();
 				if (effect_value < mana_taken) mana_taken = effect_value;
 
-
 				rank = caster->GetBuildRank(ENCHANTER, RB_ENC_ENERGYBURN);
 				if (IsNPC() &&
 					IsCaster() &&
@@ -854,8 +858,19 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						caster->BuildEcho(StringFormat("Lifeflow %i healed you for %i hitpoints.", rank, damage_amount));
 						caster->HealDamage(damage_amount);
 					}
-			}
+				}
 
+				if (caster) {
+					if (caster->IsClient()) { //Ensure caster is client for these mechanics
+						Client * casterClient = caster->CastToClient();
+
+						rank = casterClient->GetBuildRank(NECROMANCER, RB_NEC_DEATHBLOOM);
+						if (rank > 0 && spell_id == 21754) {
+							effect_value = 30 * rank; // 50 HP per rank -> 30 Mana per tick (ticks 10 times at level 60, minimum 7 times)
+						}
+					}
+				}
+			
 				if(IsManaTapSpell(spell_id)) {
 					if(GetCasterClass() != 'N') {
 #ifdef SPELL_EFFECT_SPAM

@@ -891,6 +891,7 @@ typedef enum {	//AA IDs
 	aaGiftofAmazingExquisiteRadiantMana		=7621,
 	aaHastenedWrathoftheWild				=7664,
 	aaGroupShrink							=7669,
+	aaDeathBloom							=7703,
 	aaEnchantDwerium						=7732,
 	aaMassEnchantDwerium					=7734,
 	aaEnchantPalladium						=7735,
@@ -899,9 +900,7 @@ typedef enum {	//AA IDs
 	aaGreaterMassEnchantPalladium			=7738,
 	aaEnchantTemporite						=7739,
 	aaMassEnchantTemporite					=7740,
-
 	aaLayonHandsRank16						=7866, //Duplicate ID with aaExtendedAstralProjection!
-
 	aaHarmTouch								=7800,//First 10 AA cost 0 per rank
 	aaHarmToch2								=7810,//Next 6+ AA cost 3 +1inc per rank
 	aaLayonHands							=7850,//First 10 AA cost 0 per rank
