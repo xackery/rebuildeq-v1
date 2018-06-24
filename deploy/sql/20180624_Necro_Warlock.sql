@@ -1,0 +1,1 @@
+UPDATE `rebuildeq`.`aa_ranks` SET `expansion`=10 WHERE `id`=7703;
