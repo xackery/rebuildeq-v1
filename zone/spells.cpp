@@ -2701,7 +2701,7 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 		CastToNPC()->AI_Event_SpellCastFinished(true, static_cast<uint16>(slot));
 
 	if (IsClient()) {
-		uint8 rank = CastToClient()->GetBuildRank(NECROMANCER, RB_NEC_LICHKING);
+		uint8 rank = CastToClient()->GetBuildRank(NECROMANCER, RB_NEC_BLOODREALM);
 		if (rank > 0 && (
 			spell_id == 341 || // Lifetap
 			spell_id == 502 || // Lifespike
