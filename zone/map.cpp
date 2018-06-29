@@ -11,7 +11,7 @@
 #include <memory>
 #include <tuple>
 #include <vector>
-
+namespace EQEmu {
 struct Map::impl
 {
 	RaycastMesh *rm;
