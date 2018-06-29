@@ -1,4 +1,4 @@
-
+ 
 
 #bin and build for temp build files
 bin/
@@ -17,37 +17,6 @@ dependencies/protobuf/build/*
 *.oldlock
 
 doxygen/
-
-# deploy/server stuff that needs ignored.
-deploy/server/eqemu_config.xml
-deploy/server/*.lock
-deploy/server/eqcleanup-linux64
-deploy/server/eqemu_update.pl
-deploy/server/backups/
-deploy/server/db_update/
-deploy/server/db_dumper.pl
-deploy/server/login.ini
-deploy/server/queryserv
-deploy/server/shared_memory
-deploy/server/ucs
-deploy/server/world
-deploy/server/zone
-deploy/server/.bash_history
-deploy/server/eqlaunch
-deploy/server/export_client_files
-deploy/server/import_client_files
-deploy/server/EQEmu.sln
-deploy/server/EQEmu.sdf
-deploy/server/EQEmu.opensdf
-deploy/server/common/
-deploy/server/client_files/
-deploy/server/luabind/
-deploy/server/Win32/
-deploy/server/eqlaunch/
-deploy/server/shared/*
-deploy/server/discordnats
-deploy/server/loginserver
-deploy/web/html/web
 
 # Csharp sln
 [Oo]bj

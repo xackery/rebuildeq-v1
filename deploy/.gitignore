@@ -1,2 +1,35 @@
 #patch/ directory is generated using ../client_patch/clientpatch.bat
 patch/*
+
+
+# server stuff that needs ignored.
+!Makefile
+server/eqemu_config.xml
+server/*.lock
+server/eqcleanup-linux64
+server/eqemu_update.pl
+server/backups/
+server/db_update/
+server/db_dumper.pl
+server/login.ini
+server/queryserv
+server/shared_memory
+server/ucs
+server/world
+server/zone
+server/.bash_history
+server/eqlaunch
+server/export_client_files
+server/import_client_files
+server/EQEmu.sln
+server/EQEmu.sdf
+server/EQEmu.opensdf
+server/common/
+server/client_files/
+server/luabind/
+server/Win32/
+server/eqlaunch/
+server/shared/*
+server/discordnats
+server/loginserver
+web/html/web

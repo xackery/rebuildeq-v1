@@ -14,30 +14,30 @@ services:
       - "3306:3306"
     expose:
       - "3306"
- #   network_mode: "bridge"
-  eqemu:
-    stdin_open: true
-    build: ./docker/eqemu/.
-    volumes:
-      - "./deploy/server:/eqemu"
-    links:
-      - mariadb
-      - web
-      - nats
-    depends_on:
-      - mariadb
-      - nats
-    ports:
-      - "5998-5999:5998-5999/udp"
-      - "7000-7100:7000-7100/udp"
-      - "9000:9000/udp"
-      - "9001:9001"
-      - "9080:9080"
-    expose:
-      - "5998-5999/udp"
-      - "7000-7100/udp"
-      - "9000/udp"
-      - "9080/udp"
+ #   network_mode: "bridge" 
+  #eqemu:
+  #  stdin_open: true
+  #  build: ./docker/eqemu/.
+  #  volumes:
+  #    - "./deploy/server:/eqemu"
+  #  links:
+  #    - mariadb
+  #    - web
+  #    - nats
+  #  depends_on:
+  #    - mariadb
+  #    - nats
+  #  ports:
+  #    - "5998-5999:5998-5999/udp"
+  #    - "7000-7100:7000-7100/udp"
+  #    - "9000:9000/udp"
+  #    - "9001:9001"
+  #    - "9080:9080"
+  #  expose:
+  #    - "5998-5999/udp"
+  #    - "7000-7100/udp"
+  #    - "9000/udp"
+  #    - "9080/udp"
   web:
     stdin_open: true
     build: ./docker/web/.

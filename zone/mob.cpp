@@ -7797,7 +7797,6 @@ int Mob::ModifyManaUsage(int mana_cost, uint16 spell_id, Mob* spell_target, bool
 	if (!IsClient()) return mana_cost;
 	int rank = 0;
 
-
 	rank = GetBuildRank(DRUID, RB_DRU_ENTRAP);
 	if (rank > 0 && (
 		spell_id == 3614 ||
@@ -7962,17 +7961,6 @@ int Mob::ModifyManaUsage(int mana_cost, uint16 spell_id, Mob* spell_target, bool
 		int mana_cost_reduc = floor(0.1f * rank * mana_cost);
 		BuildEcho(StringFormat("Ring Affinity %i reduced mana cost by %i.", rank, mana_cost_reduc));
 		mana_cost -= mana_cost_reduc;
-	}
-
-
-	// Druid Teleport Bind
-	rank = GetBuildRank(DRUID, RB_DRU_TELEPORTBIND);
-	if (rank > 0 && spell_id == 5953) {
-		// 85% Mana at Rank 1, minus 15% per rank: 85,70,55,40,25
-		int redux = floor(GetMaxMana() * floor(1 - rank * 0.15f));
-		
-		BuildEcho(StringFormat("Teleport Bind %i reduced mana cost by %i.", rank, redux));
-		mana_cost -= redux;
 	}
 	
 	rank = GetBuildRank(NECROMANCER, RB_NEC_LIFEBURN);

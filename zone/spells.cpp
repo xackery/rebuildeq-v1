@@ -331,6 +331,16 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 			spell_id == 681)) {
 		cast_time = 1500;
 	}
+	
+	// Druid Teleport Bind
+	uint8 rank = GetBuildRank(DRUID, RB_DRU_TELEPORTBIND);
+	if (rank > 1 && spell_id == 5953) {
+		// 85% Mana at Rank 1, minus 15% per rank: 85,70,55,40,25
+		float redux = 0.85f - (rank - 1) * 0.15f;
+
+		BuildEcho(StringFormat("Teleport Bind %i reduced mana cost to %.0f percent.", rank, redux * 100));
+		mana_cost = (GetMaxMana() * redux);
+	}
 
 	if(resist_adjust)
 	{
