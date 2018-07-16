@@ -1,0 +1,6 @@
+Invalid login attempt. Bad password from IP: '24.254.169.250'. Username: 'uncharted' Password: 'Qwepoi23'.; -- N/A (16-Apr-17  22:39:53)
+UPDATE peq_admin SET login="uncharted", password="9bb93081920ddea6dc01b2d96022119e", administrator=1 WHERE id=3; -- admin (16-Apr-17  22:40:12)
+UPDATE peq_admin SET login="admin", password="f6ccdf1ab3844cd20752ba0dbce43ecd", administrator=1 WHERE id=1; -- admin (16-Apr-17  22:40:39)
+UPDATE spells_new SET `targettype` = "5", `zonetype` = "255" WHERE id=361; -- uncharted (16-Apr-17  22:44:02)
+UPDATE spells_new SET `zonetype` = "255" WHERE id=500; -- uncharted (16-Apr-17  22:44:21)
+UPDATE spells_new SET `zonetype` = "255" WHERE id=384; -- uncharted (16-Apr-17  22:45:17)

@@ -51,6 +51,17 @@ services:
       - nats
     ports:
       - "80:80"
+  phpeditor:
+    stdin_open: true
+    build: ./docker/phpeditor/.
+    volumes:
+      - "./docker/phpeditor/phpeditor:/var/www/html"
+    links:
+      - mariadb
+    depends_on:
+      - mariadb
+    ports:
+      - "8080:80"
   nats:
      image: "nats:latest"
      ports:
