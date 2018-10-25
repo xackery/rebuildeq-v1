@@ -7263,7 +7263,6 @@ int Mob::GetTier() {
 		if (npc_type_id == 108048) return 3; //Phara Dar
 		if (npc_type_id == 108512) return 3; //Druushk
 		if (npc_type_id == 108047) return 3; //Nexona
-
 		if (npc_type_id == 108043) return 3; //Hoshkar
 
 		if (npc_type_id == 117073) return 4; //Kelorek`Dar
