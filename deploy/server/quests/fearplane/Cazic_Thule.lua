@@ -13,10 +13,11 @@ function event_say(e)
 	end
 end
 
-function event_death_complete(e)
-	-- leave out broken golem, The Tempest Reaver, and Irak_Altil
-	send_signal_to_all_npc_in_zone(3, {72078,72074,72012});
-end
+-- Disabled for rebuild tier boss balancing
+-- function event_death_complete(e)
+-- 	-- leave out broken golem, The Tempest Reaver, and Irak_Altil
+-- 	send_signal_to_all_npc_in_zone(3, {72078,72074,72012});
+-- end
 
 function event_trade(e)
 	local item_lib = require("items");
@@ -29,19 +30,20 @@ function event_trade(e)
 	item_lib.return_items(e.self, e.other, e.trade)
 end
 
-function event_combat(e)
-	if (e.joined) then
-		-- call all mobs to assist
-		e.self:Shout("Denizens of Fear, your master commands you to come forth to his aid!!");
-		-- leave out broken golem, The Tempest Reaver, and Irak_Altil
-		send_signal_to_all_npc_in_zone(2, {72078,72074,72012});
-		eq.stop_timer("Shout");
-	else
-		-- leave out broken golem, The Tempest Reaver, and Irak_Altil
-		send_signal_to_all_npc_in_zone(3, {72078,72074,72012});
-		eq.set_timer("Shout",600000);
-	end
-end
+-- Disabled for rebuild tier boss balancing
+-- function event_combat(e)
+-- 	if (e.joined) then
+-- 		-- call all mobs to assist
+-- 		e.self:Shout("Denizens of Fear, your master commands you to come forth to his aid!!");
+-- 		-- leave out broken golem, The Tempest Reaver, and Irak_Altil
+-- 		send_signal_to_all_npc_in_zone(2, {72078,72074,72012});
+-- 		eq.stop_timer("Shout");
+-- 	else
+-- 		-- leave out broken golem, The Tempest Reaver, and Irak_Altil
+-- 		send_signal_to_all_npc_in_zone(3, {72078,72074,72012});
+-- 		eq.set_timer("Shout",600000);
+-- 	end
+-- end
 
 function event_timer(e)
 	if(e.timer == "Shout") then

@@ -4723,65 +4723,64 @@ void command_faq(Client *c, const Seperator *sep) {
 
 void command_teleport(Client *c, const Seperator *sep) {
 
-    static const int FreeLevel = 10;
+	static const int FreeLevel = 10;
 
-    struct Location {
-        explicit Location(std::string pZoneName, unsigned int pZoneID, float pX, float pY, float pZ, float pHeading, unsigned int pMinimumLevel, unsigned int pItemID) : ZoneName(pZoneName), ZoneID(pZoneID), X(pX), Y(pY), Z(pZ), Heading(pHeading), MinimumLevel(pMinimumLevel), ItemID(pItemID) {};
-        std::string ZoneName;
-        unsigned int ZoneID;
-        float X;
-        float Y;
-        float Z;
-        float Heading;
-        unsigned int MinimumLevel;
-        unsigned int ItemID;
-        bool Bind; // Not in use currently.
-    };
+	struct Location {
+		explicit Location(std::string pZoneName, unsigned int pZoneID, float pX, float pY, float pZ, float pHeading, unsigned int pMinimumLevel, unsigned int pItemID) : ZoneName(pZoneName), ZoneID(pZoneID), X(pX), Y(pY), Z(pZ), Heading(pHeading), MinimumLevel(pMinimumLevel), ItemID(pItemID) {};
+		std::string ZoneName;
+		unsigned int ZoneID;
+		float X;
+		float Y;
+		float Z;
+		float Heading;
+		unsigned int MinimumLevel;
+		unsigned int ItemID;
+		bool Bind; // Not in use currently.
+	};
 
-    static Location Locations[] = {
-            Location("airplane", 71, 614, 1415, -663.62, 55.8, 46, 10094),
-            Location("cobaltscar", 117, -1574.95, -1053.25, 307.74, 56.1, 10, 100011),
-            Location("chardok", 103, 865.17, 23.58, 103.72, 188.8, 10, 100018),
-            //Location("commons", 21, 1839.84, 0.15, -15.61, 61.0, 10, 0),
-            Location("dreadlands", 86, 9565.0, 2806.0, 1045.19, 0.0, 10, 100016),
-            Location("ecommons", 22, -73.06, -1787.51, 3.13, 51.8, 1, 0),
-            Location("emeraldjungle", 94, 3474.83, -3123.34, -341.34, 1.5, 10, 100013),
-            Location("fieldofbone", 78, 2395.95, -2216.75, 30.63, 227.6, 1, 0),
-            Location("gfaydark", 54, -411, -2023, -0.28, 47.8, 1, 0),
-            Location("greatdivide", 118, 3654.25, -3826.56, -242.37, 136.3, 10, 100008),
-            Location("hateplaneb", 186, -393, 656, 3.13, 187.6, 46, 10092),
-            Location("iceclad", 110, 4879.12, -604.28, 109.21, 214.3, 10, 100010),
-            Location("lavastorm", 27, -25, 182, -73.26, 252.3, 10, 100015),
-            Location("pojustice", 201, 469.48, 765.68, 9.63, 63.5, 1, 0),
-            Location("northkarana", 13, 1205.91, -3685.44, -8.56, 126.6, 10, 0),
-            Location("sebilis", 89, 0, 250, 39.13, 125.0, 30, 100014),
-            Location("skyfire", 91, 783.57, -3097.01, -159.38, 1.8, 10, 100012),
-            Location("sro", 35, 124.6, -1041.51, 9.45, 99.5, 10, 0),
-            Location("timorous", 96, 4351.98, -12257.01, -278.9, 64.1, 10, 100017),
-            Location("toxxulia", 414, -1656.96, -1502.43, 72.29, 58.2, 1, 0),
-            Location("wakening", 119, -2980.7, -3020, 26.5, 42.9, 10, 100009)
-    };
+	static Location Locations[] = {
+		Location("airplane", 71, 614, 1415, -663.62, 55.8, 46, 10094),
+		Location("cobaltscar", 117, -1574.95, -1053.25, 307.74, 56.1, 10, 100011),
+		Location("chardok", 103, 865.17, 23.58, 103.72, 188.8, 10, 100018),
+		Location("dreadlands", 86, 9565.0, 2806.0, 1045.19, 0.0, 10, 100016),
+		Location("ecommons", 22, -73.06, -1787.51, 3.13, 51.8, 1, 0),
+		Location("emeraldjungle", 94, 3474.83, -3123.34, -341.34, 1.5, 10, 100013),
+		Location("fieldofbone", 78, 1447, -1692.32, -62.08, 190, 1, 0),
+		Location("gfaydark", 54, -411, -2023, -0.28, 47.8, 1, 0),
+		Location("greatdivide", 118, 3654.25, -3826.56, -242.37, 136.3, 10, 100008),
+		Location("hateplane", 76, -353, -374, 3.75, 128, 46, 10092),
+		Location("iceclad", 110, 4879.12, -604.28, 109.21, 214.3, 10, 100010),
+		Location("lavastorm", 27, -25, 182, -73.26, 252.3, 10, 100015),
+		Location("pojustice", 201, 469.48, 765.68, 9.63, 63.5, 1, 0),
+		Location("northkarana", 13, 1205.91, -3685.44, -8.56, 126.6, 10, 0),
+		Location("sebilis", 89, 0, 250, 39.13, 125.0, 30, 100014),
+		Location("skyfire", 91, 783.57, -3097.01, -159.38, 1.8, 10, 100012),
+		Location("sro", 35, 124.6, -1041.51, 9.45, 99.5, 10, 0),
+		Location("timorous", 96, 4351.98, -12257.01, -278.9, 64.1, 10, 100017),
+		Location("toxxulia", 414, -1656.96, -1502.43, 72.29, 58.2, 1, 0),
+		Location("wakening", 119, -2980.7, -3020, 26.5, 42.9, 10, 100009)
+	};
 
-    auto search = [](const char * pZoneName) -> Location* {
-        for (auto&& i : Locations)
-            if (strcasecmp(pZoneName, i.ZoneName.c_str()) == 0)
-                return &i;
+	auto search = [](const char * pZoneName) -> Location* {
+		for (auto&& i : Locations)
+			if (strcasecmp(pZoneName, i.ZoneName.c_str()) == 0)
+				return &i;
 
-        return nullptr;
-    };
+		return nullptr;
+	};
 
-    auto calculateCost = [](Client* pClient) -> uint64 {
-        const auto clientLevel = pClient->GetLevel();
-        // Free!
-        if (clientLevel <= FreeLevel) return 0;
+	auto calculateCost = [](Client* pClient) -> uint64 {
+		const auto clientLevel = pClient->GetLevel();
+		// Free!
+		if (clientLevel <= FreeLevel) return 0;
 
-        // TODO: Clean this up.
-        uint64 cost = 0;
-        cost = (uint64)((float)(40 * (float)((float)clientLevel / (float)60)) * 1000);
-        cost /= 2;
-        if (cost < 1000) {
-            cost = 1000;
-        }
+		// TODO: Clean this up.
+		uint64 cost = 0;
+		cost = (uint64)((float)(40 * (float)((float)clientLevel / (float)60)) * 1000);
+		cost /= 2;
+		if (cost < 1000) {
+			cost = 1000;
+		}
 
         return cost;
     };

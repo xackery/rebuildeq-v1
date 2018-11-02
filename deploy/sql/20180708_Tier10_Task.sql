@@ -1,0 +1,1 @@
+INSERT INTO `rebuildeq`.`tasks` (`id`, `duration`, `title`, `description`, `reward`, `rewardid`, `cashreward`, `xpreward`, `rewardmethod`, `startzone`, `minlevel`, `maxlevel`, `repeatable`) VALUES ('510', '0', 'Unlock Tier 10', 'Kill bosses to unlock Tier 10', 'Tier 10', '0', '0', '0', '2', '0', '0', '0', '1');

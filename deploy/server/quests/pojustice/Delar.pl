@@ -131,17 +131,136 @@ sub EVENT_SAY {
 			quest::setglobal("$acct_id-$prefix-$tmp_id", $count-1, 2, "F");
 			quest::summonitem($tmp_id);
 			quest::say("Here is your heirloom item, $name");
+			return;
 		}
 
 		quest::say("Pick a slot: [ ".quest::saylink("$prefix head")." ], [ ".quest::saylink("$prefix chest")." ], [ ".quest::saylink("$prefix arms")." ]. [ ".quest::saylink("$prefix wrist")." ], [ ".quest::saylink("$prefix hands")." ], [ ".quest::saylink("$prefix legs")." ], [ ".quest::saylink("$prefix feet")." ]");
 		return;
 	}
 
-	if ($text=~/kael/i) {		
+
+
+	if ($text=~/kael/i) {
 		$prefix = "kael";
+		$tmp_id = 0;		
+		if ($text=~/$prefix head/i) {
+			if ($classid == 3 || $classid == 8 || $classid == 1 || $classid == 5 || $classid == 2) {
+				$tmp_id = 24905; #plate			
+			}
+			elsif ($classid == 4 || $classid == 9 || $classid == 10) {
+				$tmp_id = 24912; #chain
+			}
+			elsif ($classid == 6 || $classid == 7) {
+				$tmp_id = 24919; #leather
+			}
+			else {
+				$tmp_id = 24926; #silk
+			}
+		}
+
+		if ($text=~/$prefix chest/i) {
+			if ($classid == 3 || $classid == 8 || $classid == 1 || $classid == 5 || $classid == 2) {
+				$tmp_id = 24900; #plate			
+			}
+			elsif ($classid == 4 || $classid == 9 || $classid == 10) {
+				$tmp_id = 24907; #chain
+			}
+			elsif ($classid == 6 || $classid == 7) {
+				$tmp_id = 24914; #leather
+			}
+			else {
+				$tmp_id = 24921; #silk
+			}
+		}
+		if ($text=~/$prefix arm/i) {
+			if ($classid == 3 || $classid == 8 || $classid == 1 || $classid == 5 || $classid == 2) {
+				$tmp_id = 24902; #plate			
+			}
+			elsif ($classid == 4 || $classid == 9 || $classid == 10) {
+				$tmp_id = 24909; #chain
+			}
+			elsif ($classid == 6 || $classid == 7) {
+				$tmp_id = 24916; #leather
+			}
+			else {
+				$tmp_id = 24923; #silk
+			}
+		}
+		if ($text=~/$prefix wrist/i) {
+			if ($classid == 3 || $classid == 8 || $classid == 1 || $classid == 5 || $classid == 2) {
+				$tmp_id = 24904; #plate
+			}
+			elsif ($classid == 4 || $classid == 9 || $classid == 10) {
+				$tmp_id = 24911; #chain
+			}
+			elsif ($classid == 6 || $classid == 7) {
+				$tmp_id = 24918; #leather
+			}
+			else {
+				$tmp_id = 24925; #silk
+			}
+		}
+		if ($text=~/$prefix hand/i) {
+			if ($classid == 3 || $classid == 8 || $classid == 1 || $classid == 5 || $classid == 2) {
+				$tmp_id = 24906; #plate			
+			}
+			elsif ($classid == 4 || $classid == 9 || $classid == 10) {
+				$tmp_id = 24913; #chain
+			}
+			elsif ($classid == 6 || $classid == 7) {
+				$tmp_id = 24920; #leather
+			}
+			else {
+				$tmp_id = 24927; #silk
+			}
+		}
+		if ($text=~/$prefix leg/i) {
+			if ($classid == 3 || $classid == 8 || $classid == 1 || $classid == 5 || $classid == 2) {
+				$tmp_id = 24901; #plate			
+			}
+			elsif ($classid == 4 || $classid == 9 || $classid == 10) {
+				$tmp_id = 24908; #chain
+			}
+			elsif ($classid == 6 || $classid == 7) {
+				$tmp_id = 24915; #leather
+			}
+			else {
+				$tmp_id = 24922; #silk
+			}
+		}
+		if ($text=~/$prefix feet/i) {
+			if ($classid == 3 || $classid == 8 || $classid == 1 || $classid == 5 || $classid == 2) {
+				$tmp_id = 24903; #plate			
+			}
+			elsif ($classid == 4 || $classid == 9 || $classid == 10) {
+				$tmp_id = 24910; #chain
+			}
+			elsif ($classid == 6 || $classid == 7) {
+				$tmp_id = 24917; #leather
+			}
+			else {
+				$tmp_id = 24924; #silk
+			}
+		}
+		if ($tmp_id > 0) {
+			$acct_id = $client->AccountID();
+
+			if (!defined $qglobals{"$acct_id-$prefix-$tmp_id"} || $qglobals{"$acct_id-$prefix-$tmp_id"} < 1) {
+				quest::say("You do not have any items stored that match that category. $acct_id-$prefix-$tmp_id");
+				return;
+			}			
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+			quest::setglobal("$acct_id-$prefix-$tmp_id", $count-1, 2, "F");
+			quest::summonitem($tmp_id);
+			quest::say("Here is your heirloom item, $name");
+			return;
+		}
+
 		quest::say("Pick a slot: [ ".quest::saylink("$prefix head")." ], [ ".quest::saylink("$prefix chest")." ], [ ".quest::saylink("$prefix arms")." ]. [ ".quest::saylink("$prefix wrist")." ], [ ".quest::saylink("$prefix hands")." ], [ ".quest::saylink("$prefix legs")." ], [ ".quest::saylink("$prefix feet")." ]");
 		return;
 	}
+
+
 
 
 	#if ($text=~/radiant/i || $text=~/rc/i) {
@@ -199,8 +318,96 @@ sub EVENT_SAY {
 				return;
 			}
 			if (!quest::istaskactive(502)) { #not done yet
-				quest::say("Tier 2 is not yet implemented. Come back at a later time!");
-				#quest::assigntask(501);
+				quest::say("Very well. Here is the path to unlock Tier 2.");
+				quest::assigntask(502);
+				return;
+			}
+		}
+		if (!quest::istaskcompleted(503)) { #tier 3 task
+			if (quest::istaskactive(503)) { #ongoing
+				quest::say("You appear to be working on your tier 3 task. You can do it!");
+				return;
+			}
+			if (!quest::istaskactive(503)) { #not done yet
+				quest::say("Very well. Here is the path to unlock Tier 3.");
+				quest::assigntask(503);
+				return;
+			}
+		}
+		if (!quest::istaskcompleted(504)) { #tier 4 task
+			if (quest::istaskactive(504)) { #ongoing
+				quest::say("You appear to be working on your tier 4 task. You can do it!");
+				return;
+			}
+			if (!quest::istaskactive(504)) { #not done yet
+				quest::say("Very well. Here is the path to unlock Tier 4.");
+				quest::assigntask(504);
+				return;
+			}
+		}
+		if (!quest::istaskcompleted(505)) { #tier 5 task
+			if (quest::istaskactive(505)) { #ongoing
+				quest::say("You appear to be working on your tier 5 task. You can do it!");
+				return;
+			}
+			if (!quest::istaskactive(505)) { #not done yet
+				quest::say("Very well. Here is the path to unlock Tier 5.");
+				quest::assigntask(505);
+				return;
+			}
+		}
+		if (!quest::istaskcompleted(506)) { #tier 6 task
+			if (quest::istaskactive(506)) { #ongoing
+				quest::say("You appear to be working on your tier 6 task. You can do it!");
+				return;
+			}
+			if (!quest::istaskactive(506)) { #not done yet
+				quest::say("Very well. Here is the path to unlock Tier 6.");
+				quest::assigntask(506);
+				return;
+			}
+		}
+		if (!quest::istaskcompleted(507)) { #tier 7 task
+			if (quest::istaskactive(507)) { #ongoing
+				quest::say("You appear to be working on your tier 7 task. You can do it!");
+				return;
+			}
+			if (!quest::istaskactive(507)) { #not done yet
+				quest::say("Very well. Here is the path to unlock Tier 7.");
+				quest::assigntask(507);
+				return;
+			}
+		}
+		if (!quest::istaskcompleted(508)) { #tier 8 task
+			if (quest::istaskactive(508)) { #ongoing
+				quest::say("You appear to be working on your tier 8 task. You can do it!");
+				return;
+			}
+			if (!quest::istaskactive(508)) { #not done yet
+				quest::say("Very well. Here is the path to unlock Tier 8.");
+				quest::assigntask(508);
+				return;
+			}
+		}
+		if (!quest::istaskcompleted(509)) { #tier 9 task
+			if (quest::istaskactive(509)) { #ongoing
+				quest::say("You appear to be working on your tier 9 task. You can do it!");
+				return;
+			}
+			if (!quest::istaskactive(509)) { #not done yet
+				quest::say("Very well. Here is the path to unlock Tier 9.");
+				quest::assigntask(509);
+				return;
+			}
+		}
+		if (!quest::istaskcompleted(510)) { #tier 10 task
+			if (quest::istaskactive(510)) { #ongoing
+				quest::say("You appear to be working on your tier 10 task. You can do it!");
+				return;
+			}
+			if (!quest::istaskactive(510)) { #not done yet
+				quest::say("Very well. Here is the path to unlock Tier 10.");
+				quest::assigntask(510);
 				return;
 			}
 		}
@@ -260,10 +467,23 @@ sub EVENT_SAY {
 sub EVENT_ITEM {
 
 #Begin experience bottle turn in code.
-  my $task_id = 501;
-  my $activity_id = 5;
-  my $bottle_goal = 10;
-  my $bottle_message = "Thank you for your potion of experience for tier 1 progression, $name.";
+  my $tier = 0;
+  my $task_id = 0;
+  my $activity_id = 0;
+  my $bottle_goal = 0;
+
+  if (quest::istaskactive(501)) { $tier = 1; $task_id = 501; $activity_id = 8; $bottle_goal = 1; }
+  if (quest::istaskactive(502)) { $tier = 2; $task_id = 502; $activity_id = 10; $bottle_goal = 2; }
+  if (quest::istaskactive(503)) { $tier = 3; $task_id = 503; $activity_id = 9; $bottle_goal = 3; }
+  if (quest::istaskactive(504)) { $tier = 4; $task_id = 504; $activity_id = 6; $bottle_goal = 4; }
+  if (quest::istaskactive(505)) { $tier = 5; $task_id = 505; $activity_id = 8; $bottle_goal = 5; }
+  if (quest::istaskactive(506)) { $tier = 6; $task_id = 506; $activity_id = 8; $bottle_goal = 6; }
+  if (quest::istaskactive(507)) { $tier = 7; $task_id = 507; $activity_id = 3; $bottle_goal = 7; }
+  if (quest::istaskactive(508)) { $tier = 8; $task_id = 508; $activity_id = 7; $bottle_goal = 8; }
+  if (quest::istaskactive(509)) { $tier = 9; $task_id = 509; $activity_id = 5; $bottle_goal = 9; }
+  if (quest::istaskactive(510)) { $tier = 10; $task_id = 510; $activity_id = 8; $bottle_goal = 10; }
+
+  my $bottle_message = "Thank you for your potion of experience for tier $tier progression, $name.";
   my $bottle_task_active = quest::istaskactivityactive($task_id, $activity_id);
   my $bottles_previously_turned_in = quest::gettaskactivitydonecount($task_id, $activity_id);
   my $bottles_turned_in = 0;
@@ -609,5 +829,286 @@ sub EVENT_ITEM {
 		quest::say("Thank you for the item, $name.");
 	}
 
+	## === KAEL ===
+	if (plugin::check_handin(\%itemcount, 24905 => 1)) { #kael plate			
+		$tmp_id = 24905;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24912 => 1)) { #kael chain
+		$tmp_id = 24912;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24919 => 1)) { #kael leather
+		$tmp_id = 24919;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24926 => 1)) { #kael silk
+		$tmp_id = 24926;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24900 => 1)) { #kael plate			
+		$tmp_id = 24900;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24907 => 1)) { #kael chain
+		$tmp_id = 24907;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24914 => 1)) { #kael leather
+		$tmp_id = 24914;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24921 => 1)) { #kael silk
+		$tmp_id = 24921;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24902 => 1)) { #kael plate			
+		$tmp_id = 24902;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24909 => 1)) { #kael chain
+		$tmp_id = 24909;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24916 => 1)) { #kael leather
+		$tmp_id = 24916;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24923 => 1)) { #kael silk
+		$tmp_id = 24923;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24904 => 1)) { #kael plate
+		$tmp_id = 24904;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24911 => 1)) { #kael chain
+		$tmp_id = 24911;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24918 => 1)) { #kael leather
+		$tmp_id = 24918;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24925 => 1)) { #kael silk
+		$tmp_id = 24925;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24906 => 1)) { #kael plate			
+		$tmp_id = 24906;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24913 => 1)) { #kael chain
+		$tmp_id = 24913;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24920 => 1)) { #kael leather
+		$tmp_id = 24920;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24927 => 1)) { #kael silk
+		$tmp_id = 24927;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24901 => 1)) { #kael plate			
+		$tmp_id = 24901;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24908 => 1)) { #kael chain
+		$tmp_id = 24908;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24915 => 1)) { #kael leather
+		$tmp_id = 24915;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24922 => 1)) { #kael silk
+		$tmp_id = 24922;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24903 => 1)) { #kael plate			
+		$tmp_id = 24903;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24910 => 1)) { #kael chain
+		$tmp_id = 24910;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24917 => 1)) { #kael leather
+		$tmp_id = 24917;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
+	if (plugin::check_handin(\%itemcount, 24924 => 1)) { #kael silk
+		$tmp_id = 24924;
+		$prefix = "kael";
+		$count = 0;
+		if (defined $qglobals{"$acct_id-$prefix-$tmp_id"}) {
+			$count = $qglobals{"$acct_id-$prefix-$tmp_id"};
+		}
+		quest::setglobal("$acct_id-$prefix-$tmp_id", $count+1, 2, "F");
+		quest::say("Thank you for the item, $name.");
+	}
   plugin::return_items(\%itemcount);  
 }

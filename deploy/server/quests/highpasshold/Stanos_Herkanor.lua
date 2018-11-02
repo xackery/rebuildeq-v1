@@ -45,6 +45,7 @@ function event_trade(e)
 		e.other:Faction(105,5,0);
 		e.other:AddEXP(10000);
 		eq.depop();
+		eq.world_emote(269, "" ..e.other:GetName() .." received the epic weapon, " .. eq.item_link(10650) .. "!");
 	elseif(item_lib.check_turn_in(e.trade, {item1 = 18961})) then
 		e.self:Say("Let me see what you have here. Aha, so that's who.. yes, yes! There is one more thing I need you to do. This document tells me who the originator of the plot really was. His name is General V'ghera, which is interesting, as Anson's men have spotted him in Kithicor recently. He will not be easy to get to, but if you give this box to one of his many aides, the General will HAVE to come to investigate. You see, this box used to contain the tools crafted for the assassination. When he arrives, kill him! I need any documents you find on him - with luck it will be enough evidence to convince Hanns that what I say is true. Bring any documents or dispatch cases you find, along with those blades Vilnius made you work so hard for, and we will make a trade.");
 		e.other:SummonItem(28057);
