@@ -1,0 +1,33 @@
+#!/bin/bash
+export LD_LIBRARY_PATH=/eqemu/
+sleep 10
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/zone &
+/eqemu/world

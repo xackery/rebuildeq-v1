@@ -1,0 +1,8 @@
+!*.dll
+eqemu_server.pl
+!*.so
+database_dumper.pl
+database_dumper
+db
+grafana
+graylog

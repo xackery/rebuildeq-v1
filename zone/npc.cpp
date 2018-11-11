@@ -1644,21 +1644,24 @@ void NPC::PickPocket(Client* thief)
 	}
 
 	rank = thief->GetBuildRank(ROGUE, RB_ROG_HIDDENSTASH);
-	if (!is_hidden_stash_used && steal_chance > steal_skill && rank > 0) {
-		is_hidden_stash_used = true;
-		int amount = 1;
-		int maxAmount = 1;
-		if (GetLevel() > 50) maxAmount = 10 * rank;
-		else if (GetLevel() > 40) maxAmount = 5 * rank;
-		else if (GetLevel() > 30) maxAmount = 3 * rank;
-		else if (GetLevel() > 20) maxAmount = 2 * rank;
-		else if (GetLevel() > 10) maxAmount = rank;
-		amount = zone->random.Int(amount, maxAmount);
-		thief->Message(MT_Skills, "You have found a hidden stash (%i).", rank, amount);
-		DailyGain(thief->AccountID(), thief->CharacterID(), thief->Identity(),0,0,amount);
-		thief->AddMoneyToPP(0, 0, 0, amount, false);
-		thief->SendPickPocketResponse(this, amount, PickPocketPlatinum);
-		return;
+	if (rank > 0) {
+		int hiddenstashroll = zone->random.Int(1, 100);
+		int hiddenstashchance = floor(steal_chance / 5); //Hidden stash chance is 1/5 of pickpocket chance.
+		if (hiddenstashchance > 20) hiddenstashchance = 20; //Cap hidden stash chance at 20%
+		if (hiddenstashroll <= hiddenstashchance) {
+			int amount = 1;
+			int maxAmount = 1;
+			if (GetLevel() > 50) maxAmount = 10 * rank;
+			else if (GetLevel() > 40) maxAmount = 5 * rank;
+			else if (GetLevel() > 30) maxAmount = 3 * rank;
+			else if (GetLevel() > 20) maxAmount = 2 * rank;
+			else if (GetLevel() > 10) maxAmount = rank;
+			amount = zone->random.Int(amount, maxAmount);
+			thief->Message(MT_Skills, "You have found a hidden stash of %i platinum.", amount);
+			DailyGain(thief->AccountID(), thief->CharacterID(), thief->Identity(), 0, 0, amount);
+			thief->AddMoneyToPP(0, 0, 0, amount, false);
+			return;
+		}
 	}
 
 	// still needs to have FindFreeSlot vs PutItemInInventory issue worked out

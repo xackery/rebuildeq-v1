@@ -7295,12 +7295,12 @@ int Mob::GetTier() {
 		if (npc_type_id == 86014) return 2; //Gorenaire
 		if (npc_type_id == 89154) return 2; //Trakanon
 
-		if (npc_type_id == 108050) return 3; //Silverwing
-		if (npc_type_id == 108053) return 3; //Xygoz
-		if (npc_type_id == 108048) return 3; //Phara Dar
+		if (npc_type_id == 108509) return 3; //Silverwing
+		if (npc_type_id == 108511) return 3; //Xygoz
+		if (npc_type_id == 108510) return 3; //Phara Dar
 		if (npc_type_id == 108512) return 3; //Druushk
-		if (npc_type_id == 108047) return 3; //Nexona
-		if (npc_type_id == 108043) return 3; //Hoshkar
+		if (npc_type_id == 108513) return 3; //Nexona
+		if (npc_type_id == 108517) return 3; //Hoshkar
 
 		if (npc_type_id == 117073) return 4; //Kelorek`Dar
 		if (npc_type_id == 119112) return 4; //Wuoshi
@@ -7556,6 +7556,10 @@ int Mob::AdjustTierPenalty(Mob* caster, int value) {
 		tmpTier = GetOwner()->GetTier();
 		if (tmpTier < lowTier) lowTier = tmpTier;
 	}
+	if (caster->IsPet() && caster->GetOwner()->IsClient()) {
+		tmpTier = caster->GetOwner()->GetTier();
+		if (tmpTier < lowTier) lowTier = tmpTier;
+	}
 
 	//Get tier difference
 	int tierDifference = highTier - lowTier;
@@ -7568,12 +7572,11 @@ int Mob::AdjustTierPenalty(Mob* caster, int value) {
 		value = -value;
 	}
 
-	if (IsNPC()) { //if we're doing something to an npc, penalize it
+	if (IsNPC() && !IsPet()) { //if we're doing something to an npc, penalize it
 		if (GetTier() >= 8) value -= floor(value * 0.5f * tierDifference);
 		if (GetTier() >= 5) value -= floor(value * 0.3f * tierDifference);
 		else value -= floor(value * 0.2f * tierDifference);
-	}
-	if (IsClient() && caster->IsNPC()) { //if we're a NPC doing something to a client, boost it
+	} else { //if we're a NPC doing something to a client, boost it
 		if (GetTier() >= 8) value += floor(value * 0.5f * tierDifference);
 		if (GetTier() >= 5) value += floor(value * 0.3f * tierDifference);
 		else value += floor(value * 0.2f * tierDifference);
