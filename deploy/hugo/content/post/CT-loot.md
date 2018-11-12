@@ -3,14 +3,14 @@ banner = "post/images/CT-loot.png"
 date = "2018-11-06T13:28:18-07:00"
 description = "Cazic Thule's Loot is Updated"
 images = ["post/images/CT-loot-updated.png"]
-tags = ["zone", "tier", "bugs", "feat", "card", "teleport", "taks", "npc"]
+tags = ["zone", "tier", "bugs", "feat", "card", "teleport", "tasks", "npc"]
 title = "Cazic Thule's Loot is Updated"
 +++
 * Cazic Thule's loot table has been updated to velious era.
 * Keeper of Souls no longer despawns on a timer.
 * Ice Burrowers in Western Wastes no longer summon.
 * Added (Armor Quest) tag to Lieutenant Bythgar in Thurgadin.
-#### Some items that were previously patched:
+* The below items were patched previously...
 * Zones are now static!
 * Dry Sapara now lets people into Veeshan's Peak.
 * Fixed an issue where T1 players were doing reduced damage to T1 bosses.
