@@ -50,7 +50,7 @@
           <tr><td>Zombie Card</td><td>Weapon</td><td>Rare</td><td>Disease Effect</td></tr>
           <tr><td>Human Card</td><td>Weapon</td><td>Rare</td><td>Bear Bane Damage</td></tr>
           <tr><td>Dark Elf Card</td><td>Weapon</td><td>Rare</td><td>20 Halfling Bane Damage</td></tr>
-          <tr><td>Giant Card</td><td>Weapon</td><td>Rare</td><td>5 STR, 5 ATK, 5 Accuracy</td></tr>
+          <tr><td>Giant Card</td><td>Weapon</td><td>Rare</td><td>20 Coldain Bane Damage</td></tr>
           <tr><td>Snake Card</td><td>Weapon</td><td>Rare</td><td>3 Backstab Damage</td></tr>
           <tr><td>Lycanthrope Card</td><td>Weapon</td><td>Rare</td><td>5 Strikethrough</td></tr>
           <tr><td>Magical Card</td><td>Weapon</td><td>Rare</td><td>2 Magical Damage</td></tr>
@@ -64,13 +64,14 @@
           <tr><td>Dragon Card</td><td>Chest</td><td>Rare</td><td>10 Mana Regen</td></tr>
           <tr><td>Bear Card</td><td>Chest</td><td>Rare</td><td>75 HP</td></tr>
           <tr><td>Animal Card</td><td>Chest</td><td>Rare</td><td>10 AC, 5 AGI, 5 ATK</td></tr>
-          <tr><td>Insect Card</td><td>Chest</td><td>Rare</td><td>10 HP, 10 AC</td></tr>
+          <tr><td>Insect Card</td><td>Chest</td><td>Rare</td><td>10 HP, 10 AC, 5 STA</td></tr>
           <tr><td>Orc Card</td><td>Chest</td><td>Rare</td><td>15 AC</td></tr>
           <tr><td>Extra Planar Card</td><td>Chest</td><td>Rare</td><td>10 STR, 20 ATK</td></tr>
           <tr><td>Fungus Card</td><td>Chest</td><td>Rare</td><td>15 HP Regen</td></tr>
           <tr><td>Plant Card</td><td>Chest</td><td>Rare</td><td>2 AC, 10 HP, 10 Mana, 10 Endurance, 2 HP Regen, 2 Mana Regen, 2 Endurance Regen</td></tr>
           <tr><td>Undead Card</td><td>Chest</td><td>Rare</td><td>25 HP, 5 HP Regen</td></tr>
           <tr><td>Gnoll Card</td><td>Chest</td><td>Rare</td><td>50 HP</td></tr>
+          <tr><td>Drake Card</td><td>Chest</td><td>Rare</td><td>5 To All Resists</td></tr>
           <tr><td>Dozekar the Cursed Card</td><td>Chest</td><td>Very Rare</td><td>Unknown Effect</td></tr>
           <tr><td>Humanoid Card</td><td>Legs</td><td>Rare</td><td>5 STR, 5 STA, 5 DEX, 5 AGI, 5 CHA, 5 INT, 5 WIS</td></tr>
           <tr><td>Monster Card</td><td>Legs</td><td>Rare</td><td>10 INT, 10 WIS</td></tr>
