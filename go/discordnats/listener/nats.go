@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-yaml/yaml"
 	"github.com/golang/protobuf/proto"
-	"github.com/nats-io/go-nats"
+	"github.com/nats-io/nats.go"
 	"github.com/robfig/cron"
 	"github.com/xackery/eqemuconfig"
 	"github.com/xackery/rebuildeq/go/discordnats/discord"

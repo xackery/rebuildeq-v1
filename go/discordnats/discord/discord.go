@@ -10,8 +10,8 @@ type Discord struct {
 	lastPassword string
 }
 
-func (d *Discord) Connect(username string, password string) (err error) {
-	if d.instance, err = discordgo.New(username, password); err != nil {
+func (d *Discord) Connect(username string) (err error) {
+	if d.instance, err = discordgo.New(username); err != nil {
 		return
 	}
 	return
@@ -19,7 +19,7 @@ func (d *Discord) Connect(username string, password string) (err error) {
 
 func (d *Discord) GetName() (name string) {
 	if d.instance == nil {
-		err := d.Connect(d.lastUsername, d.lastPassword)
+		err := d.Connect("Bot " + d.lastUsername)
 		if err != nil {
 			name = "Unknown"
 			return
@@ -36,7 +36,7 @@ func (d *Discord) GetName() (name string) {
 
 func (d *Discord) GetGuilds() (guilds []*discordgo.UserGuild, err error) {
 	if d.instance == nil {
-		err = d.Connect(d.lastUsername, d.lastPassword)
+		err = d.Connect("Bot " + d.lastUsername)
 		if err != nil {
 			return
 		}
@@ -51,7 +51,7 @@ func (d *Discord) GetGuilds() (guilds []*discordgo.UserGuild, err error) {
 
 func (d *Discord) GetSession() (session *discordgo.Session, err error) {
 	if d.instance == nil {
-		if err = d.Connect(d.lastUsername, d.lastPassword); err != nil {
+		if err = d.Connect("Bot " + d.lastUsername); err != nil {
 			return
 		}
 	}
@@ -61,7 +61,7 @@ func (d *Discord) GetSession() (session *discordgo.Session, err error) {
 
 func (d *Discord) GetChannels(guildID string) (channels []*discordgo.Channel, err error) {
 	if d.instance == nil {
-		err = d.Connect(d.lastUsername, d.lastPassword)
+		err = d.Connect("Bot " + d.lastUsername)
 		if err != nil {
 			return
 		}
@@ -76,7 +76,7 @@ func (d *Discord) GetChannels(guildID string) (channels []*discordgo.Channel, er
 
 func (d *Discord) SendMessage(channelID string, message string) (msgReturn *discordgo.Message, err error) {
 	if d.instance == nil {
-		err = d.Connect(d.lastUsername, d.lastPassword)
+		err = d.Connect("Bot " + d.lastUsername)
 		if err != nil {
 			return
 		}
