@@ -1880,18 +1880,56 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 			case SE_ACv2:
 			case SE_ArmorClass:
 			{
+				if (caster != nullptr) {
+					rank = caster->GetBuildRank(NECROMANCER, RB_NEC_SHADOWTAP);
+					if (rank > 0 && //ac taps come in negative, recourses positive
+						spell_id == 2547 || spell_id == 2478) { //succussion of shadows / recourse
+						effect_value += rank * 0.2f * effect_value;
+					}
+				}
 				new_bonus->AC += effect_value;
 				break;
 			}
 
 			case SE_ATK:
 			{
+				if (caster != nullptr) {
+					rank = caster->GetBuildRank(NECROMANCER, RB_NEC_CRIPPLINGCLAUDICATION);
+					if (rank > 0 && //recourse only
+						spell_id == 2479) { //20% increased recourse effect per rank
+						effect_value += rank * 0.2f * effect_value;
+					}
+					rank = caster->GetBuildRank(NECROMANCER, RB_NEC_DEATHLYAURA);
+					if (rank > 0 &&
+						spell_id == 346) { 
+						effect_value += rank * 10; // 10 attack per rank
+					}
+				}
 				new_bonus->ATK += effect_value;
 				break;
 			}
 
 			case SE_STR:
 			{
+				if (caster != nullptr) {
+					rank = caster->GetBuildRank(NECROMANCER, RB_NEC_IMPARTSTRENGTH);
+					if (rank > 0 && spell_id == 2464){ // recourse
+						int atk = rank * casterlevel;
+						new_bonus->ATK -= atk;
+					}
+					if (rank > 0 && spell_id == 358) {
+						int atk = rank * casterlevel;
+						new_bonus->ATK += atk;
+					}
+					
+					rank = caster->GetBuildRank(NECROMANCER, RB_NEC_DEGENERATION);
+					if (rank > 0 && spell_id == 2477) { // recourse
+						effect_value *= (1 + (rank * 0.2f));
+					}
+					if (rank > 0 && spell_id == 2546) {
+						effect_value *= (1 + (rank * 0.2f));
+					}
+				}
 				new_bonus->STR += effect_value;
 				break;
 			}

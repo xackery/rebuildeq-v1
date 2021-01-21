@@ -9774,7 +9774,7 @@ void Client::RefreshBuild() {
 				}
 
 				if (GetClass() == MONK && i == RB_MNK_PURIFYBODY && GetAA(aaPurifyBody) < 1) {
-					TrainAARank(aaPurifyBody);
+					TrainAARank(aaPurification);
 					Message(15, "You have unlocked the AA \"Purify Body\"! Find the hotkey in your Alternate Advancement Window.");
 				}
 
@@ -9796,6 +9796,11 @@ void Client::RefreshBuild() {
 				if (GetClass() == NECROMANCER && i == RB_NEC_DYINGGRASP && GetAA(aaDyingGrasp) < 1) {
 					TrainAARank(aaDyingGrasp);
 					Message(15, "You have unlocked the AA \"Dying Grasp\"! Find the hotkey in your Alternate Advancement Window.");
+				}
+
+				if (GetClass() == NECROMANCER && i == RB_NEC_DEATHBLOOM && GetAA(aaDeathBloom) < 1) {
+					TrainAARank(aaDeathBloom);
+					Message(15, "You have unlocked the AA \"Death Bloom\"! Find the hotkey in your Alternate Advancement Window.");
 				}
 
 				if (GetClass() == PALADIN && i == RB_PAL_HANDOFPIETY && GetAA(aaHandofPiety) < 1) {
@@ -9911,10 +9916,6 @@ void Client::RefreshBuild() {
 				if (GetClass() == SHAMAN && i == RB_SHM_CALLOFTHEANCIENTS && GetAA(aaCalloftheAncients) < 1) {
 					TrainAARank(aaCalloftheAncients);
 					Message(15, "You have unlocked the AA \"Call of the Ancients\"! Find the hotkey in your Alternate Advancement Window.");
-				}
-				if (GetClass() == SHAMAN && i == RB_SHM_PARAGONOFSPIRIT && GetAA(aaParagonofSpirit) < 1) {
-					TrainAARank(aaParagonofSpirit);
-					Message(15, "You have unlocked the AA \"Paragon of Spirit\"! Find the hotkey in your Alternate Advancement Window.");
 				}
 			}
 		}
@@ -10861,13 +10862,13 @@ std::string Client::GetBuildName(uint32 id) {
 		if (id == RB_NEC_SPIRITFOCUS) return "Spirit Focus";
 		if (id == RB_NEC_DYINGGRASP) return "Dying Grasp";
 		if (id == RB_NEC_SERVANTOFBLOOD) return "Servant of Blood";
-		if (id == RB_NEC_ARMOROFDEATH) return "Armor of Death";
-		if (id == RB_NEC_BLOODREALM) return "Blood Realm";		
+		if (id == RB_NEC_IMPARTSTRENGTH) return "Impart Strength";
+		if (id == RB_NEC_BLOODREALM) return "Blood Realm";
 		if (id == RB_NEC_DEATHLYAURA) return "Deathly Aura";
-		if (id == RB_NEC_BURDENOFUNDEAD) return "Burden of Undead";
+		if (id == RB_NEC_SHADOWTAP) return "Shadow Tap";
 		if (id == RB_NEC_DEATHBLOOM) return "Death Bloom";
-		if (id == RB_NEC_ETERNITYOFUNDEATH) return "Eternity of Undeath";		
-		if (id == RB_NEC_GHOULCLAWS) return "Ghoul Claws";
+		if (id == RB_NEC_CRIPPLINGCLAUDICATION) return "Crippling Claudication";
+		if (id == RB_NEC_DEGENERATION) return "Degeneration";
 		if (id == RB_NEC_LICHKING) return "Lich King";
 		break;
 	case PALADIN:		

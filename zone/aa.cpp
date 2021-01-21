@@ -1333,6 +1333,7 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 		rank_id == aaLifeBurn && GetBuildRank(NECROMANCER, RB_NEC_LIFEBURN) < 1 ||
 		rank_id == aaBloodMagic && GetBuildRank(NECROMANCER, RB_NEC_BLOODMAGIC) < 1 ||
 		rank_id == aaDyingGrasp && GetBuildRank(NECROMANCER, RB_NEC_DYINGGRASP) < 1 ||
+		rank_id == aaDeathBloom && GetBuildRank(NECROMANCER, RB_NEC_DEATHBLOOM) < 1 ||
 
 		rank_id == aaHandofPiety && GetBuildRank(PALADIN, RB_PAL_HANDOFPIETY) < 1 ||
 		rank_id == aaPurification && GetBuildRank(PALADIN, RB_PAL_PURIFICATION) < 1 ||		
