@@ -517,6 +517,7 @@
 #define TIER_7 507
 #define TIER_8 508
 #define TIER_9 509
+#define TIER_10 510
 
 //Build Skills
 #define RB_BRD_ELEMENTALHARMONY 0
@@ -743,6 +744,8 @@
 #define RB_ROG_DEADLYDAGGER 46
 #define RB_ROG_THIEVESAFFINITY 49
 #define RB_ROG_HIDDENDAGGER 52
+
+#define RB_RNG_TRICKSHOT 6
 
 #define RB_SHD_LEECHTOUCH 0
 #define RB_SHD_GOUGINGSKIN 2
