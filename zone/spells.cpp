@@ -2721,6 +2721,53 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 	if(IsNPC())
 		CastToNPC()->AI_Event_SpellCastFinished(true, static_cast<uint16>(slot));
 
+	if (IsClient()) {
+		uint8 rank = CastToClient()->GetBuildRank(NECROMANCER, RB_NEC_BLOODREALM);
+		if (rank > 0 && (
+			spell_id == 341 || // Lifetap
+			spell_id == 502 || // Lifespike
+			spell_id == 445 || // Lifedraw
+			spell_id == 446 || // Siphon Life
+			spell_id == 524 || // Spirit Tap
+			spell_id == 525 || // Drain Spirit
+			spell_id == 447 || // Drain Soul
+			spell_id == 1613 || // Deflux
+			spell_id == 1618 || // Touch of Nigh
+			spell_id == 1735)) { // Trucidation
+
+			int32 rankEffect = rank * spells[spell_id].mana;
+			if(IsGrouped()) {
+				int manaCount = 0;
+				int manaTotal = 0;
+				int amount = floor(spells[spell_id].mana * 0.01f * rank);
+				if (amount < 1) amount = 1;
+
+				auto group = GetGroup(); //iterate group
+				for (int i = 0; i < 6; ++i) {
+					Mob *groupMember = group->members[i];
+					if (!groupMember) continue; //target grouped
+					if (!groupMember->IsClient()) continue; //Is a client
+					if (this->GetZoneID() != groupMember->GetZoneID()) continue; //same zone
+					if (groupMember->CastToClient()->IsDead()) continue; //not dead
+					if (this == groupMember) continue; //not person who received spell effect
+					float dist2 = DistanceSquared(m_Position, groupMember->GetPosition());
+					float range2 = (rank * 10) * (rank * 10);
+					if (dist2 > range2) continue;
+
+					manaCount++;
+					if (this->GetID() == groupMember->GetID()) groupMember->Message(MT_Spells, "Blood Realm %i granted you %i mana.", rank, amount);
+					else groupMember->Message(MT_Spells, "%s's Blood Realm %i granted you %i mana.", GetCleanName(), rank, amount);
+					groupMember->SetMana(groupMember->GetMana() + amount);
+					manaTotal += amount;
+				}
+
+				if (manaCount > 0) {
+					BuildEcho(StringFormat("Blood Realm %i granted %i allies %i mana (total).", rank, manaCount, manaTotal));
+				}
+			}
+		}
+	}
+
 	return true;
 }
 

@@ -1,1 +1,0 @@
-Audit is an incomplete snippet project that I was going to "Audit items, players, and various things inside rebuild using SQL queries"
