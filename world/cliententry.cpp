@@ -23,7 +23,6 @@
 #include "worlddb.h"
 #include "zoneserver.h"
 #include "world_config.h"
-#include "nats_manager.h"
 #include "../common/guilds.h"
 #include "../common/string_util.h"
 
@@ -31,7 +30,6 @@ extern uint32 numplayers;
 extern LoginServerList loginserverlist;
 extern ClientList		client_list;
 extern volatile bool RunLoops;
-extern NatsManager nats;
 
 ClientListEntry::ClientListEntry(uint32 in_id, uint32 iLSID, const char* iLoginName, const char* iLoginKey, int16 iWorldAdmin, uint32 ip, uint8 local)
 : id(in_id)
@@ -303,7 +301,7 @@ bool ClientListEntry::CheckAuth(uint32 iLSID, const char* iKey) {
 				Log(Logs::Detail, Logs::World_Server,"Error adding local account for LS login: '%s', duplicate name?" ,plsname);
 				return false;
 			}
-			nats.SendAdminMessage(StringFormat("New account was created for %s, accountid: %u", plsname, paccountid));
+			//nats.SendAdminMessage(StringFormat("New account was created for %s, accountid: %u", plsname, paccountid));
 			strn0cpy(paccountname, plsname, sizeof(paccountname));
 			padmin = tmpStatus;
 		}

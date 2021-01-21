@@ -62,7 +62,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "embparser.h"
 #include "lua_parser.h"
 #include "questmgr.h"
-#include "nats_manager.h"
 
 
 #include "../common/event/event_loop.h"
@@ -112,7 +111,6 @@ const SPDat_Spell_Struct* spells;
 int32 SPDAT_RECORDS = -1;
 const ZoneConfig *Config;
 uint64_t frame_time = 0;
-NatsManager nats;
 
 void Shutdown();
 extern void MapOpcodes();
@@ -151,8 +149,7 @@ int main(int argc, char** argv) {
 		return 1;
 	}
 	Config = ZoneConfig::get();
-	nats.Load();
-
+	
 	const char *zone_name;
 	uint32 instance_id = 0;
 	std::string z_name;
@@ -514,15 +511,10 @@ int main(int argc, char** argv) {
 				entity_list.MobProcess();
 				entity_list.BeaconProcess();
 				entity_list.EncounterProcess();
-				if (zone->IsLoaded()) { //&& zone->CountAuth() > 0) { we don't need clients to do nats processing
-					nats.ZoneSubscribe(zone->GetShortName(), zone->GetInstanceID());
-					nats.Process();
-				}
-
+				
 				if (zone) {
 					if (!zone->Process()) {
 						Zone::Shutdown();
-						nats.Unregister();
 					}					
 				}
 
@@ -577,7 +569,6 @@ int main(int argc, char** argv) {
 
 	if (zone != 0) {
 		Zone::Shutdown(true);
-		nats.Unregister();
 	}
 	//Fix for Linux world server problem.
 	safe_delete(taskmanager);
@@ -600,7 +591,6 @@ void CatchSignal(int sig_num) {
 
 void Shutdown()
 {
-	nats.Unregister();
 	Zone::Shutdown(true);
 	RunLoops = false;
 	Log(Logs::General, Logs::Zone_Server, "Shutting down...");

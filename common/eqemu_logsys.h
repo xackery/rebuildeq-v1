@@ -92,7 +92,6 @@ enum LogCategory {
 	FixZ,
 	Food,
 	Traps,
-	NATS,
 	MaxCategoryID	/* Don't Remove this*/
 };
 
@@ -150,7 +149,6 @@ static const char* LogCategoryName[LogCategory::MaxCategoryID] = {
 	"FixZ",
 	"Food",
 	"Traps",
-	"NATS",
 };
 }
 

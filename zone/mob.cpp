@@ -19,7 +19,6 @@
 #include "../common/spdat.h"
 #include "../common/string_util.h"
 #include "../common/misc_functions.h"
-#include "nats_manager.h"
 #include "quest_parser_collection.h"
 #include "string_ids.h"
 #include "worldserver.h"
@@ -37,7 +36,6 @@ extern EntityList entity_list;
 
 extern Zone* zone;
 extern WorldServer worldserver;
-extern NatsManager nats;
 
 Mob::Mob(const char* in_name,
 		const char* in_lastname,
@@ -941,7 +939,6 @@ void Mob::CreateSpawnPacket(EQApplicationPacket* app, Mob* ForWho) {
 	NewSpawn_Struct* ns = (NewSpawn_Struct*)app->pBuffer;
 	FillSpawnStruct(ns, ForWho);
 
-	nats.OnSpawnEvent(OP_NewSpawn, ns->spawn.spawnId, &ns->spawn);
 	if(RuleB(NPC, UseClassAsLastName) && strlen(ns->spawn.lastName) == 0)
 	{
 		switch(ns->spawn.class_)
@@ -1259,7 +1256,6 @@ void Mob::CreateDespawnPacket(EQApplicationPacket* app, bool Decay)
 	// The next field only applies to corpses. If 0, they vanish instantly, otherwise they 'decay'
 	ds->Decay = Decay ? 1 : 0;
 
-	nats.OnDeleteSpawnEvent(this->GetID(), ds);
 }
 
 void Mob::CreateHPPacket(EQApplicationPacket* app)
@@ -1270,7 +1266,6 @@ void Mob::CreateHPPacket(EQApplicationPacket* app)
 	app->pBuffer = new uchar[app->size];
 	memset(app->pBuffer, 0, sizeof(SpawnHPUpdate_Struct2));
 	SpawnHPUpdate_Struct2* ds = (SpawnHPUpdate_Struct2*)app->pBuffer;
-	nats.OnHPEvent(OP_MobHealth, this->GetID(), cur_hp, max_hp);
 	ds->spawn_id = GetID();
 	// they don't need to know the real hp
 	ds->hp = (int)GetHPRatio();
@@ -1304,7 +1299,6 @@ void Mob::CreateHPPacket(EQApplicationPacket* app)
 // sends hp update of this mob to people who might care
 void Mob::SendHPUpdate(bool skip_self /*= false*/, bool force_update_all /*= false*/)
 {
-	nats.OnHPEvent(OP_HPUpdate, this->GetID(), cur_hp, max_hp);
 	/* If our HP is different from last HP update call - let's update ourself */
 	if (IsClient()) {
 		if (cur_hp != last_hp || force_update_all) {
@@ -1467,7 +1461,6 @@ void Mob::SendPosition() {
 	else {
 		entity_list.QueueCloseClients(this, app, true, RuleI(Range, MobPositionUpdates), nullptr, false);
 	}
-	nats.OnClientUpdateEvent(this->GetID(), spu);
 	safe_delete(app);
 }
 
@@ -1481,7 +1474,6 @@ void Mob::SendPositionUpdateToClient(Client *client) {
 		MakeSpawnUpdateNoDelta(spawn_update);
 
 	client->QueuePacket(app, false);
-	nats.OnClientUpdateEvent(this->GetID(), spawn_update);
 	safe_delete(app);
 }
 
@@ -1501,7 +1493,6 @@ void Mob::SendPositionUpdate(uint8 iSendToSelf) {
 	} else {
 		entity_list.QueueCloseClients(this, app, (iSendToSelf == 0), RuleI(Range, MobPositionUpdates), nullptr, false);
 	}
-	nats.OnClientUpdateEvent(this->GetID(), spu);
 	safe_delete(app);
 }
 
@@ -1622,7 +1613,6 @@ void Mob::DoAnim(const int animnum, int type, bool ackreq, eqFilterType filter) 
 		ackreq, /* Packet ACK */
 		filter /* eqFilterType filter */
 	);
-	nats.OnAnimationEvent(this->GetID(), anim);
 	safe_delete(outapp);
 }
 
@@ -2938,7 +2928,6 @@ void Mob::SendWearChange(uint8 material_slot, Client *one_client)
 	{
 		one_client->QueuePacket(outapp, false, Client::CLIENT_CONNECTED);
 	}
-	nats.OnWearChangeEvent(this->GetID(), wc);
 	safe_delete(outapp);
 }
 
@@ -2962,7 +2951,6 @@ void Mob::SendTextureWC(uint8 slot, uint16 texture, uint32 hero_forge_model, uin
 
 	entity_list.QueueClients(this, outapp);
 	safe_delete(outapp);
-	nats.OnWearChangeEvent(this->GetID(), wc);
 }
 
 void Mob::SetSlotTint(uint8 material_slot, uint8 red_tint, uint8 green_tint, uint8 blue_tint)
@@ -2984,7 +2972,6 @@ void Mob::SetSlotTint(uint8 material_slot, uint8 red_tint, uint8 green_tint, uin
 
 	entity_list.QueueClients(this, outapp);
 	safe_delete(outapp);
-	nats.OnWearChangeEvent(this->GetID(), wc);
 }
 
 void Mob::WearChange(uint8 material_slot, uint16 texture, uint32 color, uint32 hero_forge_model)
@@ -3001,7 +2988,6 @@ void Mob::WearChange(uint8 material_slot, uint16 texture, uint32 color, uint32 h
 
 	entity_list.QueueClients(this, outapp);
 
-	nats.OnWearChangeEvent(this->GetID(), wc);
 	safe_delete(outapp);
 }
 
@@ -4752,7 +4738,6 @@ void Mob::DoKnockback(Mob *caster, uint32 pushback, uint32 pushup)
 		outapp_push->priority = 6;
 		entity_list.QueueClients(this, outapp_push, true);
 		CastToClient()->FastQueuePacket(&outapp_push);
-		nats.OnClientUpdateEvent(this->GetID(), spu);
 	}
 }
 
@@ -7608,7 +7593,7 @@ int Mob::GetAggroTier() {
 
 void Mob::DailyGain(int account_id, int character_id, const char* identity, int levels_gained, int experience_gained, int money_earned)
 {
-	nats.OnDailyGain(account_id, character_id, identity, levels_gained, experience_gained, money_earned);
+	//nats.OnDailyGain(account_id, character_id, identity, levels_gained, experience_gained, money_earned);
 }
 
 //This triggers the crippling presence mechanic on each attack. It's a bit weird.

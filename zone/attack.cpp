@@ -30,7 +30,6 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "zone.h"
 #include "lua_parser.h"
 #include "fastmath.h"
-#include "nats_manager.h"
 
 #include <assert.h>
 #include <stdio.h>
@@ -52,7 +51,6 @@ extern FastMath g_Math;
 
 extern EntityList entity_list;
 extern Zone* zone;
-extern NatsManager nats;
 
 EQEmu::skills::SkillType Mob::AttackAnimation(int Hand, const EQEmu::ItemInstance* weapon, EQEmu::skills::SkillType skillinuse)
 {
@@ -2500,7 +2498,6 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQEmu::skills::Skil
 	app->priority = 6;
 	entity_list.QueueClients(killer_mob, app, false);
 	safe_delete(app);
-	nats.OnDeathEvent(d);
 	if (respawn2) {
 		respawn2->DeathReset(1);
 	}
@@ -2626,7 +2623,7 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQEmu::skills::Skil
 		}
 		++iterator;
 	}
-	if (GetTier() > 0 && IsNPC()) nats.SendAdminMessage(adminMessage);
+	//if (GetTier() > 0 && IsNPC()) nats.SendAdminMessage(adminMessage);
 	if (killer_mob && GetClass() != LDON_TREASURE)
 		hate_list.AddEntToHateList(killer_mob, damage);
 
@@ -3325,7 +3322,6 @@ void Mob::DamageShield(Mob* attacker, bool spell_ds) {
 		cds->damage = DS;
 		entity_list.QueueCloseClients(this, outapp);
 		safe_delete(outapp);
-		nats.OnDamageEvent(cds->source, cds);
 	} else if (DS > 0 && !spell_ds) {
 		//we are healing the attacker...
 		attacker->HealDamage(DS);
@@ -4565,7 +4561,6 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 			}
 		}
 
-		nats.OnDamageEvent(a->source, a);
 		safe_delete(outapp);
 	}
 	else {

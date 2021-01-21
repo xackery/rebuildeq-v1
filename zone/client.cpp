@@ -54,7 +54,6 @@ extern volatile bool RunLoops;
 #include "guild_mgr.h"
 #include "quest_parser_collection.h"
 #include "queryserv.h"
-#include "nats_manager.h"
 
 extern QueryServ* QServ;
 extern EntityList entity_list;
@@ -63,7 +62,6 @@ extern volatile bool is_zone_loaded;
 extern WorldServer worldserver;
 extern uint32 numclients;
 extern PetitionList petition_list;
-extern NatsManager nats;
 
 bool commandlogged;
 char entirecommand[255];
@@ -10716,7 +10714,7 @@ int Client::GiveBoxReward(int minimumRarity, int boxType) {
 
 	const EQEmu::ItemData * item = database.GetItem(reward.item_id);
 	if (!SummonItem(reward.item_id)) {
-		nats.SendAdminMessage(StringFormat("Failed to give reward to %s [%s] itemid: %i rarity: %i", GetCleanName(), GetIdentity(), reward.item_id, reward.rarity));
+		//nats.SendAdminMessage(StringFormat("Failed to give reward to %s [%s] itemid: %i rarity: %i", GetCleanName(), GetIdentity(), reward.item_id, reward.rarity));
 		return 0;
 	}
 

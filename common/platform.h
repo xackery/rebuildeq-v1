@@ -14,8 +14,7 @@ enum EQEmuExePlatform
 	ExePlatformSharedMemory,
 	ExePlatformClientImport,
 	ExePlatformClientExport,
-	ExePlatformHC,
-	ExePlatformNATS
+	ExePlatformHC
 };
 
 void RegisterExecutablePlatform(EQEmuExePlatform p);

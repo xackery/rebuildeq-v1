@@ -68,7 +68,6 @@ union semun {
 
 #include "../common/patches/patches.h"
 #include "../common/random.h"
-#include "nats_manager.h"
 #include "zoneserver.h"
 #include "login_server.h"
 #include "login_server_list.h"
@@ -96,7 +95,6 @@ UCSConnection UCSLink;
 QueryServConnection QSLink;
 LauncherList launcher_list;
 AdventureManager adventure_manager;
-NatsManager nats;
 EQEmu::Random emu_random;
 volatile bool RunLoops = true;
 uint32 numclients = 0;
@@ -381,7 +379,6 @@ int main(int argc, char** argv) {
 	adventure_manager.Load();
 	adventure_manager.LoadLeaderboardInfo();
 
-	nats.Load();
 	Log(Logs::General, Logs::World_Server, "Purging expired instances");
 	database.PurgeExpiredInstances();
 
@@ -408,7 +405,7 @@ int main(int argc, char** argv) {
 	server_opts.credentials = Config->SharedKey;
 	server_connection->Listen(server_opts);
 	Log(Logs::General, Logs::World_Server, "Server (TCP) listener started.");
-	nats.SendAdminMessage("World server booted up.");
+	//nats.SendAdminMessage("World server booted up.");
 	server_connection->OnConnectionIdentified("Zone", [&console](std::shared_ptr<EQ::Net::ServertalkServerConnection> connection) {
 		LogF(Logs::General, Logs::World_Server, "New Zone Server connection from {2} at {0}:{1}",
 			connection->Handle()->RemoteIP(), connection->Handle()->RemotePort(), connection->GetUUID());
@@ -559,7 +556,6 @@ int main(int argc, char** argv) {
 		launcher_list.Process();
 		LFPGroupList.Process();
 		adventure_manager.Process();
-		nats.Process();
 
 		if (InterserverTimer.Check()) {
 			InterserverTimer.Start();
