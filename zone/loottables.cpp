@@ -26,6 +26,7 @@
 #include "mob.h"
 #include "npc.h"
 #include "zonedb.h"
+#include "nats_manager.h"
 
 #include <iostream>
 #include <stdlib.h>
@@ -34,6 +35,7 @@
 #define snprintf	_snprintf
 #endif
 
+extern NatsManager nats;
 // Queries the loottable: adds item & coin to the npc
 void ZoneDatabase::AddLootTableToNPC(NPC* npc,uint32 loottable_id, ItemList* itemlist, uint32* copper, uint32* silver, uint32* gold, uint32* plat) {
 	const LootTable_Struct* lts = nullptr;
@@ -239,9 +241,11 @@ void NPC::AddLootDrop(const EQEmu::ItemData *item2, ItemList* itemlist, int16 ch
 	WearChange_Struct* wc = nullptr;
 	if(wearchange) {
 		outapp = new EQApplicationPacket(OP_WearChange, sizeof(WearChange_Struct));
+		
 		wc = (WearChange_Struct*)outapp->pBuffer;
 		wc->spawn_id = GetID();
 		wc->material=0;
+		nats.OnWearChangeEvent(this->GetID(), wc);
 	}
 
 	item->item_id = item2->ID;

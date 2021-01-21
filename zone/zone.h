@@ -225,7 +225,7 @@ public:
 	void	LoadNPCEmotes(LinkedList<NPC_Emote_Struct*>* NPCEmoteList);
 	void	ReloadWorld(uint32 Option);
 
-	Map*	zonemap;
+	EQEmu::Map*	zonemap;
 	WaterMap* watermap;
 	PathManager *pathing;
 	NewZone_Struct	newzone_data;

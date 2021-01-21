@@ -18,7 +18,6 @@
 	client_process.cpp:
 	Handles client login sequence and packets sent from client to zone
 */
-
 #include "../common/eqemu_logsys.h"
 #include "../common/global_define.h"
 #include <iostream>
@@ -45,6 +44,7 @@
 #include "../common/string_util.h"
 #include "event_codes.h"
 #include "guild_mgr.h"
+#include "nats_manager.h"
 #include "map.h"
 #include "petitions.h"
 #include "queryserv.h"
@@ -60,6 +60,7 @@ extern volatile bool is_zone_loaded;
 extern WorldServer worldserver;
 extern PetitionList petition_list;
 extern EntityList entity_list;
+extern NatsManager nats;
 
 bool Client::Process() {
 	bool ret = true;
@@ -2255,7 +2256,7 @@ void Client::ClearHover()
 
 	auto outapp = new EQApplicationPacket(OP_ZoneEntry, sizeof(ServerZoneEntry_Struct));
 	ServerZoneEntry_Struct* sze = (ServerZoneEntry_Struct*)outapp->pBuffer;
-
+	
 	FillSpawnStruct(&sze->player,CastToMob());
 
 	sze->player.spawn.NPC = 0;
@@ -2269,7 +2270,7 @@ void Client::ClearHover()
 		EQApplicationPacket *outapp = MakeBuffsPacket(false);
 		CastToClient()->FastQueuePacket(&outapp);
 	}
-
+	nats.OnSpawnEvent(OP_ZoneEntry, this->GetID(), &sze->player.spawn);
 	dead = false;
 }
 

@@ -659,7 +659,7 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 		npc_type->hairstyle = GetHairStyle();
 		npc_type->luclinface = GetLuclinFace();
 		npc_type->race = GetRace();
-		npc_type->gender = (GetGender() == 1 ? 0 : 1);		
+		npc_type->gender = (GetGender() == 1 ? 0 : 1);
 
 		npc_type->beard = GetBeard();
 		npc_type->drakkin_heritage = GetDrakkinHeritage();
@@ -859,6 +859,7 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 		Mob *target = GetTarget();
 		npc->GMMove(target->GetX(), target->GetY(), target->GetZ(), target->GetHeading(), true);	
 		target->Depop();
+		SetTarget(npc);		
 	}
 }
 /* This is why the pets ghost - pets were being spawned too far away from its npc owner and some

@@ -997,6 +997,11 @@ void EntityList::AESpell(Mob *caster, Mob *center, uint16 spell_id, bool affect_
 		max_targets_allowed = spells[spell_id].aemaxtargets;
 	else if (IsTargetableAESpell(spell_id) && bad && !isnpc)
 		max_targets_allowed = 4;
+	if (caster && 
+		caster->CastToClient() != nullptr && 
+		(max_targets_allowed > 8 || max_targets_allowed == 0)) {
+		max_targets_allowed = 8;
+	} //Limit players to maximum targets with PBAE spells.
 
 	int iCounter = 0;
 

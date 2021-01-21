@@ -1,0 +1,1 @@
+eqproto contains compiled proto files for go projects inside rebuildeq.

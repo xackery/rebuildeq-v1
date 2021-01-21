@@ -480,6 +480,9 @@ public:
 	void RefreshClientXTargets(Client *c);
 	void SendAlternateAdvancementStats();
 
+	std::map<uint16, NPC*> ListNPCs();
+	std::map<uint16, Client*> ListClients();
+
 	void GetTrapInfo(Client* client);
 	bool IsTrapGroupSpawned(uint32 trap_id, uint8 group);
 	void UpdateAllTraps(bool respawn, bool repopnow = false);

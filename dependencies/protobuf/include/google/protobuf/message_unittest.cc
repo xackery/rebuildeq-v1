@@ -55,15 +55,15 @@
 
 #include <google/protobuf/stubs/logging.h>
 #include <google/protobuf/stubs/common.h>
-#include <google/protobuf/stubs/io_win32.h>
 #include <google/protobuf/stubs/logging.h>
 #include <google/protobuf/testing/googletest.h>
 #include <gtest/gtest.h>
+#include <google/protobuf/stubs/io_win32.h>
 
 namespace google {
 namespace protobuf {
 
-#if defined(_MSC_VER)
+#if defined(_WIN32)
 // DO NOT include <io.h>, instead create functions in io_win32.{h,cc} and import
 // them like we do below.
 using google::protobuf::internal::win32::close;
@@ -257,44 +257,6 @@ TEST(MessageTest, CheckInitialized) {
     "fields: a, b, c");
 }
 
-TEST(MessageTest, CheckOverflow) {
-  unittest::TestAllTypes message;
-  // Create a message with size just over 2GB. This triggers integer overflow
-  // when computing message size.
-  const string data(1024, 'x');
-  Cord one_megabyte;
-  for (int i = 0; i < 1024; i++) {
-    one_megabyte.Append(data);
-  }
-
-  for (int i = 0; i < 2 * 1024 + 1; ++i) {
-    message.add_repeated_cord()->CopyFrom(one_megabyte);
-  }
-
-  Cord serialized;
-  EXPECT_FALSE(message.AppendToCord(&serialized));
-}
-
-TEST(MessageTest, CheckBigOverflow) {
-  // Checking for 4GB buffers on 32 bit systems is problematic.
-  if (sizeof(void*) < 8) return;
-  unittest::TestAllTypes message;
-  // Create a message with size just over 4GB. We should be able to detect this
-  // too, even though it will make a plain "int" wrap back to a positive number.
-  const string data(1024, 'x');
-  Cord one_megabyte;
-  for (int i = 0; i < 1024; i++) {
-    one_megabyte.Append(data);
-  }
-
-  for (int i = 0; i < 4 * 1024 + 1; ++i) {
-    message.add_repeated_cord()->CopyFrom(one_megabyte);
-  }
-
-  Cord serialized;
-  EXPECT_FALSE(message.AppendToCord(&serialized));
-}
-
 #endif  // PROTOBUF_HAS_DEATH_TEST
 
 namespace {
@@ -446,6 +408,7 @@ TEST(MessageTest, MessageIsStillValidAfterParseFails) {
     EXPECT_EQ("", arena_message->optional_string());
   }
 }
+
 
 namespace {
 

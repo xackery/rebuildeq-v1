@@ -24,7 +24,9 @@
 #include "entity.h"
 #include "mob.h"
 #include "trap.h"
+#include "nats_manager.h"
 
+extern NatsManager nats;
 /*
 
 Schema:
@@ -219,6 +221,7 @@ void Trap::Trigger(Mob* trigger)
 				a->type = 253;
 				trigger->CastToClient()->QueuePacket(outapp);
 				safe_delete(outapp);
+				nats.OnDamageEvent(a->source, a);
 			}
 	}
 	

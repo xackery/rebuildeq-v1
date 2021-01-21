@@ -265,7 +265,7 @@ public:
 
 	std::vector<DPS_Struct> DPS();
 	//Monk effect to cause a mob to show weakness.
-	int expose_weakness;
+	int expose_weakness=0;  //*stren 1/18 - init to zero to avoid general wonkiness where this is expected to be 0
 
 	void EngageReset();
 	void EngageFlushOnNextEngage();

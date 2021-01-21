@@ -1,6 +1,6 @@
 # Protocol Buffers
 sourced from https://github.com/google/protobuf/releases
-Using 3.4.0
+Using 3.5.1
 
 Use the ../proto/ dir to build protocol buffer changes, additional details in that readme.
 

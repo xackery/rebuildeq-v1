@@ -30,6 +30,7 @@
 #include "quest_parser_collection.h"
 #include "string_ids.h"
 #include "worldserver.h"
+#include "nats_manager.h";
 
 #include <math.h>
 
@@ -42,7 +43,7 @@
 extern Zone* zone;
 extern volatile bool is_zone_loaded;
 extern WorldServer worldserver;
-
+extern NatsManager nats;
 
 // the spell can still fail here, if the buff can't stack
 // in this case false will be returned, true otherwise
@@ -341,7 +342,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							}
 
 							rank = casterClient->GetBuildRank(DRUID, RB_DRU_LINGERINGPAIN);
-							if (rank > 0 && spells[spell_id].classes[DRUID] > (GetLevel() - 15) &&
+							if (rank > 0 && spells[spell_id].classes[DRUID - 1] > (GetLevel() - 15) &&
 								(spell_id == 239 || spell_id == 93 || spell_id == 92 || spell_id == 252 || spell_id == 91 || spell_id == 419 || spell_id == 52 || spell_id == 405 || spell_id == 27 || spell_id == 115 || spell_id == 217 || spell_id == 1439 || spell_id == 406 || spell_id == 418 || spell_id == 664 || spell_id == 57 || spell_id == 1436 || spell_id == 29 || spell_id == 420 || spell_id == 433 || spell_id == 671 || spell_id == 1603 || spell_id == 1529 || spell_id == 1605 || spell_id == 2518 || spell_id == 1606 || spell_id == 1607 || spell_id == 2126 || spell_id == 2877 || spell_id == 1740)
 								) {
 
@@ -730,26 +731,13 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					}
 				}
 
-
-				if (caster->IsClient()) {
-					if (IsClient() && CastToClient()->ClientVersionBit() & EQEmu::versions::bit_UFAndLater)
-					{
-						EQApplicationPacket *outapp = MakeBuffsPacket(false);
-						CastToClient()->FastQueuePacket(&outapp);
-					}
-					break; //maybe break?
-				}
-
 				//do any AAs apply to these spells?
+				// Only do damage: healing effect removed from this spell type to prevent overpowered buff spam
 				if(dmg < 0) {
 					if (!PassCastRestriction(false, spells[spell_id].base2[i], true))
 						break;
 					dmg = -dmg;
 					Damage(caster, dmg, spell_id, spell.skill, false, buffslot, false);
-				} else {
-					if (!PassCastRestriction(false, spells[spell_id].base2[i], false))
-						break;
-					HealDamage(dmg, caster);
 				}
 				break;
 			}
@@ -1328,6 +1316,8 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				InterruptSpell();
 				entity_list.RemoveDebuffs(this);
 				entity_list.RemoveFromTargets(this);
+				// Set target to this again, if the caster is a client so that spells can be cast without retargeting in the client
+				if(caster->IsClient()) caster->SetTarget(this);
 				WipeHateList();
 
 				if (IsClient() && caster->IsClient()) {
@@ -1529,6 +1519,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						Save();
 						safe_delete(action_packet);
 						safe_delete(message_packet);
+						nats.OnDamageEvent(cd->source, cd);
 					}
 					else
 					{
@@ -1580,6 +1571,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 								Save();
 								safe_delete(action_packet);
 								safe_delete(message_packet);
+								nats.OnDamageEvent(cd->source, cd);
 							}
 						}
 						else
@@ -1618,6 +1610,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							Save();
 							safe_delete(action_packet);
 							safe_delete(message_packet);
+							nats.OnDamageEvent(cd->source, cd);
 						}
 					}
 				}
@@ -4467,7 +4460,7 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 						spell_id == 2885  //funeral pyre of kelador
 						)
 						) {
-						int mana_return = int(spell.mana * 0.05f);
+						int mana_return = int(spell.mana * rank * 0.01f);  //1% per rank
 						if (mana_return < 1) mana_return = 1;
 						caster->DebugEcho(StringFormat("Decay %i returned %i mana.", rank, mana_return));
 						caster->SetMana(caster->GetMana() + mana_return);

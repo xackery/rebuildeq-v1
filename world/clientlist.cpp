@@ -707,7 +707,7 @@ void ClientList::SendWhoAll(uint32 fromid,const char* to, int16 admin, Who_All_S
 	uint32 zonestring=0xFFFFFFFF;
 	uint32 plzone=0;
 	uint32 unknown80[2];
-	if(cle->Anon()==0 || (admin>=cle->Admin() && admin>0)){
+	if(cle->Anon()==0 || (admin>=cle->Admin() && admin>20)){ // Status 20 is player (to bypass locked server)
 		plclass_=cle->class_();
 		pllevel=cle->level();
 		if(admin>=100)

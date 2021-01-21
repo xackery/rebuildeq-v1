@@ -73,7 +73,7 @@ func commandParse(s *discordgo.Session, m *discordgo.MessageCreate) {
 		return
 	}
 
-	allowedCommands := []string{"unlock", "who", "lock", "setidentity"}
+	allowedCommands := []string{"unlock", "who", "lock", "setidentity", "worldshutdown"}
 	//figure out command, remove the ! bang
 	commandSplit := strings.Split(m.Message.Content[1:], " ")
 	parameters := commandSplit[1:]

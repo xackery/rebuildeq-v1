@@ -41,13 +41,6 @@ func startService() {
 		os.Exit(1)
 	}
 
-	if config.Discord.Password == "" {
-		applog.Error.Println("I don't see a password set in your <discord><password> section of eqemu_config.xml, please adjust.")
-		fmt.Println("press a key then enter to exit.")
-		fmt.Scan(&option)
-		os.Exit(1)
-	}
-
 	if config.Discord.ServerID == "" {
 		applog.Error.Println("I don't see a serverid set in your <discord><serverid> section of eqemuconfig.xml, please adjust.")
 		fmt.Println("press a key then enter to exit.")
@@ -61,8 +54,9 @@ func startService() {
 		fmt.Scan(&option)
 		os.Exit(1)
 	}
+
 	disco := discord.Discord{}
-	err = disco.Connect(config.Discord.Username, config.Discord.Password)
+	err = disco.Connect(config.Discord.Username)
 	if err != nil {
 		applog.Error.Println("Error connecting to discord:", err.Error())
 		fmt.Println("press a key then enter to exit.")
@@ -83,7 +77,7 @@ func listenToDiscord(config *eqemuconfig.Config, disco *discord.Discord) (err er
 
 		applog.Info.Println("[Discord] Reconnecting in 5 seconds...")
 		time.Sleep(5 * time.Second)
-		err = disco.Connect(config.Discord.Username, config.Discord.Password)
+		err = disco.Connect("Bot " + config.Discord.Username)
 		if err != nil {
 			applog.Error.Println("[Discord] Error connecting to discord:", err.Error())
 		}

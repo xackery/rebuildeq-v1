@@ -1869,7 +1869,7 @@ void command_stats(Client *c, const Seperator *sep)
 	float dps = floor(max_dmg * num_hits*(delay / 1000)/40);
 
 	c->Message(0, "NPC Stats:");
-	c->Message(0, "Name: %s   NpcID: %u", c->GetTarget()->GetName(), c->GetTarget()->GetNPCTypeID());
+	c->Message(0, "Name: %s   NpcID: %u, Entity ID: %u", c->GetTarget()->GetName(), c->GetTarget()->GetNPCTypeID(), c->GetTarget()->GetID());
 	c->Message(0, "Race: %i  Level: %i  Class: %i  Material: %i", c->GetTarget()->GetRace(), c->GetTarget()->GetLevel(), c->GetTarget()->GetClass(), c->GetTarget()->GetTexture());
 	c->Message(0, "Faction: %i", target->GetPrimaryFaction());
 	c->Message(0, "HP: %i, AC: %i", target->GetMaxHP(), target->GetAC());
@@ -1878,7 +1878,7 @@ void command_stats(Client *c, const Seperator *sep)
 	c->Message(0, "DPS: %f", dps);		
 	c->Message(0, "Specials: %s", specials.c_str());
 	c->Message(0, "Spawn Group: %i  Grid: %i", c->GetTarget()->CastToNPC()->GetSp2(), c->GetTarget()->CastToNPC()->GetGrid());
-	c->GetTarget()->CastToNPC()->QueryLoot(c);
+	if (c->GetTarget()->IsNPC()) c->GetTarget()->CastToNPC()->QueryLoot(c);
 
 }
 
@@ -4049,7 +4049,7 @@ void command_builds(Client *c, const Seperator *sep)
 		const auto clientLevel = pClient->GetLevel();
 		uint8 freeLevel = 10;
 		// Free!
-		if (clientLevel < freeLevel) return 0;
+		if (clientLevel <= freeLevel) return 0;
 
 		uint64 cost = 0;
 		cost = (uint64)((float)(1000 * (float)((float)clientLevel / (float)60)) * 1000);
@@ -4597,14 +4597,13 @@ void command_teleport(Client *c, const Seperator *sep) {
 		Location("airplane", 71, 614, 1415, -663.62, 55.8, 46, 10094),
 		Location("cobaltscar", 117, -1574.95, -1053.25, 307.74, 56.1, 10, 100011),
 		Location("chardok", 103, 865.17, 23.58, 103.72, 188.8, 10, 100018),
-		//Location("commons", 21, 1839.84, 0.15, -15.61, 61.0, 10, 0),
 		Location("dreadlands", 86, 9565.0, 2806.0, 1045.19, 0.0, 10, 100016),
 		Location("ecommons", 22, -73.06, -1787.51, 3.13, 51.8, 1, 0),
 		Location("emeraldjungle", 94, 3474.83, -3123.34, -341.34, 1.5, 10, 100013),
-		Location("fieldofbone", 78, 2395.95, -2216.75, 30.63, 227.6, 1, 0),
+		Location("fieldofbone", 78, 1447, -1692.32, -62.08, 190, 1, 0),
 		Location("gfaydark", 54, -411, -2023, -0.28, 47.8, 1, 0),
 		Location("greatdivide", 118, 3654.25, -3826.56, -242.37, 136.3, 10, 100008),
-		Location("hateplaneb", 186, -393, 656, 3.13, 187.6, 46, 10092),
+		Location("hateplane", 76, -353, -374, 3.75, 128, 46, 10092),
 		Location("iceclad", 110, 4879.12, -604.28, 109.21, 214.3, 10, 100010),
 		Location("lavastorm", 27, -25, 182, -73.26, 252.3, 10, 100015),
 		Location("pojustice", 201, 469.48, 765.68, 9.63, 63.5, 1, 0),
@@ -4628,7 +4627,7 @@ void command_teleport(Client *c, const Seperator *sep) {
 	auto calculateCost = [](Client* pClient) -> uint64 {
 		const auto clientLevel = pClient->GetLevel();
 		// Free!
-		if (clientLevel < FreeLevel) return 0;
+		if (clientLevel <= FreeLevel) return 0;
 
 		// TODO: Clean this up.
 		uint64 cost = 0;
@@ -4656,6 +4655,7 @@ void command_teleport(Client *c, const Seperator *sep) {
 	if (sep->arg[1] && strlen(sep->arg[1]) > 0 ) {
 		if (strcasecmp(sep->arg[1], "info") == 0) {
 			const char *message = "The #teleport command is used to simplify teleporting around Norrath. <br> \
+				You can always teleport to pojustice for free and will not be bound there automatically. <br> \
 				You will find in certain zones (typically where druid/wizard can teleport) will have a chance of fragments dropping off every mob in the zone. The chance is low, and once looted the item dissapears, and you unlock the ability to #teleport to the zone in the future.<br> \
 				<br> \
 				Teleporting is only available when the following situation is true: <br> \
@@ -4689,12 +4689,15 @@ void command_teleport(Client *c, const Seperator *sep) {
 			c->Message(0, "That zone is not yet available to teleport to.");
 			return;
 		}
+		
+		bool portisfree = false;
+		if (location->ZoneID == 201) portisfree = true;
 
 		// Calculate cost.
 		const auto cost = calculateCost(c);
-
+		
 		// Handle: Payment.
-		if (cost > 0) {
+		if (cost > 0 && portisfree == false) {
 			// Handle: Not enough money.
 			if (!c->HasMoneyInInvOrBank(cost)) {
 				c->Message(0, "Not enough money to teleport.");
@@ -4721,10 +4724,14 @@ void command_teleport(Client *c, const Seperator *sep) {
 			c->Message(0, "You paid %s to teleport to %s.", StringFormat("%u platinum", (cost / 1000)).c_str(), location->ZoneName.c_str());
 		}
 		else {
-			c->Message(0, "You are being teleported and bound to %s for free due to being below level %i.", location->ZoneName.c_str(), FreeLevel);
-			c->SetBindPoint(0, location->ZoneID, 0, glm::vec3(location->X, location->Y, location->Z));
+			if (portisfree == false) {
+				c->Message(0, "You are being teleported and bound to %s for free due to being level %i or under.", location->ZoneName.c_str(), FreeLevel);
+				c->SetBindPoint(0, location->ZoneID, 0, glm::vec3(location->X, location->Y, location->Z));
+			}
+			else {
+				c->Message(0, "You are being teleported to %s for free.", location->ZoneName.c_str());
+			}
 		}
-
 		if (c->IsTaskActivityActive(307, 1)) c->UpdateTaskActivity(FEAT_GETTINGSTARTED, 1, 1);
 		if (c->IsTaskActivityActive(307, 9)) c->UpdateTaskActivity(FEAT_GETTINGSTARTED, 9, 1);
 
@@ -4736,11 +4743,12 @@ void command_teleport(Client *c, const Seperator *sep) {
 	// Handle: Player entered #teleport and needs some prompting.
 	const auto cost = calculateCost(c);
 	std::stringstream ss;
+	ss << "You may teleport to [ " << c->CreateSayLink("#teleport pojustice", "pojustice") << " ] for free at any level. ";
 	if (cost > 0) {
 		ss << "At level " << (int)c->GetLevel() << ", it will cost " << (cost / 1000) << " platinum to teleport to";
 	}
 	else {
-		ss << "Until level" << FreeLevel << ", you may teleport and be bound for free to";
+		ss << "Until level " << FreeLevel << ", you may teleport and be bound for free to";
 	}
 
 	// Build message with available locations.
@@ -4751,7 +4759,9 @@ void command_teleport(Client *c, const Seperator *sep) {
 			ss << " [ " << i.ZoneName.c_str() << " ] ";
 		}
 		else {
-			ss << " [ " << c->CreateSayLink(StringFormat("#teleport %s", i.ZoneName.c_str()).c_str(), i.ZoneName.c_str()) << " ] ";
+			if (i.ZoneID != 201) {
+				ss << " [ " << c->CreateSayLink(StringFormat("#teleport %s", i.ZoneName.c_str()).c_str(), i.ZoneName.c_str()) << " ] ";
+			}
 		}
 	}
 	ss << " ( " << c->CreateSayLink("#teleport info", "info") << " )";
@@ -4781,7 +4791,7 @@ void command_buff(Client *c, const Seperator *sep) {
 		cost = 1000;
 	}
 	displayCost = StringFormat("%u platinum", (cost / 1000));
-	if (c->GetLevel() < 10) {
+	if (c->GetLevel() <= 10) {
 		displayCost = "nothing";
 		cost = 0;
 	}
@@ -4801,11 +4811,7 @@ void command_buff(Client *c, const Seperator *sep) {
 
 		Mob* target = c;
 		uint8 level = target->GetLevel();
-		int duration = level;
-		if (duration < 10) {
-			duration = 10;
-		}
-		duration *= 10;
+		int duration = 600; // 1 hour
 
 		if (level < 39) target->QuickBuff(target, 144, duration); //regeneration 38
 		else if (level < 52) target->QuickBuff(target, 145, duration); //chloro 51
@@ -4975,7 +4981,7 @@ void command_return(Client *c, const Seperator *sep) {
 			c->Message(0, "You paid %s to return to %s.", displayCost.c_str(), returnZoneName.c_str());
 		}
 		else {
-			c->Message(0, "You return to %s for free since you are below level 10.", displayCost.c_str(), returnZoneName.c_str());
+			c->Message(0, "You return to %s for free since you are level 10 or under.", displayCost.c_str(), returnZoneName.c_str());
 		}
 		
 		//zone to safe coords
@@ -4985,14 +4991,14 @@ void command_return(Client *c, const Seperator *sep) {
 		return;
 	}
 	if (returnZoneName == "") {
-		if (c->GetLevel() >= 10) {
+		if (c->GetLevel() > 10) {
 			c->Message(0, "It costs %s to use #return at your level. You have not died recently. ( %s )", displayCost.c_str(), c->CreateSayLink("#return info", "info").c_str());
 		}
 		else {
 			c->Message(0, "It costs nothing to use #return until level 10. You have not died recently. ( %s )", c->CreateSayLink("#return info", "info").c_str());
 		}
 	} else {
-		if (c->GetLevel() >= 10) {
+		if (c->GetLevel() > 10) {
 			c->Message(0, "It costs %s to use #return at your level. Your last death was at %s. Teleport? [ %s ] ( %s )", displayCost.c_str(), returnZoneName.c_str(), c->CreateSayLink("#return confirm", "confirm").c_str(), c->CreateSayLink("#return info", "info").c_str());
 		}
 		else {
@@ -5023,7 +5029,7 @@ void command_rez(Client *c, const Seperator *sep) {
 		cost = 1000;
 	}
 	displayCost = StringFormat("%u platinum", (cost / 1000));
-	if (c->GetLevel() < 10) {
+	if (c->GetLevel() <= 10) {
 		displayCost == "nothing";
 		cost = 0;
 	}
@@ -11089,7 +11095,7 @@ void command_object(Client *c, const Seperator *sep)
 			o->SetHeading(c->GetHeading() * 2.0f); // Compensate for GetHeading() returning half of actual
 
 			// Bump player back to avoid getting stuck inside object
-
+			
 			// GetHeading() returns half of the actual heading, for some reason
 			x2 = 10.0f * sin(c->GetHeading() * 2.0f / 256.0f * 3.14159265f);
 			y2 = 10.0f * cos(c->GetHeading() * 2.0f / 256.0f * 3.14159265f);

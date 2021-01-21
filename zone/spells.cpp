@@ -329,6 +329,16 @@ bool Mob::CastSpell(uint16 spell_id, uint16 target_id, CastingSlot slot,
 			spell_id == 681)) {
 		cast_time = 1500;
 	}
+	
+	// Druid Teleport Bind
+	uint8 rank = GetBuildRank(DRUID, RB_DRU_TELEPORTBIND);
+	if (rank > 1 && spell_id == 5953) {
+		// 85% Mana at Rank 1, minus 15% per rank: 85,70,55,40,25
+		float redux = 0.85f - (rank - 1) * 0.15f;
+
+		BuildEcho(StringFormat("Teleport Bind %i reduced mana cost to %.0f percent.", rank, redux * 100));
+		mana_cost = (GetMaxMana() * redux);
+	}
 
 	if(resist_adjust)
 	{
@@ -2272,6 +2282,7 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 		spell_target && 
 		!spell_target->IsPetOwnerClient() && 
 		!spell_target->IsClient() && 
+		!spell_target->IsCharmed() &&
 		!IsEffectInSpell(spell_id, SE_Revive) //Rezzes are beneficial spells, but need to target self.
 		) {
 		if (IsClient() && 
@@ -3020,6 +3031,7 @@ void Mob::BardPulse(uint16 spell_id, Mob *caster) {
 			}
 			safe_delete(message_packet);
 			safe_delete(packet);
+			nats.OnDamageEvent(cd->source, cd);
 
 		}
 		//we are done...
@@ -3392,9 +3404,10 @@ int Mob::CheckStackConflict(uint16 spellid1, int caster_level1, uint16 spellid2,
 
 		/*
 		If the spells aren't the same
-		and the effect is a dot we can go ahead and stack it
+		and the effect is a dot we can go ahead and stack it.
+		Include bard AE DoT
 		*/
-		if(effect1 == SE_CurrentHP && spellid1 != spellid2 && sp1_detrimental && sp2_detrimental) {
+		if((effect1 == SE_CurrentHP || effect1 == SE_BardAEDot) && spellid1 != spellid2 && sp1_detrimental && sp2_detrimental) {
 			Log(Logs::Detail, Logs::Spells, "The spells are not the same and it is a detrimental dot, passing");
 			continue;
 		}
@@ -4644,6 +4657,7 @@ bool Mob::SpellOnTarget(uint16 spell_id, Mob *spelltar, bool reflect, bool use_r
 	}
 	safe_delete(action_packet);
 	safe_delete(message_packet);
+	nats.OnDamageEvent(cd->source, cd);
 
 	Log(Logs::Detail, Logs::Spells, "Cast of %d by %s on %s complete successfully.", spell_id, GetName(), spelltar->GetName());
 
@@ -6543,7 +6557,12 @@ void Mob::ConeDirectional(uint16 spell_id, int16 resist_adjust)
 }
 
 void Mob::QuickBuff(Mob *spelltar, uint16 spell_id, int duration_override) {
-	SpellOnTarget(spell_id, spelltar, false, false, 0, false, -1, duration_override);
+	if (spell_id == 278 && spelltar->GetLevel() < 21) { //Set minimum level for Spirit of Wolf buff
+		SpellOnTarget(spell_id, spelltar, false, false, 0, false, 20, duration_override);
+	}
+	else {
+		SpellOnTarget(spell_id, spelltar, false, false, 0, false, -1, duration_override);
+	}
 }
 
 // duration in seconds

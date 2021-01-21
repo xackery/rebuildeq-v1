@@ -134,7 +134,7 @@ int main(int argc, char** argv) {
 		std::string filename = Config->MapDir;
 		filename += mapfile;
 
-		auto m = new Map();
+		auto m = new EQEmu::Map();
 		auto success = m->Load(filename, true);
 		delete m;
 		std::cout << mapfile.c_str() << " conversion " << (success ? "succeeded" : "failed") << std::endl;
@@ -514,8 +514,8 @@ int main(int argc, char** argv) {
 				entity_list.MobProcess();
 				entity_list.BeaconProcess();
 				entity_list.EncounterProcess();
-				if (zone->IsLoaded() && zone->CountAuth() > 0) {
-					if (!nats.IsZoneSubscribed()) nats.ZoneSubscribe(zone_name);
+				if (zone->IsLoaded()) { //&& zone->CountAuth() > 0) { we don't need clients to do nats processing
+					nats.ZoneSubscribe(zone->GetShortName());
 					nats.Process();
 				}
 
@@ -606,7 +606,6 @@ void CatchSignal(int sig_num) {
 void Shutdown()
 {
 	nats.Unregister();
-//	google::protobuf::ShutdownProtobufLibrary();
 	Zone::Shutdown(true);
 	RunLoops = false;
 	Log(Logs::General, Logs::Zone_Server, "Shutting down...");

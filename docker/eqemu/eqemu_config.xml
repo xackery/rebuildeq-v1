@@ -62,7 +62,7 @@
 
 	<!-- Database configuration, replaces db.ini.  Defaults shown -->
 	<database>
-		<host>127.0.0.1</host>
+		<host>mariadb</host>
 		<port>3306</port>
 		<username>eqemu</username>
 		<password>eqemupass</password>
@@ -70,12 +70,18 @@
 	</database>
 
 	<qsdatabase>
-		<host>127.0.0.1</host>
+		<host>mariadb</host>
 		<port>3306</port>
 		<username>eqemu</username>
 		<password>eqemupass</password>
 		<db>eqemu</db>
 	</qsdatabase>
+
+    <nats>
+		<host>nats</host>
+		<port>4222</port>
+    </nats>
+    
 
 	<!-- Launcher Configuration -->
 	<launcher>

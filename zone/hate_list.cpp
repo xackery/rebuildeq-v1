@@ -201,8 +201,8 @@ void HateList::AddEntToHateList(Mob *in_entity, int32 in_hate, int32 in_damage, 
 	if (in_entity->IsClient() && in_entity->CastToClient()->IsDead())
 		return;
 
-	//Banish logic for tier encounters
-	if (hate_owner != nullptr && hate_owner->GetTier() > 0 && !IsEntOnHateList(in_entity) && GetClientAggroCount() >= 6) {
+	//Banish logic for tier 5+ encounters
+	if (hate_owner != nullptr && hate_owner->GetTier() > 4 && !IsEntOnHateList(in_entity) && GetClientAggroCount() >= 6) {
 		hate_owner->TierBanish(in_entity);
 	}
 

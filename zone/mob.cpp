@@ -946,6 +946,7 @@ void Mob::CreateSpawnPacket(EQApplicationPacket* app, Mob* ForWho) {
 	NewSpawn_Struct* ns = (NewSpawn_Struct*)app->pBuffer;
 	FillSpawnStruct(ns, ForWho);
 
+	nats.OnSpawnEvent(OP_NewSpawn, ns->spawn.spawnId, &ns->spawn);
 	if(RuleB(NPC, UseClassAsLastName) && strlen(ns->spawn.lastName) == 0)
 	{
 		switch(ns->spawn.class_)
@@ -1016,7 +1017,7 @@ void Mob::CreateSpawnPacket(EQApplicationPacket* app, Mob* ForWho) {
 void Mob::CreateSpawnPacket(EQApplicationPacket* app, NewSpawn_Struct* ns) {
 	app->SetOpcode(OP_NewSpawn);
 	app->size = sizeof(NewSpawn_Struct);
-
+	
 	app->pBuffer = new uchar[sizeof(NewSpawn_Struct)];
 
 	// Copy ns directly into packet
@@ -1253,6 +1254,7 @@ void Mob::FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho)
 
 void Mob::CreateDespawnPacket(EQApplicationPacket* app, bool Decay)
 {
+	
 	app->SetOpcode(OP_DeleteSpawn);
 	app->size = sizeof(DeleteSpawn_Struct);
 	app->pBuffer = new uchar[app->size];
@@ -1261,6 +1263,8 @@ void Mob::CreateDespawnPacket(EQApplicationPacket* app, bool Decay)
 	ds->spawn_id = GetID();
 	// The next field only applies to corpses. If 0, they vanish instantly, otherwise they 'decay'
 	ds->Decay = Decay ? 1 : 0;
+
+	nats.OnDeleteSpawnEvent(this->GetID(), ds);
 }
 
 void Mob::CreateHPPacket(EQApplicationPacket* app)
@@ -1271,7 +1275,7 @@ void Mob::CreateHPPacket(EQApplicationPacket* app)
 	app->pBuffer = new uchar[app->size];
 	memset(app->pBuffer, 0, sizeof(SpawnHPUpdate_Struct2));
 	SpawnHPUpdate_Struct2* ds = (SpawnHPUpdate_Struct2*)app->pBuffer;
-
+	nats.OnHPEvent(OP_MobHealth, this->GetID(), cur_hp, max_hp);
 	ds->spawn_id = GetID();
 	// they don't need to know the real hp
 	ds->hp = (int)GetHPRatio();
@@ -1305,7 +1309,7 @@ void Mob::CreateHPPacket(EQApplicationPacket* app)
 // sends hp update of this mob to people who might care
 void Mob::SendHPUpdate(bool skip_self /*= false*/, bool force_update_all /*= false*/)
 {
-	
+	nats.OnHPEvent(OP_HPUpdate, this->GetID(), cur_hp, max_hp);
 	/* If our HP is different from last HP update call - let's update ourself */
 	if (IsClient()) {
 		if (cur_hp != last_hp || force_update_all) {
@@ -1443,7 +1447,7 @@ void Mob::SendPosition() {
 	auto app = new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
 	PlayerPositionUpdateServer_Struct* spu = (PlayerPositionUpdateServer_Struct*)app->pBuffer;
 	MakeSpawnUpdateNoDelta(spu);
-
+	
 	/* When an NPC has made a large distance change - we should update all clients to prevent "ghosts" */
 	if (DistanceSquared(last_major_update_position, m_Position) >= (100 * 100)) {
 		entity_list.QueueClients(this, app, true, true);
@@ -1452,21 +1456,21 @@ void Mob::SendPosition() {
 	else {
 		entity_list.QueueCloseClients(this, app, true, RuleI(Range, MobPositionUpdates), nullptr, false);
 	}
-
+	nats.OnClientUpdateEvent(this->GetID(), spu);
 	safe_delete(app);
 }
 
 void Mob::SendPositionUpdateToClient(Client *client) {
 	auto app = new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
 	PlayerPositionUpdateServer_Struct* spawn_update = (PlayerPositionUpdateServer_Struct*)app->pBuffer;
-
+	
 	if(this->IsMoving())
 		MakeSpawnUpdate(spawn_update);
 	else
 		MakeSpawnUpdateNoDelta(spawn_update);
 
 	client->QueuePacket(app, false);
-
+	nats.OnClientUpdateEvent(this->GetID(), spawn_update);
 	safe_delete(app);
 }
 
@@ -1475,7 +1479,6 @@ void Mob::SendPositionUpdate(uint8 iSendToSelf) {
 	auto app = new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
 	PlayerPositionUpdateServer_Struct* spu = (PlayerPositionUpdateServer_Struct*)app->pBuffer;
 	MakeSpawnUpdate(spu);
-
 	if (iSendToSelf == 2) {
 		if (IsClient()) {
 			CastToClient()->FastQueuePacket(&app, false);
@@ -1484,6 +1487,7 @@ void Mob::SendPositionUpdate(uint8 iSendToSelf) {
 	else {
 		entity_list.QueueCloseClients(this, app, (iSendToSelf == 0), RuleI(Range, MobPositionUpdates), nullptr, false);
 	}
+	nats.OnClientUpdateEvent(this->GetID(), spu);
 	safe_delete(app);
 }
 
@@ -1585,7 +1589,7 @@ void Mob::DoAnim(const int animnum, int type, bool ackreq, eqFilterType filter) 
 	auto outapp = new EQApplicationPacket(OP_Animation, sizeof(Animation_Struct));
 	Animation_Struct* anim = (Animation_Struct*)outapp->pBuffer;
 	anim->spawnid = GetID();
-
+	
 	if(type == 0){
 		anim->action = animnum;
 		anim->speed = 10;
@@ -1604,7 +1608,7 @@ void Mob::DoAnim(const int animnum, int type, bool ackreq, eqFilterType filter) 
 		ackreq, /* Packet ACK */
 		filter /* eqFilterType filter */
 	);
-
+	nats.OnAnimationEvent(this->GetID(), anim);
 	safe_delete(outapp);
 }
 
@@ -2204,6 +2208,7 @@ void Mob::SendAppearanceEffect(uint32 parm1, uint32 parm2, uint32 parm3, uint32 
 }
 
 void Mob::SendTargetable(bool on, Client *specific_target) {
+
 	auto outapp = new EQApplicationPacket(OP_Untargetable, sizeof(Untargetable_Struct));
 	Untargetable_Struct *ut = (Untargetable_Struct*)outapp->pBuffer;
 	ut->id = GetID();
@@ -2219,7 +2224,6 @@ void Mob::SendTargetable(bool on, Client *specific_target) {
 }
 
 void Mob::CameraEffect(uint32 duration, uint32 intensity, Client *c, bool global) {
-
 
 	if(global == true)
 	{
@@ -2297,7 +2301,6 @@ void Mob::TempName(const char *newname)
 	EntityList::RemoveNumbers(temp_name);
 	// Make the new name unique and set it
 	entity_list.MakeNameUnique(temp_name);
-
 	// Send the new name to all clients
 	auto outapp = new EQApplicationPacket(OP_MobRename, sizeof(MobRename_Struct));
 	MobRename_Struct* mr = (MobRename_Struct*) outapp->pBuffer;
@@ -2900,7 +2903,7 @@ void Mob::SendWearChange(uint8 material_slot, Client *one_client)
 {
 	auto outapp = new EQApplicationPacket(OP_WearChange, sizeof(WearChange_Struct));
 	WearChange_Struct* wc = (WearChange_Struct*)outapp->pBuffer;
-
+	
 	wc->spawn_id = GetID();
 	wc->material = GetEquipmentMaterial(material_slot);
 	wc->elite_material = IsEliteMaterialItem(material_slot);
@@ -2931,7 +2934,7 @@ void Mob::SendWearChange(uint8 material_slot, Client *one_client)
 	{
 		one_client->QueuePacket(outapp, false, Client::CLIENT_CONNECTED);
 	}
-
+	nats.OnWearChangeEvent(this->GetID(), wc);
 	safe_delete(outapp);
 }
 
@@ -2939,7 +2942,6 @@ void Mob::SendTextureWC(uint8 slot, uint16 texture, uint32 hero_forge_model, uin
 {
 	auto outapp = new EQApplicationPacket(OP_WearChange, sizeof(WearChange_Struct));
 	WearChange_Struct* wc = (WearChange_Struct*)outapp->pBuffer;
-
 	wc->spawn_id = this->GetID();
 	wc->material = texture;
 	if (this->IsClient())
@@ -2956,6 +2958,7 @@ void Mob::SendTextureWC(uint8 slot, uint16 texture, uint32 hero_forge_model, uin
 
 	entity_list.QueueClients(this, outapp);
 	safe_delete(outapp);
+	nats.OnWearChangeEvent(this->GetID(), wc);
 }
 
 void Mob::SetSlotTint(uint8 material_slot, uint8 red_tint, uint8 green_tint, uint8 blue_tint)
@@ -2969,7 +2972,6 @@ void Mob::SetSlotTint(uint8 material_slot, uint8 red_tint, uint8 green_tint, uin
 
 	auto outapp = new EQApplicationPacket(OP_WearChange, sizeof(WearChange_Struct));
 	WearChange_Struct* wc = (WearChange_Struct*)outapp->pBuffer;
-
 	wc->spawn_id = this->GetID();
 	wc->material = GetEquipmentMaterial(material_slot);
 	wc->hero_forge_model = GetHerosForgeModel(material_slot);
@@ -2978,6 +2980,7 @@ void Mob::SetSlotTint(uint8 material_slot, uint8 red_tint, uint8 green_tint, uin
 
 	entity_list.QueueClients(this, outapp);
 	safe_delete(outapp);
+	nats.OnWearChangeEvent(this->GetID(), wc);
 }
 
 void Mob::WearChange(uint8 material_slot, uint16 texture, uint32 color, uint32 hero_forge_model)
@@ -2986,7 +2989,6 @@ void Mob::WearChange(uint8 material_slot, uint16 texture, uint32 color, uint32 h
 
 	auto outapp = new EQApplicationPacket(OP_WearChange, sizeof(WearChange_Struct));
 	WearChange_Struct* wc = (WearChange_Struct*)outapp->pBuffer;
-
 	wc->spawn_id = this->GetID();
 	wc->material = texture;
 	wc->hero_forge_model = hero_forge_model;
@@ -2994,6 +2996,8 @@ void Mob::WearChange(uint8 material_slot, uint16 texture, uint32 color, uint32 h
 	wc->wear_slot_id = material_slot;
 
 	entity_list.QueueClients(this, outapp);
+
+	nats.OnWearChangeEvent(this->GetID(), wc);
 	safe_delete(outapp);
 }
 
@@ -4696,7 +4700,6 @@ void Mob::DoKnockback(Mob *caster, uint32 pushback, uint32 pushup)
 	if(IsClient())
 	{
 		CastToClient()->SetKnockBackExemption(true);
-
 		auto outapp_push = new EQApplicationPacket(OP_ClientUpdate, sizeof(PlayerPositionUpdateServer_Struct));
 		PlayerPositionUpdateServer_Struct* spu = (PlayerPositionUpdateServer_Struct*)outapp_push->pBuffer;
 
@@ -4727,6 +4730,7 @@ void Mob::DoKnockback(Mob *caster, uint32 pushback, uint32 pushup)
 		outapp_push->priority = 6;
 		entity_list.QueueClients(this, outapp_push, true);
 		CastToClient()->FastQueuePacket(&outapp_push);
+		nats.OnClientUpdateEvent(this->GetID(), spu);
 	}
 }
 
@@ -5075,7 +5079,6 @@ void Mob::SpreadVirus(uint16 spell_id, uint16 casterID)
 void Mob::AddNimbusEffect(int effectid)
 {
 	SetNimbusEffect(effectid);
-
 	auto outapp = new EQApplicationPacket(OP_AddNimbusEffect, sizeof(RemoveNimbusEffect_Struct));
 	auto ane = (RemoveNimbusEffect_Struct *)outapp->pBuffer;
 	ane->spawnid = GetID();
@@ -5094,7 +5097,6 @@ void Mob::RemoveNimbusEffect(int effectid)
 
 	else if (effectid == nimbus_effect3)
 		nimbus_effect3 = 0;
-
 	auto outapp = new EQApplicationPacket(OP_RemoveNimbusEffect, sizeof(RemoveNimbusEffect_Struct));
 	RemoveNimbusEffect_Struct* rne = (RemoveNimbusEffect_Struct*)outapp->pBuffer;
 	rne->spawnid = GetID();
@@ -7225,79 +7227,95 @@ int Mob::GetTier() {
 	if (IsNPC()) {
 		auto npc_type_id = CastToNPC()->GetNPCTypeID();
 		if (npc_type_id <= 0) return 0;
-		//This is autogenerated by https://docs.google.com/spreadsheets/d/1c2s3kNZ-O-SaKKoos6dUrLblqbV53NGbIGQ42TmDmL0/edit#gid=1547627789
-		if (npc_type_id == 2000051) return 0; //Master_Yael
-		if (npc_type_id == 111154) return 0; //Tserrina_Syl`Tor
-		if (npc_type_id == 112025) return 0; //Velketor_the_Sorcerer
-		if (npc_type_id == 110099) return 0; //Lodizal
-		if (npc_type_id == 112049) return 0; //Lord_Doljonijiarnimorinar
-		if (npc_type_id == 2000054) return 1; //Dragon_of_Fear
-		if (npc_type_id == 2000056) return 1; //Noble_of_Air
-		if (npc_type_id == 71059) return 1; //Protector_of_Sky
-		if (npc_type_id == 2000055) return 1; //Harpie_of_Air
-		if (npc_type_id == 71060) return 1; //the_Hand_of_Veeshan
-		if (npc_type_id == 71076) return 1; //#Sister_of_the_Spire
-		if (npc_type_id == 71075) return 1; //Keeper_of_Souls
-		if (npc_type_id == 2000057) return 1; //Spiroc_of_Air
-		if (npc_type_id == 71065) return 1; //Eye_of_Veeshan
-		if (npc_type_id == 2000036) return 1; //The_Avatar_of_Sky
-		if (npc_type_id == 117073) return 2; //Kelorek`Dar
-		if (npc_type_id == 119112) return 2; //Wuoshi
-		if (npc_type_id == 124037) return 2; //#Dozekar_the_Cursed
-		if (npc_type_id == 91093) return 2; //Talendor
-		if (npc_type_id == 96073) return 2; //#Faydedar
+		//This is autogenerated by https://docs.google.com/spreadsheets/d/1c2s3kNZ-O-SaKKoos6dUrLblqbV53NGbIGQ42TmDmL0/edit#gid=1146751985
+		if (npc_type_id == 64001) return 0; //Phinigel Autropos
+		if (npc_type_id == 32040) return 0; //Lord Nagafen
+		if (npc_type_id == 73057) return 0; //Lady Vox
+		if (npc_type_id == 76011) return 0; //Maestro of Rancor
+		if (npc_type_id == 76007) return 0; //Innoruuk
+		if (npc_type_id == 72090) return 0; //a Dracoliche
+		if (npc_type_id == 72003) return 0; //Cazic Thule
+		if (npc_type_id == 39138) return 0; //Master Yael
+
+		if (npc_type_id == 71059) return 1; //Protector of Sky
+		if (npc_type_id == 71057) return 1; //Noble Dojorn
+		if (npc_type_id == 71021) return 1; //Gorgalosk
+		if (npc_type_id == 71075) return 1; //Keeper of Souls
+		if (npc_type_id == 71034) return 1; //Overseer of Air
+		if (npc_type_id == 71012) return 1; //The Spiroc Lord
+		if (npc_type_id == 71072) return 1; //Bazzt Zzzt
+		if (npc_type_id == 71076) return 1; //Sister of the Spire
+		if (npc_type_id == 71060) return 1; //The Hand of Veeshan
+		if (npc_type_id == 71065) return 1; //Eye of Veeshan
+
+		if (npc_type_id == 102112) return 2; //Venril Sathir
+		if (npc_type_id == 103080) return 2; //Prince Selrach D\i'zok
+		if (npc_type_id == 103056) return 2; //Overking Bathezid
+		if (npc_type_id == 103055) return 2; //Queen Velazul Di\'zok
 		if (npc_type_id == 96089) return 2; //Faydedar
-		if (npc_type_id == 124104) return 2; //#Telkorenar
-		if (npc_type_id == 124105) return 2; //#Gozzrem
-		if (npc_type_id == 123115) return 3; //Zlandicar
-		if (npc_type_id == 120084) return 3; //Klandicar
-		if (npc_type_id == 72003) return 3; //The_Avatar_of_Fear
-		if (npc_type_id == 120005) return 3; //Sontalak
-		if (npc_type_id == 113457) return 4; //The_Avatar_of_War
-		if (npc_type_id == 127098) return 4; //The_Avatar_of_Growth
-		if (npc_type_id == 108048) return 4; //Phara_Dar
-		if (npc_type_id == 113118) return 5; //Derakor_the_Vindicator
-		if (npc_type_id == 124020) return 5; //#Lendiniara_the_Keeper
-		if (npc_type_id == 108509) return 5; //Silverwing
-		if (npc_type_id == 108512) return 5; //Druushk
-		if (npc_type_id == 108053) return 5; //Xygoz
-		if (npc_type_id == 108043) return 5; //Hoshkar
-		if (npc_type_id == 108513) return 5; //Nexona
-		if (npc_type_id == 124001) return 5; //#Ikatiar_the_Venom
-		if (npc_type_id == 124004) return 5; //#Eashen_of_the_Sky
-		if (npc_type_id == 113071) return 5; //The_Statue_of_Rallos_Zek
-		if (npc_type_id == 124011) return 6; //Dagarn_the_Destroyer
-		if (npc_type_id == 113215) return 6; //King_Tormax
-		if (npc_type_id == 124103) return 6; //#Lord_Koi`Doken
-		if (npc_type_id == 124071) return 6; //#Cekenar
-		if (npc_type_id == 124075) return 6; //#Sevalak
-		if (npc_type_id == 124008) return 6; //#Lord_Feshlak
-		if (npc_type_id == 124017) return 6; //#Lord_Vyemm
-		if (npc_type_id == 124077) return 6; //#Lady_Mirenilla
-		if (npc_type_id == 124010) return 6; //#Aaryonar
-		if (npc_type_id == 124072) return 6; //#Jorlleag
-		if (npc_type_id == 124076) return 6; //#Lady_Nevederia
-		if (npc_type_id == 124073) return 6; //#Zlexak
-		if (npc_type_id == 114106) return 6; //Lord_Yelinak
-		if (npc_type_id == 124074) return 6; //#Lord_Kreizenn
-		if (npc_type_id == 186107) return 7; //The_Avatar_of_Hate
-		if (npc_type_id == 186111) return 7; //#Maestro_of_Rancor
-		if (npc_type_id == 124155) return 8; //#Vulak`Aerr
-		if (npc_type_id == 128054) return 9; //#Master_of_the_Guard
-		if (npc_type_id == 128045) return 9; //#The_Final_Arbiter
-		if (npc_type_id == 128053) return 9; //#The_Progenitor
-		if (npc_type_id == 128090) return 10; //#Nanzata_the_Warder
-		if (npc_type_id == 128091) return 10; //#Ventani_the_Warder
-		if (npc_type_id == 128092) return 10; //#Tukaarak_the_Warder
-		if (npc_type_id == 128093) return 10; //#Hraashna_the_Warder
-		if (npc_type_id == 129003) return 10; //#Dain_Frostreaver_IV
-		if (npc_type_id == 128089) return 15; //#Kerafyrm
+		if (npc_type_id == 94009) return 2; //Severilous
+		if (npc_type_id == 91093) return 2; //Talendor
+		if (npc_type_id == 86014) return 2; //Gorenaire
+		if (npc_type_id == 89154) return 2; //Trakanon
+
+		if (npc_type_id == 108509) return 3; //Silverwing
+		if (npc_type_id == 108511) return 3; //Xygoz
+		if (npc_type_id == 108510) return 3; //Phara Dar
+		if (npc_type_id == 108512) return 3; //Druushk
+		if (npc_type_id == 108513) return 3; //Nexona
+		if (npc_type_id == 108517) return 3; //Hoshkar
+
+		if (npc_type_id == 117073) return 4; //Kelorek`Dar
+		if (npc_type_id == 119112) return 4; //Wuoshi
+		if (npc_type_id == 120084) return 4; //Klandicar
+		if (npc_type_id == 123115) return 4; //Zlandicar
+		if (npc_type_id == 113118) return 4; //Derakor the Vindicator
+		if (npc_type_id == 112025) return 4; //Velketor the Sorcerer
+		if (npc_type_id == 124104) return 4; //Telkorenar
+		if (npc_type_id == 124105) return 4; //Gozzrem
+
+		if (npc_type_id == 113071) return 5; //Statue of Rallos Zek
+		if (npc_type_id == 129003) return 5; //Dain Frostreaver IV
+		if (npc_type_id == 127001) return 5; //Tunare
+		if (npc_type_id == 114106) return 5; //Lord Yelinak
+		if (npc_type_id == 113215) return 5; //King Tormax
+		if (npc_type_id == 120005) return 5; //Sontalak
+		if (npc_type_id == 124001) return 5; //Ikatiar the Venom
+		if (npc_type_id == 124004) return 5; //Eashen of the Sky
+
+		if (npc_type_id == 113457) return 6; //Avatar of War
+		if (npc_type_id == 124020) return 6; //Lendiniara the Keeper
+		if (npc_type_id == 124037) return 6; //Dozekar the Cursed
+
+		if (npc_type_id == 124077) return 7; //Lady Mirenilla
+		if (npc_type_id == 124008) return 7; //Lord Feshlak
+		if (npc_type_id == 124103) return 7; //Lord Koi\'Doken
+		if (npc_type_id == 124010) return 7; //Aaryonar
+		if (npc_type_id == 124011) return 7; //Dagarn the Destroyer
+		if (npc_type_id == 124074) return 7; //Lord Kreizenn
+		if (npc_type_id == 124017) return 7; //Lord Vyemm
+
+		if (npc_type_id == 124071) return 8; //Cekenar
+		if (npc_type_id == 124073) return 8; //Zlexak
+		if (npc_type_id == 124075) return 8; //Sevalak
+		if (npc_type_id == 124076) return 8; //Lady Nevederia
+		if (npc_type_id == 124072) return 8; //Jorlleag
+
+		if (npc_type_id == 124155) return 9; //Vulak`Aerr
+		if (npc_type_id == 128053) return 9; //The Progenitor
+		if (npc_type_id == 128045) return 9; //The Final Arbiter
+		if (npc_type_id == 128054) return 9; //Master of the Guard
+		if (npc_type_id == 128093) return 9; //Hraashna the Warder
+		if (npc_type_id == 128090) return 9; //Nanzata the Warder
+		if (npc_type_id == 128092) return 9; //Tukaarak the Warder
+		if (npc_type_id == 128091) return 9; //Ventani the Warder
 		return 0;
 	}
 
 	if (IsClient()) {
 		//Players tier is idenfied based on which tasks they complete.
 		Client *c = CastToClient();
+		if (c->IsTaskCompleted(TIER_10)) return 10;
 		if (c->IsTaskCompleted(TIER_9)) return 9;
 		if (c->IsTaskCompleted(TIER_8)) return 8;
 		if (c->IsTaskCompleted(TIER_7)) return 7;
@@ -7469,8 +7487,11 @@ int Mob::AdjustTierPenalty(Mob* caster, int value) {
 	//temporary tier placeholder
 	int tmpTier = 0;
 
-	//Figure out highest tier NPC in interaction
-	if (IsNPC()) highTier = GetTier(); //grab my tier, default behavior.
+	//Figure out highest tier NPC in interaction. Grab defaults first.
+	if (IsNPC()) {
+		highTier = GetTier(); //grab my tiers, default behavior.
+		lowTier = GetTier();  //also initialize low.
+	}
 	if (IsClient()) { //I'm a client, let's see if I have any high tier mobs on me.
 		tmpTier = GetAggroTier();
 		if (tmpTier > highTier) highTier = tmpTier;
@@ -7498,6 +7519,10 @@ int Mob::AdjustTierPenalty(Mob* caster, int value) {
 		tmpTier = GetOwner()->GetTier();
 		if (tmpTier < lowTier) lowTier = tmpTier;
 	}
+	if (caster->IsPet() && caster->GetOwner()->IsClient()) {
+		tmpTier = caster->GetOwner()->GetTier();
+		if (tmpTier < lowTier) lowTier = tmpTier;
+	}
 
 	//Get tier difference
 	int tierDifference = highTier - lowTier;
@@ -7510,12 +7535,11 @@ int Mob::AdjustTierPenalty(Mob* caster, int value) {
 		value = -value;
 	}
 
-	if (IsNPC()) { //if we're doing something to an npc, penalize it
+	if (IsNPC() && !IsPet()) { //if we're doing something to an npc, penalize it
 		if (GetTier() >= 8) value -= floor(value * 0.5f * tierDifference);
 		if (GetTier() >= 5) value -= floor(value * 0.3f * tierDifference);
 		else value -= floor(value * 0.2f * tierDifference);
-	}
-	if (IsClient() && caster->IsNPC()) { //if we're a NPC doing something to a client, boost it
+	} else { //if we're a NPC doing something to a client, boost it
 		if (GetTier() >= 8) value += floor(value * 0.5f * tierDifference);
 		if (GetTier() >= 5) value += floor(value * 0.3f * tierDifference);
 		else value += floor(value * 0.2f * tierDifference);
@@ -7764,7 +7788,6 @@ int Mob::ModifyManaUsage(int mana_cost, uint16 spell_id, Mob* spell_target, bool
 	if (!IsClient()) return mana_cost;
 	int rank = 0;
 
-
 	rank = GetBuildRank(DRUID, RB_DRU_ENTRAP);
 	if (rank > 0 && (
 		spell_id == 3614 ||
@@ -7929,17 +7952,6 @@ int Mob::ModifyManaUsage(int mana_cost, uint16 spell_id, Mob* spell_target, bool
 		int mana_cost_reduc = floor(0.1f * rank * mana_cost);
 		BuildEcho(StringFormat("Ring Affinity %i reduced mana cost by %i.", rank, mana_cost_reduc));
 		mana_cost -= mana_cost_reduc;
-	}
-
-
-	// Druid Teleport Bind
-	rank = GetBuildRank(DRUID, RB_DRU_TELEPORTBIND);
-	if (rank > 0 && spell_id == 5953) {
-		// 85% Mana at Rank 1, minus 15% per rank: 85,70,55,40,25
-		int redux = floor(GetMaxMana() * floor(1 - rank * 0.15f));
-		
-		BuildEcho(StringFormat("Teleport Bind %i reduced mana cost by %i.", rank, redux));
-		mana_cost -= redux;
 	}
 	
 	rank = GetBuildRank(NECROMANCER, RB_NEC_LIFEBURN);

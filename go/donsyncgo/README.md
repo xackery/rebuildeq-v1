@@ -1,0 +1,1 @@
+donsyncgo is a project that syncronized the LDON merchants in game with information based on the spreadsheet. I believe this was a one time run, kept for posterity in case we need to run it again at some point.

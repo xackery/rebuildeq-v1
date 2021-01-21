@@ -2,5 +2,5 @@
 client: rof
 
  #Prefix for downloading patch files
-downloadprefix: http://rebuildeq.com/patch/
+downloadprefix: https://raw.githubusercontent.com/rebuildeq/rebuildeq/master/
 

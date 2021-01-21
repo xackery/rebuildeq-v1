@@ -12,6 +12,7 @@
 #include <vector>
 #include <zlib.h>
 
+namespace EQEmu {
 
 uint32 EstimateDeflateBuffer(uint32_t len) {
 	z_stream zstream;
@@ -1174,3 +1175,4 @@ bool Map::SaveMMF(const std::string& map_file_name, bool force_mmf_overwrite)
 }
 
 #endif /*USE_MAP_MMFS*/
+}

@@ -1,0 +1,1 @@
+DiscordNATS is discordeq built specifically for rebuildeq. We likely should move this away from a forked project and try to get all it's features combined into discordeq at some point, and have the options toggle-able.. especially after NATS is merged to master.

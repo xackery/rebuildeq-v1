@@ -10,7 +10,7 @@ import (
 
 	"github.com/go-yaml/yaml"
 	"github.com/golang/protobuf/proto"
-	"github.com/nats-io/go-nats"
+	"github.com/nats-io/nats.go"
 	"github.com/robfig/cron"
 	"github.com/xackery/eqemuconfig"
 	"github.com/xackery/rebuildeq/go/discordnats/discord"
@@ -76,8 +76,14 @@ func connectNATS(config *eqemuconfig.Config) (err error) {
 	if nc != nil {
 		return
 	}
-	if nc, err = nats.Connect(nats.DefaultURL); err != nil {
-		log.Fatal(err)
+	if config.NATS.Host != "" && config.NATS.Port != "" {
+		if nc, err = nats.Connect(fmt.Sprintf("nats://%s:%s", config.NATS.Host, config.NATS.Port)); err != nil {
+			log.Fatal(err)
+		}
+	} else {
+		if nc, err = nats.Connect(nats.DefaultURL); err != nil {
+			log.Fatal(err)
+		}
 	}
 	log.Printf("[NATS] Connected\n")
 	return

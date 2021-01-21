@@ -1,0 +1,64 @@
+version: '3'
+services:
+  mariadb:
+    image: "bitnami/mariadb:latest"
+    volumes:
+      - ./docker/db:/bitnami/mariadb
+    environment:
+   #   MARIADB_ROOT_PASSWORD: rootpass
+      MARIADB_DATABASE: eqemu
+      MARIADB_USER: eqemu
+      MARIADB_PASSWORD: eqemupass
+      ALLOW_EMPTY_PASSWORD: "yes"
+    ports:
+      - "3306:3306"
+    expose:
+      - "3306"
+ #   network_mode: "bridge" 
+  eqemu:
+   stdin_open: true
+   build: ./docker/eqemu/.
+   volumes:
+     - "./deploy/server:/eqemu"
+   links:
+     - mariadb
+     - web
+     - nats
+   depends_on:
+     - mariadb
+     - nats
+   ports:
+     - "5998-5999:5998-5999/udp"
+     - "7000-7100:7000-7100/udp"
+     - "9000:9000/udp"
+     - "9001:9001"
+     - "9080:9080"
+   expose:
+     - "5998-5999/udp"
+     - "7000-7100/udp"
+     - "9000/udp"
+     - "9080/udp"
+  web:
+    stdin_open: true
+    build: ./docker/web/.
+    volumes:
+      - "./deploy/web:/var/www"
+      - "./deploy/hugo:/var/hugo"
+    links:
+      - mariadb
+      - nats
+    depends_on:
+      - mariadb
+      - nats
+    ports:
+      - "80:80"
+  nats:
+     image: "nats:latest"
+     ports:
+       - "4222:4222"
+       - "6222:6222"
+       - "8222:8222"
+     expose:
+       - "4222/tcp"
+       - "6222/tcp"
+       - "8222/tcp"

@@ -1614,7 +1614,7 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 		rb_rank = GetBuildRank(DRUID, RB_DRU_NATURESBLIGHT);
 		if (rb_rank > 0) { spellid = 6237; cooldown = 120 - (10 * rb_rank); }
 		rb_rank = GetBuildRank(MONK, RB_MNK_GRACEOFTHEORDER);
-		if (rb_rank > 0) { spellid = 6237; cooldown = 360 - (30 * rb_rank); }
+		if (rb_rank > 0) { spellid = 6238; cooldown = 360 - (30 * rb_rank); }
 		rb_rank = GetBuildRank(NECROMANCER, RB_NEC_SERVANTOFBLOOD);
 		if (rb_rank > 0) { spellid = 6242; cooldown = 360 - (30 * rb_rank); }
 		rb_rank = GetBuildRank(PALADIN, RB_PAL_FLAMESOFREDEMPTION);
@@ -1630,6 +1630,9 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 		if(rb_rank) {
 			cooldown = rank->recast_time - (rb_rank * 2);
 		}
+		
+	} else if (rank_id == aaPurifyBody) {
+		cooldown = 5;  //bring this in parity with Paladin
 	}
 
 	manacost = ModifyManaUsage(manacost, spellid, GetTarget(), false);

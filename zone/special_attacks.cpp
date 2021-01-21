@@ -625,7 +625,7 @@ void Mob::RogueBackstab(Mob* other, bool min_damage, int ReuseTime)
 	if (rank > 0) {
 		int vitalDmg = floor(base_damage * 0.1f * rank);
 		if (vitalDmg > 0) {
-			BuildEcho(StringFormat("Vital Organs %i added %i damage to backstab.", rank, vitalDmg));
+			BuildEcho(StringFormat("Vital Organs %i added %i base damage to backstab prior to hit checks.", rank, vitalDmg));
 			base_damage += vitalDmg;
 		}
 	}

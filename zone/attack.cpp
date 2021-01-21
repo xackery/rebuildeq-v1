@@ -2364,10 +2364,7 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQEmu::skills::Skil
 {
 	Log(Logs::Detail, Logs::Combat, "Fatal blow dealt by %s with %d damage, spell %d, skill %d",
 		((killer_mob) ? (killer_mob->GetName()) : ("[nullptr]")), damage, spell, attack_skill);
-
-	//Shin: On death, see if anyone is on hate list that causes a trigger on death
-	hate_list.OnDeathTrigger();
-	
+		
 	Mob *oos = nullptr;
 	if (killer_mob) {
 		oos = killer_mob->GetOwnerOrSelf();
@@ -2416,6 +2413,9 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQEmu::skills::Skil
 
 	SetHP(0);
 	SetPet(0);
+	
+	//Shin: On death, see if anyone is on hate list that causes a trigger on death
+	hate_list.OnDeathTrigger();
 
 	if (GetSwarmOwner()) {
 		Mob* owner = entity_list.GetMobID(GetSwarmOwner());
@@ -2444,8 +2444,10 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQEmu::skills::Skil
 		safe_delete(outapp);
 	}
 
+	
 	auto app = new EQApplicationPacket(OP_Death, sizeof(Death_Struct));
 	Death_Struct* d = (Death_Struct*)app->pBuffer;
+	
 	d->spawn_id = GetID();
 	d->killer_id = killer_mob ? killer_mob->GetID() : 0;
 	d->bindzoneid = 0;
@@ -2454,9 +2456,8 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQEmu::skills::Skil
 	d->damage = damage;
 	app->priority = 6;
 	entity_list.QueueClients(killer_mob, app, false);
-
 	safe_delete(app);
-
+	nats.OnDeathEvent(d);
 	if (respawn2) {
 		respawn2->DeathReset(1);
 	}
@@ -3281,6 +3282,7 @@ void Mob::DamageShield(Mob* attacker, bool spell_ds) {
 		cds->damage = DS;
 		entity_list.QueueCloseClients(this, outapp);
 		safe_delete(outapp);
+		nats.OnDamageEvent(cds->source, cds);
 	} else if (DS > 0 && !spell_ds) {
 		//we are healing the attacker...
 		attacker->HealDamage(DS);
@@ -4244,9 +4246,11 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 
 
 		//final damage has been determined.
+		int32 pre_hit_hp;
 		damage = AdjustTierPenalty(attacker, damage);
 		entity_list.LogHPEvent(attacker, this, -damage);
-		SetHP(GetHP() - damage);
+		pre_hit_hp = GetHP();
+		SetHP(pre_hit_hp - damage);
 
 		if (HasDied()) {
 			bool IsSaved = false;
@@ -4303,12 +4307,10 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 				can_stun = true;
 			}
 
-			if ((GetBaseRace() == OGRE || GetBaseRace() == OGGOK_CITIZEN) &&
+			if ((GetBaseRace() == OGRE || GetBaseRace() == OGGOK_CITIZEN || (IsClient() && CastToClient()->IsTaskCompleted(FEAT_FRONTSTUN))) &&
 				!attacker->BehindMob(this, attacker->GetX(), attacker->GetY()))
 				can_stun = false;
 			if (GetSpecialAbility(UNSTUNABLE))
-				can_stun = false;
-			if (IsClient() && CastToClient()->IsTaskCompleted(FEAT_FRONTSTUN)) 
 				can_stun = false;
 		}
 		if (can_stun) {
@@ -4518,7 +4520,8 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 				CastToClient()->QueuePacket(outapp);
 			}
 		}
-
+		
+		nats.OnDamageEvent(a->source, a);
 		safe_delete(outapp);
 	}
 	else {
@@ -5113,6 +5116,10 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 			CastToClient()->sneaking = false; //Disable sneak
 			CastToClient()->SendAppearancePacket(AT_Sneak, 0);
 		}
+
+		rank = CastToClient()->GetBuildRank(PALADIN, RB_PAL_DISMISSEVIL);  //simplify, move up to before we actually check crit chance
+		if (rank > 0 && (defender->GetBodyType() == BT_Undead || defender->GetBodyType() == BT_Vampire)) 
+			crit_chance += rank;
 	}
 
 	// we have a chance to crit!
@@ -5157,12 +5164,6 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 			Log(Logs::Detail, Logs::Combat,
 				"Crit success roll %d dex chance %d og dmg %d crit_mod %d new dmg %d", roll, dex_bonus,
 				og_damage, crit_mod, hit.damage_done);
-
-			if ((defender->GetBodyType() == BT_Undead || 
-				defender->GetBodyType() == BT_Vampire) && 
-				IsClient() && CastToClient()->GetBuildRank(PALADIN, RB_PAL_DISMISSEVIL) > 0) {
-				crit_chance += CastToClient()->GetBuildRank(PALADIN, RB_PAL_DISMISSEVIL);
-			}
 
 			// step 3: check deadly strike
 			if (GetClass() == ROGUE && hit.skill == EQEmu::skills::SkillThrowing) {

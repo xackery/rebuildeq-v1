@@ -1,0 +1,5 @@
+UPDATE `eqemu`.`activities` SET `goalid` = '108517' WHERE (`taskid` = '504') and (`activityid` = '5');
+UPDATE `eqemu`.`activities` SET `goalid` = '108513' WHERE (`taskid` = '504') and (`activityid` = '4');
+UPDATE `eqemu`.`activities` SET `goalid` = '108510' WHERE (`taskid` = '504') and (`activityid` = '2');
+UPDATE `eqemu`.`activities` SET `goalid` = '108509' WHERE (`taskid` = '504') and (`activityid` = '0');
+UPDATE `eqemu`.`activities` SET `goalid` = '108511' WHERE (`taskid` = '504') and (`activityid` = '1');

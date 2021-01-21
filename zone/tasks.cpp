@@ -1885,13 +1885,8 @@ void ClientTaskState::IncrementDoneCount(Client *c, TaskInformation* Task, int T
 			taskmanager->SendCompletedTasksToClient(c, this);
 			c->SendTaskActivityComplete(ActiveTasks[TaskIndex].TaskID, 0, TaskIndex, false);
 			taskmanager->SaveClientState(c, this);
-			//c->SendTaskComplete(TaskIndex);
-			c->CancelTask(TaskIndex);
-			//if(Task->RewardMethod != METHODQUEST) RewardTask(c, Task);
-			// If Experience and/or cash rewards are set, reward them from the task even if RewardMethod is METHODQUEST
 			RewardTask(c, Task);
-			//RemoveTask(c, TaskIndex);
-			if (TaskIndex == FEAT_PETDISCIPLINE) {
+			if (ActiveTasks[TaskIndex].TaskID == FEAT_PETDISCIPLINE) {
 				c->SetAA(aaPetDiscipline, 1, 0);
 				c->SaveAA();
 				c->SendAlternateAdvancementPoints();
@@ -1900,7 +1895,7 @@ void ClientTaskState::IncrementDoneCount(Client *c, TaskInformation* Task, int T
 				
 				c->Message(15, "You have been granted the pet discipline AA!");
 			}
-			if (TaskIndex == FEAT_INNATERUNSPEED) {
+			if (ActiveTasks[TaskIndex].TaskID == FEAT_INNATERUNSPEED) {
 				c->SetAA(aaInnateRunSpeed, 3, 0);
 				c->SaveAA();
 				c->SendAlternateAdvancementPoints();
@@ -1910,15 +1905,7 @@ void ClientTaskState::IncrementDoneCount(Client *c, TaskInformation* Task, int T
 				c->Message(15, "You have been granted an AA!");
 			}
 
-			if (TaskIndex == FEAT_CHARMOFDEFENSE && c->IsValidItem(100045)) {
-				c->Message(15, "You have obtained the Charm of Defense! Use #feats to summon a new copy if you ever need another.");
-				c->SummonItem(100045);				
-			}
-
-			if (TaskIndex == FEAT_CHARMOFMANA && c->IsValidItem(100088)) {
-				c->Message(15, "You have obtained the Charm of Mana! Use #feats to summon a new copy if you ever need another.");
-				c->SummonItem(100045);
-			}
+			c->CancelTask(TaskIndex);
 		}
 
 	}
