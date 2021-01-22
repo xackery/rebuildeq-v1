@@ -80,6 +80,11 @@ Lua_NPC Lua_EntityList::GetNPCByNPCTypeID(int npc_type) {
 	return Lua_NPC(self->GetNPCByNPCTypeID(npc_type));
 }
 
+Lua_NPC Lua_EntityList::GetNPCBySpawnID(uint32 spawn_id) {
+	Lua_Safe_Call_Class(Lua_NPC);
+	return Lua_NPC(self->GetNPCBySpawnID(spawn_id));
+}
+
 Lua_Client Lua_EntityList::GetClientByName(const char *name) {
 	Lua_Safe_Call_Class(Lua_Client);
 	return Lua_Client(self->GetClientByName(name));
@@ -231,7 +236,7 @@ void Lua_EntityList::ReplaceWithTarget(Lua_Mob target, Lua_Mob new_target) {
 	self->ReplaceWithTarget(target, new_target);
 }
 
-void Lua_EntityList::OpenDoorsNear(Lua_NPC opener) {
+void Lua_EntityList::OpenDoorsNear(Lua_Mob opener) {
 	Lua_Safe_Call_Void();
 	self->OpenDoorsNear(opener);
 }
@@ -340,6 +345,22 @@ Lua_Client_List Lua_EntityList::GetClientList() {
 	return ret;
 }
 
+Lua_Client_List Lua_EntityList::GetShuffledClientList() {
+	Lua_Safe_Call_Class(Lua_Client_List);
+	Lua_Client_List ret;
+	auto &t_list = self->GetClientList();
+
+	auto iter = t_list.begin();
+	while(iter != t_list.end()) {
+		ret.entries.push_back(Lua_Client(iter->second));
+		++iter;
+	}
+
+	zone->random.Shuffle(ret.entries.begin(), ret.entries.end());
+
+	return ret;
+}
+
 Lua_NPC_List Lua_EntityList::GetNPCList() {
 	Lua_Safe_Call_Class(Lua_NPC_List);
 	Lua_NPC_List ret;
@@ -433,6 +454,7 @@ luabind::scope lua_register_entity_list() {
 		.def("IsMobSpawnedByNpcTypeID", (bool(Lua_EntityList::*)(int))&Lua_EntityList::IsMobSpawnedByNpcTypeID)
 		.def("GetNPCByID", (Lua_NPC(Lua_EntityList::*)(int))&Lua_EntityList::GetNPCByID)
 		.def("GetNPCByNPCTypeID", (Lua_NPC(Lua_EntityList::*)(int))&Lua_EntityList::GetNPCByNPCTypeID)
+		.def("GetNPCBySpawnID", (Lua_NPC(Lua_EntityList::*)(int))&Lua_EntityList::GetNPCBySpawnID)
 		.def("GetClientByName", (Lua_Client(Lua_EntityList::*)(const char*))&Lua_EntityList::GetClientByName)
 		.def("GetClientByAccID", (Lua_Client(Lua_EntityList::*)(uint32))&Lua_EntityList::GetClientByAccID)
 		.def("GetClientByID", (Lua_Client(Lua_EntityList::*)(int))&Lua_EntityList::GetClientByID)
@@ -463,7 +485,7 @@ luabind::scope lua_register_entity_list() {
 		.def("RemoveFromTargets", (void(Lua_EntityList::*)(Lua_Mob))&Lua_EntityList::RemoveFromTargets)
 		.def("RemoveFromTargets", (void(Lua_EntityList::*)(Lua_Mob, bool))&Lua_EntityList::RemoveFromTargets)
 		.def("ReplaceWithTarget", (void(Lua_EntityList::*)(Lua_Mob, Lua_Mob))&Lua_EntityList::ReplaceWithTarget)
-		.def("OpenDoorsNear", (void(Lua_EntityList::*)(Lua_NPC))&Lua_EntityList::OpenDoorsNear)
+		.def("OpenDoorsNear", (void(Lua_EntityList::*)(Lua_Mob))&Lua_EntityList::OpenDoorsNear)
 		.def("MakeNameUnique", (std::string(Lua_EntityList::*)(const char*))&Lua_EntityList::MakeNameUnique)
 		.def("RemoveNumbers", (std::string(Lua_EntityList::*)(const char*))&Lua_EntityList::RemoveNumbers)
 		.def("SignalMobsByNPCID", (void(Lua_EntityList::*)(uint32, int))&Lua_EntityList::SignalMobsByNPCID)
@@ -480,6 +502,7 @@ luabind::scope lua_register_entity_list() {
 		.def("GetRandomClient", (Lua_Client(Lua_EntityList::*)(float, float, float, float, Lua_Client))&Lua_EntityList::GetRandomClient)
 		.def("GetMobList", (Lua_Mob_List(Lua_EntityList::*)(void))&Lua_EntityList::GetMobList)
 		.def("GetClientList", (Lua_Client_List(Lua_EntityList::*)(void))&Lua_EntityList::GetClientList)
+		.def("GetShuffledClientList", (Lua_Client_List(Lua_EntityList::*)(void))&Lua_EntityList::GetShuffledClientList)
 		.def("GetNPCList", (Lua_NPC_List(Lua_EntityList::*)(void))&Lua_EntityList::GetNPCList)
 		.def("GetCorpseList", (Lua_Corpse_List(Lua_EntityList::*)(void))&Lua_EntityList::GetCorpseList)
 		.def("GetObjectList", (Lua_Object_List(Lua_EntityList::*)(void))&Lua_EntityList::GetObjectList)

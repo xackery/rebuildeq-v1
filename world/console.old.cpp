@@ -88,7 +88,7 @@ void Console::Die() {
 	state = CONSOLE_STATE_CLOSED;
 	struct in_addr in;
 	in.s_addr = GetIP();
-	Log(Logs::Detail, Logs::World_Server,"Removing console from %s:%d",inet_ntoa(in),GetPort());
+	LogInfo("Removing console from [{}]:[{}]",inet_ntoa(in),GetPort());
 	tcpc->Disconnect();
 }
 
@@ -219,7 +219,7 @@ bool Console::Process() {
 	if (!tcpc->Connected()) {
 		struct in_addr in;
 		in.s_addr = GetIP();
-		Log(Logs::Detail, Logs::World_Server,"Removing console (!tcpc->Connected) from %s:%d",inet_ntoa(in),GetPort());
+		LogInfo("Removing console (!tcpc->Connected) from [{}]:[{}]",inet_ntoa(in),GetPort());
 		return false;
 	}
 	//if we have not gotten the special markers after this timer, send login prompt
@@ -230,7 +230,7 @@ bool Console::Process() {
 		std::string connecting_ip = inet_ntoa(in);
 
 		SendMessage(2, StringFormat("Establishing connection from IP: %s Port: %d", inet_ntoa(in), GetPort()).c_str());
-		
+
 		if (connecting_ip.find("127.0.0.1") != std::string::npos) {
 			SendMessage(2, StringFormat("Connecting established from local host, auto assuming admin").c_str());
 			state = CONSOLE_STATE_CONNECTED;
@@ -244,7 +244,7 @@ bool Console::Process() {
 		}
 
 		prompt_timer.Disable();
-			
+
 	}
 
 	if (timeout_timer.Check()) {
@@ -252,7 +252,7 @@ bool Console::Process() {
 		SendMessage(1, "Timeout, disconnecting...");
 		struct in_addr in;
 		in.s_addr = GetIP();
-		Log(Logs::Detail, Logs::World_Server,"TCP connection timeout from %s:%d",inet_ntoa(in),GetPort());
+		LogInfo("TCP connection timeout from [{}]:[{}]",inet_ntoa(in),GetPort());
 		return false;
 	}
 
@@ -261,29 +261,29 @@ bool Console::Process() {
 		in.s_addr = GetIP();
 		if(tcpc->GetPacketMode() == EmuTCPConnection::packetModeZone) {
 			auto zs = new ZoneServer(tcpc);
-			Log(Logs::Detail, Logs::World_Server,"New zoneserver #%d from %s:%d", zs->GetID(), inet_ntoa(in), GetPort());
+			LogInfo("New zoneserver #[{}] from [{}]:[{}]", zs->GetID(), inet_ntoa(in), GetPort());
 			zoneserver_list.Add(zs);
 			numzones++;
 			tcpc = 0;
 		} else if(tcpc->GetPacketMode() == EmuTCPConnection::packetModeLauncher) {
-			Log(Logs::Detail, Logs::World_Server,"New launcher from %s:%d", inet_ntoa(in), GetPort());
+			LogInfo("New launcher from [{}]:[{}]", inet_ntoa(in), GetPort());
 			launcher_list.Add(tcpc);
 			tcpc = 0;
-		} 
+		}
 		else if(tcpc->GetPacketMode() == EmuTCPConnection::packetModeUCS)
 		{
-			Log(Logs::Detail, Logs::World_Server,"New UCS Connection from %s:%d", inet_ntoa(in), GetPort());
+			LogInfo("New UCS Connection from [{}]:[{}]", inet_ntoa(in), GetPort());
 			UCSLink.SetConnection(tcpc);
 			tcpc = 0;
 		}
 		else if(tcpc->GetPacketMode() == EmuTCPConnection::packetModeQueryServ)
 		{
-			Log(Logs::Detail, Logs::World_Server,"New QS Connection from %s:%d", inet_ntoa(in), GetPort());
+			LogInfo("New QS Connection from [{}]:[{}]", inet_ntoa(in), GetPort());
 			QSLink.SetConnection(tcpc);
 			tcpc = 0;
-		}  
+		}
 		else {
-			Log(Logs::Detail, Logs::World_Server,"Unsupported packet mode from %s:%d", inet_ntoa(in), GetPort());
+			LogInfo("Unsupported packet mode from [{}]:[{}]", inet_ntoa(in), GetPort());
 		}
 		return false;
 	}
@@ -440,7 +440,7 @@ void Console::ProcessCommand(const char* command) {
 				state = CONSOLE_STATE_CLOSED;
 				return;
 			}
-			Log(Logs::Detail, Logs::World_Server,"TCP console authenticated: Username=%s, Admin=%d",paccountname,admin);
+			LogInfo("TCP console authenticated: Username=[{}], Admin=[{}]",paccountname,admin);
 			SendMessage(1, 0);
 			SendMessage(2, "Login accepted.");
 			state = CONSOLE_STATE_CONNECTED;
@@ -616,7 +616,7 @@ void Console::ProcessCommand(const char* command) {
 				if(sep.arg[1][0]==0 || sep.arg[2][0] == 0)
 					SendMessage(1, "Usage: movechar [charactername] [zonename]");
 				else {
-					if (!database.GetZoneID(sep.arg[2]))
+					if (!ZoneID(sep.arg[2]))
 						SendMessage(1, "Error: Zone '%s' not found", sep.arg[2]);
 					else if (!database.CheckUsedName((char*) sep.arg[1])) {
 						if (!database.MoveCharacterToZone((char*) sep.arg[1], (char*) sep.arg[2]))
@@ -711,13 +711,13 @@ void Console::ProcessCommand(const char* command) {
 					if (sep.arg[1][0] >= '0' && sep.arg[1][0] <= '9')
 						s->ZoneServerID = atoi(sep.arg[1]);
 					else
-						s->zoneid = database.GetZoneID(sep.arg[1]);
+						s->zoneid = ZoneID(sep.arg[1]);
 
 					ZoneServer* zs = 0;
 					if (s->ZoneServerID != 0)
 						zs = zoneserver_list.FindByID(s->ZoneServerID);
 					else if (s->zoneid != 0)
-						zs = zoneserver_list.FindByName(database.GetZoneName(s->zoneid));
+						zs = zoneserver_list.FindByName(ZoneName(s->zoneid));
 					else
 						SendMessage(1, "Error: ZoneShutdown: neither ID nor name specified");
 
@@ -737,7 +737,7 @@ void Console::ProcessCommand(const char* command) {
 					tmpname[0] = '*';
 					strcpy(&tmpname[1], paccountname);
 
-					Log(Logs::Detail, Logs::World_Server,"Console ZoneBootup: %s, %s, %s",tmpname,sep.arg[2],sep.arg[1]);
+					LogInfo("Console ZoneBootup: [{}], [{}], [{}]",tmpname,sep.arg[2],sep.arg[1]);
 					zoneserver_list.SOPZoneBootup(tmpname, atoi(sep.arg[1]), sep.arg[2], (bool) (strcasecmp(sep.arg[3], "static") == 0));
 				}
 			}
@@ -821,17 +821,17 @@ void Console::ProcessCommand(const char* command) {
 				#endif
 				RunLoops = true;
 				SendMessage(1, "  Login Server Reconnect manually restarted by Console");
-				Log(Logs::Detail, Logs::World_Server,"Login Server Reconnect manually restarted by Console");
+				LogInfo("Login Server Reconnect manually restarted by Console");
 			}
 			else if (strcasecmp(sep.arg[0], "zonelock") == 0 && admin >= consoleZoneStatus) {
 				if (strcasecmp(sep.arg[1], "list") == 0) {
 					zoneserver_list.ListLockedZones(0, this);
 				}
 				else if (strcasecmp(sep.arg[1], "lock") == 0 && admin >= 101) {
-					uint16 tmp = database.GetZoneID(sep.arg[2]);
+					uint16 tmp = ZoneID(sep.arg[2]);
 					if (tmp) {
 						if (zoneserver_list.SetLockedZone(tmp, true))
-							zoneserver_list.SendEmoteMessage(0, 0, 80, 15, "Zone locked: %s", database.GetZoneName(tmp));
+							zoneserver_list.SendEmoteMessage(0, 0, 80, 15, "Zone locked: %s", ZoneName(tmp));
 						else
 							SendMessage(1, "Failed to change lock");
 					}
@@ -839,10 +839,10 @@ void Console::ProcessCommand(const char* command) {
 						SendMessage(1, "Usage: #zonelock lock [zonename]");
 				}
 				else if (strcasecmp(sep.arg[1], "unlock") == 0 && admin >= 101) {
-					uint16 tmp = database.GetZoneID(sep.arg[2]);
+					uint16 tmp = ZoneID(sep.arg[2]);
 					if (tmp) {
 						if (zoneserver_list.SetLockedZone(tmp, false))
-							zoneserver_list.SendEmoteMessage(0, 0, 80, 15, "Zone unlocked: %s", database.GetZoneName(tmp));
+							zoneserver_list.SendEmoteMessage(0, 0, 80, 15, "Zone unlocked: %s", ZoneName(tmp));
 						else
 							SendMessage(1, "Failed to change lock");
 					}

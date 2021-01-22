@@ -1,5 +1,0 @@
-command_settings
-launcher
-rule_sets
-rule_values
-variables

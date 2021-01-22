@@ -70,21 +70,22 @@ int main() {
 	// Check every minute for unused channels we can delete
 	//
 	Timer ChannelListProcessTimer(60000);
+	Timer ClientConnectionPruneTimer(60000);
 
 	Timer InterserverTimer(INTERSERVER_TIMER); // does auto-reconnect
 
-	Log(Logs::General, Logs::UCS_Server, "Starting EQEmu Universal Chat Server.");
+	LogInfo("Starting EQEmu Universal Chat Server");
 
-	if (!ucsconfig::LoadConfig()) { 
-		Log(Logs::General, Logs::UCS_Server, "Loading server configuration failed."); 
+	if (!ucsconfig::LoadConfig()) {
+		LogInfo("Loading server configuration failed");
 		return 1;
 	}
 
-	Config = ucsconfig::get(); 
+	Config = ucsconfig::get();
 
 	WorldShortName = Config->ShortName;
 
-	Log(Logs::General, Logs::UCS_Server, "Connecting to MySQL...");
+	LogInfo("Connecting to MySQL");
 
 	if (!database.Connect(
 		Config->DatabaseHost.c_str(),
@@ -92,7 +93,7 @@ int main() {
 		Config->DatabasePassword.c_str(),
 		Config->DatabaseDB.c_str(),
 		Config->DatabasePort)) {
-		Log(Logs::General, Logs::UCS_Server, "Cannot continue without a database connection.");
+		LogInfo("Cannot continue without a database connection");
 		return 1;
 	}
 
@@ -102,24 +103,28 @@ int main() {
 
 	char tmp[64];
 
+	// ucs has no 'reload rules' handler
 	if (database.GetVariable("RuleSet", tmp, sizeof(tmp)-1)) {
-		Log(Logs::General, Logs::UCS_Server, "Loading rule set '%s'", tmp);
-		if(!RuleManager::Instance()->LoadRules(&database, tmp)) {
-			Log(Logs::General, Logs::UCS_Server, "Failed to load ruleset '%s', falling back to defaults.", tmp);
+		LogInfo("Loading rule set [{}]", tmp);
+		if(!RuleManager::Instance()->LoadRules(&database, tmp, false)) {
+			LogInfo("Failed to load ruleset [{}], falling back to defaults", tmp);
 		}
 	} else {
-		if(!RuleManager::Instance()->LoadRules(&database, "default")) {
-			Log(Logs::General, Logs::UCS_Server, "No rule set configured, using default rules");
+		if(!RuleManager::Instance()->LoadRules(&database, "default", false)) {
+			LogInfo("No rule set configured, using default rules");
 		} else {
-			Log(Logs::General, Logs::UCS_Server, "Loaded default rule set 'default'", tmp);
+			LogInfo("Loaded default rule set 'default'", tmp);
 		}
 	}
+
+	EQ::InitializeDynamicLookups();
+	LogInfo("Initialized dynamic dictionary entries");
 
 	database.ExpireMail();
 
 	if(Config->ChatPort != Config->MailPort)
 	{
-		Log(Logs::General, Logs::UCS_Server, "MailPort and CharPort must be the same in eqemu_config.xml for UCS.");
+		LogInfo("MailPort and CharPort must be the same in eqemu_config.json for UCS");
 		exit(1);
 	}
 
@@ -130,29 +135,36 @@ int main() {
 	database.LoadChatChannels();
 
 	if (signal(SIGINT, CatchSignal) == SIG_ERR)	{
-		Log(Logs::General, Logs::UCS_Server, "Could not set signal handler");
+		LogInfo("Could not set signal handler");
 		return 1;
 	}
 	if (signal(SIGTERM, CatchSignal) == SIG_ERR)	{
-		Log(Logs::General, Logs::UCS_Server, "Could not set signal handler");
+		LogInfo("Could not set signal handler");
 		return 1;
 	}
 
 	worldserver = new WorldServer;
 
-	while(RunLoops) {
+	auto loop_fn = [&](EQ::Timer* t) {
 
 		Timer::SetCurrentTime();
 
 		g_Clientlist->Process();
 
-		if(ChannelListProcessTimer.Check())
+		if (ChannelListProcessTimer.Check()) {
 			ChannelList->Process();
+		}
 
-		EQ::EventLoop::Get().Process();
+		if (ClientConnectionPruneTimer.Check()) {
+			g_Clientlist->CheckForStaleConnectionsAll();
+		}
 
-		Sleep(5);
-	}
+	};
+
+	EQ::Timer process_timer(loop_fn);
+	process_timer.Start(32, true);
+
+	EQ::EventLoop::Get().Run();
 
 	ChannelList->RemoveAllChannels();
 

@@ -32,15 +32,15 @@
 //
 #define VARSTRUCT_DECODE_TYPE(Type, Buffer) *(Type *)Buffer; Buffer += sizeof(Type);
 #define VARSTRUCT_DECODE_STRING(String, Buffer) strcpy(String, Buffer); Buffer += strlen(String)+1;
-#define VARSTRUCT_ENCODE_STRING(Buffer, String) { sprintf(Buffer, "%s", String); Buffer += strlen(String) + 1; }
-#define VARSTRUCT_ENCODE_INTSTRING(Buffer, Number) { sprintf(Buffer, "%i", Number); Buffer += strlen(Buffer) + 1; }
+#define VARSTRUCT_ENCODE_STRING(Buffer, String) { int length = sprintf(Buffer, "%s", String); Buffer += length + 1; }
+#define VARSTRUCT_ENCODE_INTSTRING(Buffer, Number) { int length = sprintf(Buffer, "%i", Number); Buffer += length + 1; }
 #define VARSTRUCT_ENCODE_TYPE(Type, Buffer, Value) { *(Type *)Buffer = Value; Buffer += sizeof(Type); }
 #define VARSTRUCT_SKIP_TYPE(Type, Buffer) Buffer += sizeof(Type);
 
 #define VERIFY_PACKET_LENGTH(OPCode, Packet, StructName) \
 	if(Packet->size != sizeof(StructName)) \
 	{ \
-		Log(Logs::Detail, Logs::Netcode, "Size mismatch in " #OPCode " expected %i got %i", sizeof(StructName), Packet->size); \
+		LogNetcode("Size mismatch in " #OPCode " expected [{}] got [{}]", sizeof(StructName), Packet->size); \
 		DumpPacket(Packet); \
 		return; \
 	}
@@ -73,7 +73,7 @@ uint32 SwapBits21And22(uint32 mask);
 uint32 Catch22(uint32 mask);
 
 // macro to catch fp errors (provided by noudness)
-#define FCMP(a,b) (fabs(a-b) < FLT_EPSILON)
+#define FCMP(a,b) (std::abs(a-b) < FLT_EPSILON)
 
 #define _ITOA_BUFLEN	25
 const char *itoa(int num);	//not thread safe
@@ -85,29 +85,6 @@ class InitWinsock {
 public:
 	InitWinsock();
 	~InitWinsock();
-};
-
-template<class T> class AutoDelete {
-public:
-	AutoDelete(T** iVar, T* iSetTo = 0) {
-		init(iVar, iSetTo);
-	}
-	AutoDelete() { pVar = nullptr; }
-	void init(T** iVar, T* iSetTo = 0)
-	{
-		pVar = iVar;
-		if (iSetTo)
-			*pVar = iSetTo;
-	}
-	~AutoDelete() {
-		if(pVar != nullptr)
-			safe_delete(*pVar);
-	}
-	void ReallyClearIt() {
-		pVar = nullptr;
-	}
-private:
-	T** pVar;
 };
 
 #endif

@@ -48,7 +48,7 @@ Copyright (C) 2001-2004 EQEMu Development Team (http://eqemulator.net)
 class Client;
 class Mob;
 
-namespace EQEmu
+namespace EQ
 {
 	class ItemInstance;
 }
@@ -114,15 +114,15 @@ struct ActivityInformation {
 	TaskMethodType GoalMethod;
 	int		GoalCount;
 	int		DeliverToNPC;
-    std::vector<int>	ZoneIDs;
+	std::vector<int>	ZoneIDs;
 	std::string zones; // IDs ; searated, ZoneID is the first in this list for older clients -- default empty string
 	bool	Optional;
 
-    inline bool CheckZone(int zone_id) {
-        if (ZoneIDs.empty())
-            return true;
-        return std::find(ZoneIDs.begin(), ZoneIDs.end(), zone_id) != ZoneIDs.end();
-    }
+	inline bool CheckZone(int zone_id) {
+		if (ZoneIDs.empty())
+			return true;
+		return std::find(ZoneIDs.begin(), ZoneIDs.end(), zone_id) != ZoneIDs.end();
+	}
 };
 
 typedef enum { ActivitiesSequential = 0, ActivitiesStepped = 1 } SequenceType;
@@ -216,12 +216,13 @@ public:
 	void CancelTask(Client *c, int SequenceNumber, TaskType type, bool RemoveFromDB = true);
 	void CancelAllTasks(Client *c);
 	void RemoveTask(Client *c, int SequenceNumber, TaskType type);
+	void RemoveTaskByTaskID(Client *c, uint32 task_id);
 	bool UpdateTasksByNPC(Client *c, int ActivityType, int NPCTypeID);
 	void UpdateTasksOnKill(Client *c, int NPCTypeID);
 	void UpdateTasksForItem(Client *c, ActivityType Type, int ItemID, int Count=1);
 	void UpdateTasksOnExplore(Client *c, int ExploreID);
 	bool UpdateTasksOnSpeakWith(Client *c, int NPCTypeID);
-	bool UpdateTasksOnDeliver(Client *c, std::list<EQEmu::ItemInstance*>& Items, int Cash, int NPCTypeID);
+	bool UpdateTasksOnDeliver(Client *c, std::list<EQ::ItemInstance*>& Items, int Cash, int NPCTypeID);
 	void UpdateTasksOnTouch(Client *c, int ZoneID);
 	void ProcessTaskProximities(Client *c, float X, float Y, float Z);
 	bool TaskOutOfTime(TaskType type, int Index);
@@ -236,10 +237,11 @@ public:
 	int ActiveSpeakActivity(int NPCID, int TaskID);
 	int ActiveTasksInSet(int TaskSetID);
 	int CompletedTasksInSet(int TaskSetID);
-    bool HasSlotForTask(TaskInformation *task);
-    inline bool HasFreeTaskSlot() { return ActiveTask.TaskID == TASKSLOTEMPTY; }
+	bool HasSlotForTask(TaskInformation *task);
 
-    friend class TaskManager;
+	inline bool HasFreeTaskSlot() { return ActiveTask.TaskID == TASKSLOTEMPTY; }
+
+	friend class TaskManager;
 
 private:
 	bool UnlockActivities(int CharID, ClientTaskInformation &task_info);
@@ -297,8 +299,10 @@ public:
 	bool AppropriateLevel(int TaskID, int PlayerLevel);
 	int GetTaskMinLevel(int TaskID);
 	int GetTaskMaxLevel(int TaskID);
+	std::string GetTaskName(uint32 task_id);
+	TaskType GetTaskType(uint32 task_id);
 	void TaskSetSelector(Client *c, ClientTaskState *state, Mob *mob, int TaskSetID);
-    void TaskQuestSetSelector(Client *c, ClientTaskState *state, Mob *mob, int count, int *tasks); // task list provided by QuestManager (perl/lua)
+	void TaskQuestSetSelector(Client *c, ClientTaskState *state, Mob *mob, int count, int *tasks); // task list provided by QuestManager (perl/lua)
 	void SendActiveTasksToClient(Client *c, bool TaskComplete=false);
 	void SendSingleActiveTaskToClient(Client *c, ClientTaskInformation &task_info, bool TaskComplete, bool BringUpTaskJournal = false);
 	void SendTaskActivityShort(Client *c, int TaskID, int ActivityID, int ClientTaskIndex);

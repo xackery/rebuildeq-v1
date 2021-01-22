@@ -66,7 +66,7 @@ void Client::ToggleTribute(bool enabled) {
 		int r;
 		uint32 cost = 0;
 		uint32 level = GetLevel();
-		for (r = 0; r < EQEmu::invtype::TRIBUTE_SIZE; r++) {
+		for (r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
 			uint32 tid = m_pp.tributes[r].tribute;
 			if(tid == TRIBUTE_NONE)
 				continue;
@@ -93,7 +93,7 @@ void Client::ToggleTribute(bool enabled) {
 		}
 
 		if(cost > m_pp.tribute_points) {
-			Message(13, "You do not have enough tribute points to activate your tribute!");
+			Message(Chat::Red, "You do not have enough tribute points to activate your tribute!");
 			ToggleTribute(false);
 			return;
 		}
@@ -119,7 +119,7 @@ void Client::DoTributeUpdate() {
 	tis->tribute_master_id = tribute_master_id;	//Dont know what this is for
 
 	int r;
-	for (r = 0; r < EQEmu::invtype::TRIBUTE_SIZE; r++) {
+	for (r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
 		if(m_pp.tributes[r].tribute != TRIBUTE_NONE) {
 			tis->tributes[r] = m_pp.tributes[r].tribute;
 			tis->tiers[r] = m_pp.tributes[r].tier;
@@ -134,24 +134,24 @@ void Client::DoTributeUpdate() {
 
 	if(m_pp.tribute_active) {
 		//send and equip tribute items...
-		for (r = 0; r < EQEmu::invtype::TRIBUTE_SIZE; r++) {
+		for (r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
 			uint32 tid = m_pp.tributes[r].tribute;
 			if(tid == TRIBUTE_NONE) {
-				if (m_inv[EQEmu::invslot::TRIBUTE_BEGIN + r])
-					DeleteItemInInventory(EQEmu::invslot::TRIBUTE_BEGIN + r, 0, false);
+				if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
+					DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
 				continue;
 			}
 
 			if(tribute_list.count(tid) != 1) {
-				if (m_inv[EQEmu::invslot::TRIBUTE_BEGIN + r])
-					DeleteItemInInventory(EQEmu::invslot::TRIBUTE_BEGIN + r, 0, false);
+				if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
+					DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
 				continue;
 			}
 
 			//sanity check
 			if(m_pp.tributes[r].tier >= MAX_TRIBUTE_TIERS) {
-				if (m_inv[EQEmu::invslot::TRIBUTE_BEGIN + r])
-					DeleteItemInInventory(EQEmu::invslot::TRIBUTE_BEGIN + r, 0, false);
+				if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
+					DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
 				m_pp.tributes[r].tier = 0;
 				continue;
 			}
@@ -161,19 +161,19 @@ void Client::DoTributeUpdate() {
 			uint32 item_id = tier.tribute_item_id;
 
 			//summon the item for them
-			const EQEmu::ItemInstance* inst = database.CreateItem(item_id, 1);
+			const EQ::ItemInstance* inst = database.CreateItem(item_id, 1);
 			if(inst == nullptr)
 				continue;
 
-			PutItemInInventory(EQEmu::invslot::TRIBUTE_BEGIN + r, *inst, false);
-			SendItemPacket(EQEmu::invslot::TRIBUTE_BEGIN + r, inst, ItemPacketTributeItem);
+			PutItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, *inst, false);
+			SendItemPacket(EQ::invslot::TRIBUTE_BEGIN + r, inst, ItemPacketTributeItem);
 			safe_delete(inst);
 		}
 	} else {
 		//unequip tribute items...
-		for (r = 0; r < EQEmu::invtype::TRIBUTE_SIZE; r++) {
-			if (m_inv[EQEmu::invslot::TRIBUTE_BEGIN + r])
-				DeleteItemInInventory(EQEmu::invslot::TRIBUTE_BEGIN + r, 0, false);
+		for (r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
+			if (m_inv[EQ::invslot::TRIBUTE_BEGIN + r])
+				DeleteItemInInventory(EQ::invslot::TRIBUTE_BEGIN + r, 0, false);
 		}
 	}
 	CalcBonuses();
@@ -192,7 +192,7 @@ void Client::SendTributeTimer() {
 
 void Client::ChangeTributeSettings(TributeInfo_Struct *t) {
 	int r;
-	for (r = 0; r < EQEmu::invtype::TRIBUTE_SIZE; r++) {
+	for (r = 0; r < EQ::invtype::TRIBUTE_SIZE; r++) {
 
 		m_pp.tributes[r].tribute = TRIBUTE_NONE;
 
@@ -220,7 +220,7 @@ void Client::ChangeTributeSettings(TributeInfo_Struct *t) {
 
 void Client::SendTributeDetails(uint32 client_id, uint32 tribute_id) {
 	if(tribute_list.count(tribute_id) != 1) {
-		Log(Logs::General, Logs::Error, "Details request for invalid tribute %lu", (unsigned long)tribute_id);
+		LogError("Details request for invalid tribute [{}]", (unsigned long)tribute_id);
 		return;
 	}
 	TributeData &td = tribute_list[tribute_id];
@@ -239,7 +239,7 @@ void Client::SendTributeDetails(uint32 client_id, uint32 tribute_id) {
 
 //returns the number of points received from the tribute
 int32 Client::TributeItem(uint32 slot, uint32 quantity) {
-	const EQEmu::ItemInstance*inst = m_inv[slot];
+	const EQ::ItemInstance*inst = m_inv[slot];
 
 	if(inst == nullptr)
 		return(0);
@@ -250,7 +250,7 @@ int32 Client::TributeItem(uint32 slot, uint32 quantity) {
 	pts = mod_tribute_item_value(pts, m_inv[slot]);
 
 	if(pts < 1) {
-		Message(13, "This item is worthless for favor.");
+		Message(Chat::Red, "This item is worthless for favor.");
 		return(0);
 	}
 
@@ -277,7 +277,7 @@ int32 Client::TributeItem(uint32 slot, uint32 quantity) {
 //returns the number of points received from the tribute
 int32 Client::TributeMoney(uint32 platinum) {
 	if(!TakeMoneyFromPP(platinum * 1000)) {
-		Message(13, "You do not have that much money!");
+		Message(Chat::Red, "You do not have that much money!");
 		return(0);
 	}
 
@@ -409,28 +409,28 @@ bool ZoneDatabase::LoadTributes() {
 		return false;
 	}
 
-    for (auto row = results.begin(); row != results.end(); ++row) {
-        uint32 id = atoul(row[0]);
+	for (auto row = results.begin(); row != results.end(); ++row) {
+		uint32 id = atoul(row[0]);
 
-        if(tribute_list.count(id) != 1) {
-            Log(Logs::General, Logs::Error, "Error in LoadTributes: unknown tribute %lu in tribute_levels", (unsigned long)id);
-            continue;
-        }
+		if (tribute_list.count(id) != 1) {
+			LogError("Error in LoadTributes: unknown tribute [{}] in tribute_levels", (unsigned long) id);
+			continue;
+		}
 
-        TributeData &cur = tribute_list[id];
+		TributeData &cur = tribute_list[id];
 
-        if(cur.tier_count >= MAX_TRIBUTE_TIERS) {
-            Log(Logs::General, Logs::Error, "Error in LoadTributes: on tribute %lu: more tiers defined than permitted", (unsigned long)id);
-            continue;
-        }
+		if (cur.tier_count >= MAX_TRIBUTE_TIERS) {
+			LogError("Error in LoadTributes: on tribute [{}]: more tiers defined than permitted", (unsigned long) id);
+			continue;
+		}
 
-        TributeLevel_Struct &s = cur.tiers[cur.tier_count];
+		TributeLevel_Struct &s = cur.tiers[cur.tier_count];
 
-        s.level = atoul(row[1]);
-        s.cost = atoul(row[2]);
-        s.tribute_item_id = atoul(row[3]);
-        cur.tier_count++;
-    }
+		s.level           = atoul(row[1]);
+		s.cost            = atoul(row[2]);
+		s.tribute_item_id = atoul(row[3]);
+		cur.tier_count++;
+	}
 
 	return true;
 }

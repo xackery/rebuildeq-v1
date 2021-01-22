@@ -31,7 +31,14 @@ namespace UF
 	const int16 INULL = 0;
 
 	namespace inventory {
-		inline EQEmu::versions::ClientVersion GetInventoryRef() { return EQEmu::versions::ClientVersion::UF; }
+		inline EQ::versions::ClientVersion GetInventoryRef() { return EQ::versions::ClientVersion::UF; }
+
+		const bool ConcatenateInvTypeLimbo = true;
+
+		const bool AllowOverLevelEquipment = true;
+
+		const bool AllowEmptyBagInBag = false;
+		const bool AllowClickCastFromBag = false;
 
 		const bool ConcatenateInvTypeLimbo = true;
 
@@ -43,7 +50,7 @@ namespace UF
 	} /*inventory*/
 
 	namespace invtype {
-		inline EQEmu::versions::ClientVersion GetInvTypeRef() { return EQEmu::versions::ClientVersion::UF; }
+		inline EQ::versions::ClientVersion GetInvTypeRef() { return EQ::versions::ClientVersion::UF; }
 
 		namespace enum_ {
 			enum InventoryTypes : int16 {
@@ -106,7 +113,7 @@ namespace UF
 	} /*invtype*/
 
 	namespace invslot {
-		inline EQEmu::versions::ClientVersion GetInvSlotRef() { return EQEmu::versions::ClientVersion::UF; }
+		inline EQ::versions::ClientVersion GetInvSlotRef() { return EQ::versions::ClientVersion::UF; }
 
 		namespace enum_ {
 			enum InventorySlots : int16 {
@@ -150,6 +157,8 @@ namespace UF
 		const int16 SLOT_INVALID = IINVALID;
 		const int16 SLOT_BEGIN = INULL;
 
+		const int16 SLOT_TRADESKILL_EXPERIMENT_COMBINE = 1000;
+
 		const int16 POSSESSIONS_BEGIN = slotCharm;
 		const int16 POSSESSIONS_END = slotCursor;
 		const int16 POSSESSIONS_COUNT = (POSSESSIONS_END - POSSESSIONS_BEGIN) + 1;
@@ -189,8 +198,12 @@ namespace UF
 		const int16 CORPSE_BEGIN = invslot::slotGeneral1;
 		const int16 CORPSE_END = invslot::slotGeneral1 + invslot::slotCursor;
 
-		const uint64 POSSESSIONS_BITMASK = 0x000000027FFFFFFF; // based on 34-slot count (RoF+)
-		const uint64 CORPSE_BITMASK = 0x01FFFFFE7F800000; // based on 34-slot count (RoF+)
+		const uint64 EQUIPMENT_BITMASK = 0x00000000007FFFFF;
+		const uint64 GENERAL_BITMASK = 0x000000007F800000;
+		const uint64 CURSOR_BITMASK = 0x0000000200000000;
+		const uint64 POSSESSIONS_BITMASK = (EQUIPMENT_BITMASK | GENERAL_BITMASK | CURSOR_BITMASK); // based on 34-slot count (RoF+)
+		const uint64 CORPSE_BITMASK = (GENERAL_BITMASK | CURSOR_BITMASK | (EQUIPMENT_BITMASK << 34)); // based on 34-slot count (RoF+)
+		
 
 		const char* GetInvPossessionsSlotName(int16 inv_slot);
 		const char* GetInvCorpseSlotName(int16 inv_slot);
@@ -199,7 +212,7 @@ namespace UF
 	} /*invslot*/
 
 	namespace invbag {
-		inline EQEmu::versions::ClientVersion GetInvBagRef() { return EQEmu::versions::ClientVersion::UF; }
+		inline EQ::versions::ClientVersion GetInvBagRef() { return EQ::versions::ClientVersion::UF; }
 
 		const int16 SLOT_INVALID = IINVALID;
 		const int16 SLOT_BEGIN = INULL;
@@ -231,7 +244,7 @@ namespace UF
 	} /*invbag*/
 
 	namespace invaug {
-		inline EQEmu::versions::ClientVersion GetInvAugRef() { return EQEmu::versions::ClientVersion::UF; }
+		inline EQ::versions::ClientVersion GetInvAugRef() { return EQ::versions::ClientVersion::UF; }
 
 		const int16 SOCKET_INVALID = IINVALID;
 		const int16 SOCKET_BEGIN = INULL;
@@ -243,7 +256,7 @@ namespace UF
 	} /*invaug*/
 
 	namespace item {
-		inline EQEmu::versions::ClientVersion GetItemRef() { return EQEmu::versions::ClientVersion::UF; }
+		inline EQ::versions::ClientVersion GetItemRef() { return EQ::versions::ClientVersion::UF; }
 
 		enum ItemPacketType : int {
 			ItemPacketMerchant = 100,
@@ -262,7 +275,7 @@ namespace UF
 	} /*item*/
 
 	namespace profile {
-		inline EQEmu::versions::ClientVersion GetProfileRef() { return EQEmu::versions::ClientVersion::UF; }
+		inline EQ::versions::ClientVersion GetProfileRef() { return EQ::versions::ClientVersion::UF; }
 
 		const int16 BANDOLIERS_SIZE = 20;		// number of bandolier instances
 		const int16 BANDOLIER_ITEM_COUNT = 4;	// number of equipment slots in bandolier instance
@@ -274,35 +287,67 @@ namespace UF
 	} /*profile*/
 
 	namespace constants {
-		inline EQEmu::versions::ClientVersion GetConstantsRef() { return EQEmu::versions::ClientVersion::UF; }
+		inline EQ::versions::ClientVersion GetConstantsRef() { return EQ::versions::ClientVersion::UF; }
+
+		const EQ::expansions::Expansion EXPANSION = EQ::expansions::Expansion::UF;
+		const uint32 EXPANSION_BIT = EQ::expansions::bitUF;
+		const uint32 EXPANSIONS_MASK = EQ::expansions::maskUF;
 
 		const size_t CHARACTER_CREATION_LIMIT = 12;
 
 		const size_t SAY_LINK_BODY_SIZE = 50;
 
-		const int LongBuffs = 30;
-		const int ShortBuffs = 20;
-		const int DiscBuffs = 1;
-		const int TotalBuffs = LongBuffs + ShortBuffs + DiscBuffs;
-		const int NPCBuffs = 85;
-		const int PetBuffs = NPCBuffs;
-		const int MercBuffs = LongBuffs;
-
 	} /*constants*/
 
 	namespace behavior {
-		inline EQEmu::versions::ClientVersion GetBehaviorRef() { return EQEmu::versions::ClientVersion::UF; }
+		inline EQ::versions::ClientVersion GetBehaviorRef() { return EQ::versions::ClientVersion::UF; }
 
 		const bool CoinHasWeight = false;
 
 	} /*behavior*/
 
 	namespace skills {
-		inline EQEmu::versions::ClientVersion GetSkillsRef() { return EQEmu::versions::ClientVersion::UF; }
+		inline EQ::versions::ClientVersion GetSkillsRef() { return EQ::versions::ClientVersion::UF; }
 
-		const size_t LastUsableSkill = EQEmu::skills::SkillTripleAttack;
+		const size_t LastUsableSkill = EQ::skills::SkillTripleAttack;
 
 	} /*skills*/
+
+	namespace spells {
+		inline EQ::versions::ClientVersion GetSkillsRef() { return EQ::versions::ClientVersion::UF; }
+		
+		enum class CastingSlot : uint32 {
+			Gem1 = 0,
+			Gem2 = 1,
+			Gem3 = 2,
+			Gem4 = 3,
+			Gem5 = 4,
+			Gem6 = 5,
+			Gem7 = 6,
+			Gem8 = 7,
+			Gem9 = 8,
+			Gem10 = 9,
+			Gem11 = 10,
+			Gem12 = 11,
+			MaxGems = 12,
+			Item = 12,
+			Discipline = 13,
+			AltAbility = 0xFF
+		};
+
+		const int SPELL_ID_MAX = 28000;
+		const int SPELLBOOK_SIZE = 720;
+		const int SPELL_GEM_COUNT = static_cast<uint32>(CastingSlot::MaxGems);
+		
+		const int LONG_BUFFS = 30;
+		const int SHORT_BUFFS = 20;
+		const int DISC_BUFFS = 1;
+		const int TOTAL_BUFFS = LONG_BUFFS + SHORT_BUFFS + DISC_BUFFS;
+		const int NPC_BUFFS = 85;
+		const int PET_BUFFS = NPC_BUFFS;
+		const int MERC_BUFFS = LONG_BUFFS;
+
+	} /*spells*/
 
 }; /*UF*/
 

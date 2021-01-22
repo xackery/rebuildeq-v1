@@ -48,7 +48,7 @@ static uint32 ScaleAAXPBasedOnCurrentAATotal(int earnedAA, uint32 add_aaxp)
 	// Are we within the scaling window?
 	if (earnedAA >= aaLimit || earnedAA < aaMinimum)
 	{
-		Log(Logs::Detail, Logs::None, "Not within AA scaling window.");
+		LogDebug("Not within AA scaling window");
 
 		// At or past the limit.  We're done.
 		return add_aaxp;
@@ -201,6 +201,10 @@ uint32 Client::CalcEXP(uint8 conlevel) {
 		}
 	}
 
+	if (RuleR(Character, FinalExpMultiplier) >= 0) {
+		in_add_exp *= RuleR(Character, FinalExpMultiplier);
+	}
+
 	return in_add_exp;
 }
 
@@ -228,26 +232,26 @@ float static GetConLevelModifierPercent(uint8 conlevel)
 {
 	switch (conlevel)
 	{
-		case CON_GREEN:
-			return (float)RuleI(Character, GreenModifier) / 100;
-			break;
-		case CON_LIGHTBLUE:
-			return (float)RuleI(Character, LightBlueModifier) / 100;
-			break;
-		case CON_BLUE:
-			return (float)RuleI(Character, BlueModifier) / 100;
-			break;
-		case CON_WHITE:
-			return (float)RuleI(Character, WhiteModifier) / 100;
-			break;
-		case CON_YELLOW:
-			return (float)RuleI(Character, YellowModifier) / 100;
-			break;
-		case CON_RED:
-			return (float)RuleI(Character, RedModifier) / 100;
-			break;
-		default:
-			return 0;
+	case CON_GREEN:
+		return (float)RuleI(Character, GreenModifier) / 100;
+		break;
+	case CON_LIGHTBLUE:
+		return (float)RuleI(Character, LightBlueModifier) / 100;
+		break;
+	case CON_BLUE:
+		return (float)RuleI(Character, BlueModifier) / 100;
+		break;
+	case CON_WHITE:
+		return (float)RuleI(Character, WhiteModifier) / 100;
+		break;
+	case CON_YELLOW:
+		return (float)RuleI(Character, YellowModifier) / 100;
+		break;
+	case CON_RED:
+		return (float)RuleI(Character, RedModifier) / 100;
+		break;
+	default:
+		return 0;
 	}
 }
 
@@ -267,6 +271,7 @@ void Client::CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool res
 
 	uint32 whiteConKillsPerAA = RuleI(AA, NormalizedAANumberOfWhiteConPerAA);
 	uint32 xpPerAA = RuleI(AA, ExpPerPoint);
+
 	float colorModifier = GetConLevelModifierPercent(conlevel);
 	float percentToAAXp = (float)m_epp.perAA / 100;
 
@@ -274,15 +279,19 @@ void Client::CalculateNormalizedAAExp(uint32 &add_aaxp, uint8 conlevel, bool res
 	add_aaxp = percentToAAXp * (xpPerAA / (whiteConKillsPerAA / colorModifier));
 }
 
-void Client::CalculateStandardAAExp(uint32 &add_aaxp, uint8 conlevel, bool resexp) {
-	if (!resexp) {
+void Client::CalculateStandardAAExp(uint32 &add_aaxp, uint8 conlevel, bool resexp)
+{
+	if (!resexp)
+	{
 		//if XP scaling is based on the con of a monster, do that now.
-		if (RuleB(Character, UseXPConScaling)) {
-			if (conlevel != 0xFF && !resexp) {
+		if (RuleB(Character, UseXPConScaling))
+		{
+			if (conlevel != 0xFF && !resexp)
+			{
 				add_aaxp *= GetConLevelModifierPercent(conlevel);
 			}
 		}
-	}    //end !resexp
+	}	//end !resexp
 
 	float aatotalmod = 1.0;
 	if (zone->newzone_data.zone_exp_multiplier >= 0) {
@@ -290,7 +299,8 @@ void Client::CalculateStandardAAExp(uint32 &add_aaxp, uint8 conlevel, bool resex
 	}
 
 	// Shouldn't race not affect AA XP?
-	if (RuleB(Character, UseRaceClassExpBonuses)) {
+	if (RuleB(Character, UseRaceClassExpBonuses))
+	{
 		if (GetBaseRace() == HALFLING) {
 			aatotalmod *= 1.05;
 		}
@@ -301,7 +311,8 @@ void Client::CalculateStandardAAExp(uint32 &add_aaxp, uint8 conlevel, bool resex
 	}
 
 	// why wasn't this here? Where should it be?
-	if (zone->IsHotzone()) {
+	if (zone->IsHotzone())
+	{
 		aatotalmod += RuleR(Zone, HotZoneBonus);
 	}
 
@@ -310,81 +321,109 @@ void Client::CalculateStandardAAExp(uint32 &add_aaxp, uint8 conlevel, bool resex
 			add_aaxp *= zone->level_exp_mod[GetLevel()].AAExpMod;
 		}
 	}
+
+	if (RuleR(Character, FinalExpMultiplier) >= 0) {
+		add_aaxp *= RuleR(Character, FinalExpMultiplier);
+	}
+
 	add_aaxp = (uint32)(RuleR(Character, AAExpMultiplier) * add_aaxp * aatotalmod);
 }
 
-void Client::CalculateLeadershipExp(uint32 &add_exp, uint8 conlevel) {
-	if (IsLeadershipEXPOn() &&
-		(conlevel == CON_BLUE || conlevel == CON_WHITE || conlevel == CON_YELLOW || conlevel == CON_RED)) {
+void Client::CalculateLeadershipExp(uint32 &add_exp, uint8 conlevel)
+{
+	if (IsLeadershipEXPOn() && (conlevel == CON_BLUE || conlevel == CON_WHITE || conlevel == CON_YELLOW || conlevel == CON_RED))
+	{
 		add_exp = static_cast<uint32>(static_cast<float>(add_exp) * 0.8f);
 
-		if (GetGroup()) {
+		if (GetGroup())
+		{
 			if (m_pp.group_leadership_points < MaxBankedGroupLeadershipPoints(GetLevel())
-				&& RuleI(Character, KillsPerGroupLeadershipAA) > 0) {
+				&& RuleI(Character, KillsPerGroupLeadershipAA) > 0)
+			{
 				uint32 exp = GROUP_EXP_PER_POINT / RuleI(Character, KillsPerGroupLeadershipAA);
 				Client *mentoree = GetGroup()->GetMentoree();
 				if (GetGroup()->GetMentorPercent() && mentoree &&
-					mentoree->GetGroupPoints() < MaxBankedGroupLeadershipPoints(mentoree->GetLevel())) {
+					mentoree->GetGroupPoints() < MaxBankedGroupLeadershipPoints(mentoree->GetLevel()))
+				{
 					uint32 mentor_exp = exp * (GetGroup()->GetMentorPercent() / 100.0f);
 					exp -= mentor_exp;
 					mentoree->AddLeadershipEXP(mentor_exp, 0); // ends up rounded down
-					mentoree->Message_StringID(MT_Leadership, GAIN_GROUP_LEADERSHIP_EXP);
+					mentoree->MessageString(Chat::LeaderShip, GAIN_GROUP_LEADERSHIP_EXP);
 				}
-				if (exp > 0) { // possible if you mentor 100% to the other client
+				if (exp > 0)
+				{
+					// possible if you mentor 100% to the other client
 					AddLeadershipEXP(exp, 0); // ends up rounded up if mentored, no idea how live actually does it
-					Message_StringID(MT_Leadership, GAIN_GROUP_LEADERSHIP_EXP);
+					MessageString(Chat::LeaderShip, GAIN_GROUP_LEADERSHIP_EXP);
 				}
-			} else {
-				Message_StringID(MT_Leadership, MAX_GROUP_LEADERSHIP_POINTS);
 			}
-		} else {
+			else
+			{
+				MessageString(Chat::LeaderShip, MAX_GROUP_LEADERSHIP_POINTS);
+			}
+		}
+		else
+		{
 			Raid *raid = GetRaid();
 			// Raid leaders CAN NOT gain group AA XP, other group leaders can though!
-			if (raid->IsLeader(this)) {
+			if (raid->IsLeader(this))
+			{
 				if (m_pp.raid_leadership_points < MaxBankedRaidLeadershipPoints(GetLevel())
-					&& RuleI(Character, KillsPerRaidLeadershipAA) > 0) {
+					&& RuleI(Character, KillsPerRaidLeadershipAA) > 0)
+				{
 					AddLeadershipEXP(0, RAID_EXP_PER_POINT / RuleI(Character, KillsPerRaidLeadershipAA));
-					Message_StringID(MT_Leadership, GAIN_RAID_LEADERSHIP_EXP);
-				} else {
-					Message_StringID(MT_Leadership, MAX_RAID_LEADERSHIP_POINTS);
+					MessageString(Chat::LeaderShip, GAIN_RAID_LEADERSHIP_EXP);
 				}
-			} else {
+				else
+				{
+					MessageString(Chat::LeaderShip, MAX_RAID_LEADERSHIP_POINTS);
+				}
+			}
+			else
+			{
 				if (m_pp.group_leadership_points < MaxBankedGroupLeadershipPoints(GetLevel())
-					&& RuleI(Character, KillsPerGroupLeadershipAA) > 0) {
+					&& RuleI(Character, KillsPerGroupLeadershipAA) > 0)
+				{
 					uint32 group_id = raid->GetGroup(this);
 					uint32 exp = GROUP_EXP_PER_POINT / RuleI(Character, KillsPerGroupLeadershipAA);
 					Client *mentoree = raid->GetMentoree(group_id);
 					if (raid->GetMentorPercent(group_id) && mentoree &&
-						mentoree->GetGroupPoints() < MaxBankedGroupLeadershipPoints(mentoree->GetLevel())) {
+						mentoree->GetGroupPoints() < MaxBankedGroupLeadershipPoints(mentoree->GetLevel()))
+					{
 						uint32 mentor_exp = exp * (raid->GetMentorPercent(group_id) / 100.0f);
 						exp -= mentor_exp;
 						mentoree->AddLeadershipEXP(mentor_exp, 0);
-						mentoree->Message_StringID(MT_Leadership, GAIN_GROUP_LEADERSHIP_EXP);
+						mentoree->MessageString(Chat::LeaderShip, GAIN_GROUP_LEADERSHIP_EXP);
 					}
-					if (exp > 0) {
+					if (exp > 0)
+					{
 						AddLeadershipEXP(exp, 0);
-						Message_StringID(MT_Leadership, GAIN_GROUP_LEADERSHIP_EXP);
+						MessageString(Chat::LeaderShip, GAIN_GROUP_LEADERSHIP_EXP);
 					}
-				} else {
-					Message_StringID(MT_Leadership, MAX_GROUP_LEADERSHIP_POINTS);
+				}
+				else
+				{
+					MessageString(Chat::LeaderShip, MAX_GROUP_LEADERSHIP_POINTS);
 				}
 			}
 		}
 	}
 }
 
-void Client::CalculateExp(uint32 in_add_exp, uint32 &add_exp, uint32 &add_aaxp, uint8 conlevel, bool resexp) {
+void Client::CalculateExp(uint32 in_add_exp, uint32 &add_exp, uint32 &add_aaxp, uint8 conlevel, bool resexp)
+{
 	add_exp = in_add_exp;
 
-	if (!resexp && (XPRate != 0)) {
+	if (!resexp && (XPRate != 0))
+	{
 		add_exp = static_cast<uint32>(in_add_exp * (static_cast<float>(XPRate) / 100.0f));
-
 	}
 
 	// Make sure it was initialized.
 	add_aaxp = 0;
 
-	if (!resexp) {
+	if (!resexp)
+	{
 		//figure out how much of this goes to AAs
 		add_aaxp = add_exp * m_epp.perAA / 100;
 
@@ -404,7 +443,8 @@ void Client::CalculateExp(uint32 in_add_exp, uint32 &add_exp, uint32 &add_aaxp, 
 			zemmod *= zone->newzone_data.zone_exp_multiplier;
 		}
 
-		if (RuleB(Character, UseRaceClassExpBonuses)) {
+		if (RuleB(Character, UseRaceClassExpBonuses))
+		{
 			if (GetBaseRace() == HALFLING) {
 				totalmod *= 1.05;
 			}
@@ -415,27 +455,34 @@ void Client::CalculateExp(uint32 in_add_exp, uint32 &add_exp, uint32 &add_aaxp, 
 		}
 
 		//add hotzone modifier if one has been set.
-		if (zone->IsHotzone()) {
+		if (zone->IsHotzone())
+		{
 			totalmod += RuleR(Zone, HotZoneBonus);
 		}
 
 		add_exp = uint32(float(add_exp) * totalmod * zemmod);
 
 		//if XP scaling is based on the con of a monster, do that now.
-		if (RuleB(Character, UseXPConScaling)) {
-			if (conlevel != 0xFF && !resexp) {
+		if (RuleB(Character, UseXPConScaling))
+		{
+			if (conlevel != 0xFF && !resexp)
+			{
 				add_exp = add_exp * GetConLevelModifierPercent(conlevel);
 			}
 		}
 
 		// Calculate any changes to leadership experience.
 		CalculateLeadershipExp(add_exp, conlevel);
-	}    //end !resexp
+	}	//end !resexp
 
 	if (RuleB(Zone, LevelBasedEXPMods)) {
 		if (zone->level_exp_mod[GetLevel()].ExpMod) {
 			add_exp *= zone->level_exp_mod[GetLevel()].ExpMod;
 		}
+	}
+
+	if (RuleR(Character, FinalExpMultiplier) >= 0) {
+		add_exp *= RuleR(Character, FinalExpMultiplier);
 	}
 
 	add_exp = GetEXP() + add_exp;
@@ -448,21 +495,25 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 	uint32 exp = 0;
 	uint32 aaexp = 0;
 
-	if (m_epp.perAA < 0 || m_epp.perAA > 100)
-		m_epp.perAA = 0;    // stop exploit with sanity check
+	if (m_epp.perAA<0 || m_epp.perAA>100)
+		m_epp.perAA=0;	// stop exploit with sanity check
 
 	// Calculate regular XP
 	CalculateExp(in_add_exp, exp, aaexp, conlevel, resexp);
 
 	// Calculate regular AA XP
-	if (!RuleB(AA, NormalizedAAEnabled)) {
+	if (!RuleB(AA, NormalizedAAEnabled))
+	{
 		CalculateStandardAAExp(aaexp, conlevel, resexp);
-	} else {
+	}
+	else
+	{
 		CalculateNormalizedAAExp(aaexp, conlevel, resexp);
 	}
 
 	// Are we also doing linear AA acceleration?
-	if (RuleB(AA, ModernAAScalingEnabled) && aaexp > 0) {
+	if (RuleB(AA, ModernAAScalingEnabled) && aaexp > 0)
+	{
 		aaexp = ScaleAAXPBasedOnCurrentAATotal(GetAAPoints(), aaexp);
 	}
 
@@ -475,13 +526,14 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 	// Make sure our new total (existing + just earned) isn't lower than the
 	// existing total.  If it is, we overflowed the bounds of uint32 and wrapped.
 	// Reset to the existing total.
-	if (aaexp < had_aaexp) {
-		aaexp = had_aaexp;    //watch for wrap
+	if (aaexp < had_aaexp)
+	{
+		aaexp = had_aaexp;	//watch for wrap
 	}
 
 	// AA Sanity Checking for players who set aa exp and deleveled below allowed aa level.
 	if (GetLevel() <= 50 && m_epp.perAA > 0) {
-		Message(15, "You are below the level allowed to gain AA Experience. AA Experience set to 0%");
+		Message(Chat::Yellow, "You are below the level allowed to gain AA Experience. AA Experience set to 0%");
 		aaexp = 0;
 		m_epp.perAA = 0;
 	}
@@ -491,11 +543,11 @@ void Client::AddEXP(uint32 in_add_exp, uint8 conlevel, bool resexp) {
 }
 
 void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
-	Log(Logs::Detail, Logs::None, "Attempting to Set Exp for %s (XP: %u, AAXP: %u, Rez: %s)", this->GetCleanName(), set_exp, set_aaxp, isrezzexp ? "true" : "false");
+	LogDebug("Attempting to Set Exp for [{}] (XP: [{}], AAXP: [{}], Rez: [{}])", this->GetCleanName(), set_exp, set_aaxp, isrezzexp ? "true" : "false");
 
 	auto max_AAXP = GetRequiredAAExperience();
 	if (max_AAXP == 0 || GetEXPForLevel(GetLevel()) == 0xFFFFFFFF) {
-		Message(13, "Error in Client::SetEXP. EXP not set.");
+		Message(Chat::Red, "Error in Client::SetEXP. EXP not set.");
 		return; // Must be invalid class/race
 	}
 
@@ -541,75 +593,24 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 			expPct = (float)((float)i / (float)(GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel())))*(float)100; //EXP needed for level
 		}
 		if (isrezzexp) {
-			//this->Message_StringID(MT_Experience, REZ_REGAIN);
-			Message(MT_Experience, "You regain %i experience from resurrection. (%.3f%%)", i,  expPct);
-		}
-		else {
+			if (RuleI(Character, ShowExpValues) > 0)
+				Message(Chat::Experience, "You regain %s experience from resurrection. %s", exp_amount_message.c_str(), exp_percent_message.c_str());
+			else MessageString(Chat::Experience, REZ_REGAIN);
+		} else {
 			if (membercount > 1) {
-				if (m_epp.rested_exp < 1 || (i * 0.05) < 1) {
-					Message(MT_Experience, "You have gained %i party experience! (%.3f%%)", i, expPct);
-				} else {//Rested EXP available
-
-					int restedExp = i * 0.1;
-					int totalExp = i + restedExp;
-
-					m_epp.rested_exp -= restedExp; //remove from rested
-					if (m_epp.rested_exp < 0) { //not enough rested exp
-						totalExp += m_epp.rested_exp; //take negative away from bonus
-						restedExp += m_epp.rested_exp;
-						m_epp.rested_exp = 0; //reset rested to 0
-					}					
-					
-					expPct = (float)((float)totalExp / (float)(GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel())))*(float)100; //EXP needed for level
-					Message(MT_Experience, "You have gained %i party experience! (+%i rested) (%.3f%%)", i, restedExp, expPct);
-					set_exp += restedExp; //Now add bonus exp to set_exp
-				}
+				if (RuleI(Character, ShowExpValues) > 0)
+					Message(Chat::Experience, "You have gained %s party experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
+				else MessageString(Chat::Experience, GAIN_GROUPXP);
 			}
-			else if(IsRaidGrouped()) {
-				
-				if (m_epp.rested_exp < 1 || (i * 0.05) < 1) {
-					Message(MT_Experience, "You have gained %i raid experience! (%.3f%%)", i, expPct);
-				} else {//Rested EXP available
-
-					int restedExp = i * 0.1;
-					int totalExp = i + restedExp;
-
-					m_epp.rested_exp -= restedExp; //remove from rested
-					if (m_epp.rested_exp < 0) { //not enough rested exp
-						totalExp += m_epp.rested_exp; //take negative away from bonus
-						restedExp += m_epp.rested_exp;
-						m_epp.rested_exp = 0; //reset rested to 0
-					}
-
-					expPct = (float)((float)totalExp / (float)(GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel())))*(float)100; //EXP needed for level
-					Message(MT_Experience, "You have gained %i raid experience! (+%i rested) (%.3f%%)", i, restedExp, expPct);
-					set_exp += restedExp; //Now add bonus exp to set_exp
-				}
+			else if (IsRaidGrouped()) {
+				if (RuleI(Character, ShowExpValues) > 0)
+					Message(Chat::Experience, "You have gained %s raid experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
+				else MessageString(Chat::Experience, GAIN_RAIDEXP);
 			}
 			else {
-				if (m_epp.rested_exp < 1 || (i * 0.025) < 1) {
-					Message(MT_Experience, "You have gained %i experience! (%.3f%%)", i, expPct);
-				} else {//Rested EXP available
-
-					//int restedExp = (int)((float)i * 0.25); //25% bonus exp when solo, intentionally it's crappy.					
-					int restedExp = i * 0.05; //5% rested exp when solo.
-					int totalExp = i + restedExp;
-
-					m_epp.rested_exp -= restedExp; //remove from rested
-					if (m_epp.rested_exp < 0) { //not enough rested exp
-						totalExp += m_epp.rested_exp; //take negative away from bonus
-						restedExp += m_epp.rested_exp;
-						m_epp.rested_exp = 0; //reset rested to 0
-					}
-
-					if (m_epp.rested_exp < 0) { //not enough rested exp for double
-						totalExp += m_epp.rested_exp; //take negative away from bonus
-						m_epp.rested_exp = 0; //reset rested to 0
-					}
-					expPct = (float)((float)totalExp / (float)(GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel())))*(float)100; //EXP needed for level
-					Message(MT_Experience, "You have gained %i experience! (+%i rested) (%.3f%%)", i, totalExp - i, expPct);
-					set_exp += restedExp; //Now add bonus exp to set_exp
-				}
+				if (RuleI(Character, ShowExpValues) > 0)
+					Message(Chat::Experience, "You have gained %s experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
+				else MessageString(Chat::Experience, GAIN_XP);
 			}
 
 		
@@ -674,7 +675,7 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 
 		//figure out how many AA points we get from the exp were setting
 		m_pp.aapoints = set_aaxp / max_AAXP;
-		Log(Logs::Detail, Logs::None, "Calculating additional AA Points from AAXP for %s: %u / %u = %.1f points", this->GetCleanName(), set_aaxp, max_AAXP, (float)set_aaxp / (float)max_AAXP);
+		LogDebug("Calculating additional AA Points from AAXP for [{}]: [{}] / [{}] = [{}] points", this->GetCleanName(), set_aaxp, max_AAXP, (float)set_aaxp / (float)max_AAXP);
 
 		//get remainder exp points, set in PP below
 		set_aaxp = set_aaxp - (max_AAXP * m_pp.aapoints);
@@ -683,12 +684,22 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 		m_pp.aapoints += last_unspentAA;
 
 		//figure out how many points were actually gained
-		/*uint32 gained = m_pp.aapoints - last_unspentAA;*/	//unused
+		uint32 gained = (m_pp.aapoints - last_unspentAA);
 
-		//Message(15, "You have gained %d skill points!!", m_pp.aapoints - last_unspentAA);
-		char val1[20]={0};
-		Message_StringID(MT_Experience, GAIN_ABILITY_POINT, ConvertArray(m_pp.aapoints, val1),m_pp.aapoints == 1 ? "" : "(s)");	//You have gained an ability point! You now have %1 ability point%2.
-		
+		//Message(Chat::Yellow, "You have gained %d skill points!!", m_pp.aapoints - last_unspentAA);
+		char val1[20] = { 0 };
+		char val2[20] = { 0 };
+		if (gained == 1 && m_pp.aapoints == 1)
+			MessageString(Chat::Experience, GAIN_SINGLE_AA_SINGLE_AA, ConvertArray(m_pp.aapoints, val1)); //You have gained an ability point!  You now have %1 ability point.
+		else if (gained == 1 && m_pp.aapoints > 1)
+			MessageString(Chat::Experience, GAIN_SINGLE_AA_MULTI_AA, ConvertArray(m_pp.aapoints, val1)); //You have gained an ability point!  You now have %1 ability points.
+		else
+			MessageString(Chat::Experience, GAIN_MULTI_AA_MULTI_AA, ConvertArray(gained, val1), ConvertArray(m_pp.aapoints, val2)); //You have gained %1 ability point(s)!  You now have %2 ability point(s).
+			
+		if (RuleB(AA, SoundForAAEarned)) {
+			SendSound();
+		}
+
 		/* QS: PlayerLogAARate */
 		if (RuleB(QueryServ, PlayerLogAARate)){
 			int add_points = (m_pp.aapoints - last_unspentAA);
@@ -696,7 +707,7 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 			QServ->SendQuery(query.c_str());
 		}
 
-		//Message(15, "You now have %d skill points available to spend.", m_pp.aapoints);
+		//Message(Chat::Yellow, "You now have %d skill points available to spend.", m_pp.aapoints);
 	}
 
 	uint8 maxlevel = RuleI(Character, MaxExpLevel) + 1;
@@ -791,14 +802,12 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 		}
 	}
 
-	if(RuleB(Character, PerCharacterQglobalMaxLevel)){
-		uint32 MaxLevel = GetCharMaxLevelFromQGlobal();
-		if(MaxLevel){
-			if(GetLevel() >= MaxLevel){
-				uint32 expneeded = GetEXPForLevel(MaxLevel);
-				if(set_exp > expneeded) {
-					set_exp = expneeded;
-				}
+	if (GetClientMaxLevel() > 0) {
+		int client_max_level = GetClientMaxLevel();
+		if (GetLevel() >= client_max_level) {
+			uint32 expneeded = GetEXPForLevel(client_max_level);
+			if(set_exp > expneeded) {
+				set_exp = expneeded;
 			}
 		}
 	}
@@ -809,7 +818,7 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 		{									
 
 			if (level_count == 1)
-				Message_StringID(MT_Experience, GAIN_LEVEL, ConvertArray(check_level, val1));
+				MessageString(Chat::Experience, GAIN_LEVEL, ConvertArray(check_level, val1));
 			else
 				Message(15, "Welcome to level %i!", check_level);				
 
@@ -822,10 +831,10 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 				Message(15, "Your items will no longer stay with you when you respawn on death. You will now need to return to your corpse for your items.");
 
 			if (check_level == RuleI(Character, DeathExpLossLevel))
-				Message_StringID(15, CORPSE_EXP_LOST);
+				MessageString(Chat::Yellow, CORPSE_EXP_LOST);
 		}
 		else
-			Message_StringID(MT_Experience, LOSE_LEVEL, ConvertArray(check_level, val1));
+			MessageString(Chat::Experience, LOSE_LEVEL, ConvertArray(check_level, val1));
 
 #ifdef BOTS
 		uint8 myoldlevel = GetLevel();
@@ -872,14 +881,14 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 		char val1[20]={0};
 		char val2[20]={0};
 		char val3[20]={0};
-		Message_StringID(MT_Experience, GM_GAINXP, ConvertArray(set_aaxp,val1),ConvertArray(set_exp,val2),ConvertArray(GetEXPForLevel(GetLevel()+1),val3));	//[GM] You have gained %1 AXP and %2 EXP (%3).
+		MessageString(Chat::Experience, GM_GAINXP, ConvertArray(set_aaxp,val1),ConvertArray(set_exp,val2),ConvertArray(GetEXPForLevel(GetLevel()+1),val3));	//[GM] You have gained %1 AXP and %2 EXP (%3).
 	}
 }
 
 void Client::SetLevel(uint8 set_level, bool command)
 {
 	if (GetEXPForLevel(set_level) == 0xFFFFFFFF) {
-		Log(Logs::General, Logs::Error, "Client::SetLevel() GetEXPForLevel(%i) = 0xFFFFFFFF", set_level);
+		LogError("Client::SetLevel() GetEXPForLevel([{}]) = 0xFFFFFFFF", set_level);
 		return;
 	}
 
@@ -912,7 +921,7 @@ void Client::SetLevel(uint8 set_level, bool command)
 		/* QS: PlayerLogLevels */
 		if (RuleB(QueryServ, PlayerLogLevels)){
 			std::string event_desc = StringFormat("Leveled UP :: to Level:%i from Level:%i in zoneid:%i instid:%i", set_level, m_pp.level, this->GetZoneID(), this->GetInstanceID());
-			QServ->PlayerLogEvent(Player_Log_Levels, this->CharacterID(), event_desc); 
+			QServ->PlayerLogEvent(Player_Log_Levels, this->CharacterID(), event_desc);
 		}
 	}
 	else if (set_level < m_pp.level){
@@ -926,7 +935,7 @@ void Client::SetLevel(uint8 set_level, bool command)
 	m_pp.level = set_level;
 	if (command){
 		m_pp.exp = GetEXPForLevel(set_level);
-		Message(15, "Welcome to level %i!", set_level);
+		Message(Chat::Yellow, "Welcome to level %i!", set_level);
 		lu->exp = 0;
 	}
 	else {
@@ -937,7 +946,7 @@ void Client::SetLevel(uint8 set_level, bool command)
 	safe_delete(outapp);
 	this->SendAppearancePacket(AT_WhoLevel, set_level); // who level change
 
-	Log(Logs::General, Logs::Normal, "Setting Level for %s to %i", GetName(), set_level);
+	LogInfo("Setting Level for [{}] to [{}]", GetName(), set_level);
 
 	CalcBonuses();
 
@@ -1461,30 +1470,32 @@ uint32 Client::GetEXPForLevel(uint16 check_level)
 	return finalxp;
 }
 
-void Client::AddLevelBasedExp(uint8 exp_percentage, uint8 max_level) 
-{ 
+void Client::AddLevelBasedExp(uint8 exp_percentage, uint8 max_level, bool ignore_mods)
+{
 	uint32	award;
 	uint32	xp_for_level;
 
-	if (exp_percentage > 100) 
-	{ 
-		exp_percentage = 100; 
-	} 
+	if (exp_percentage > 100)
+	{
+		exp_percentage = 100;
+	}
 
 	if (!max_level || GetLevel() < max_level)
-	{ 
-		max_level = GetLevel(); 
-	} 
+	{
+		max_level = GetLevel();
+	}
 
 	xp_for_level = GetEXPForLevel(max_level + 1) - GetEXPForLevel(max_level);
-	award = xp_for_level * exp_percentage / 100; 
+	award = xp_for_level * exp_percentage / 100;
 
-	if(RuleB(Zone, LevelBasedEXPMods))
-	{
-		if(zone->level_exp_mod[GetLevel()].ExpMod)
-		{
+	if (RuleB(Zone, LevelBasedEXPMods) && !ignore_mods) {
+		if (zone->level_exp_mod[GetLevel()].ExpMod) {
 			award *= zone->level_exp_mod[GetLevel()].ExpMod;
 		}
+	}
+
+	if (RuleR(Character, FinalExpMultiplier) >= 0) {
+		award *= RuleR(Character, FinalExpMultiplier);
 	}
 
 	uint32 newexp = GetEXP() + award;
@@ -1598,12 +1609,12 @@ void Client::SetLeadershipEXP(uint32 group_exp, uint32 raid_exp) {
 	while(group_exp >= GROUP_EXP_PER_POINT) {
 		group_exp -= GROUP_EXP_PER_POINT;
 		m_pp.group_leadership_points++;
-		Message_StringID(MT_Leadership, GAIN_GROUP_LEADERSHIP_POINT);
+		MessageString(Chat::LeaderShip, GAIN_GROUP_LEADERSHIP_POINT);
 	}
 	while(raid_exp >= RAID_EXP_PER_POINT) {
 		raid_exp -= RAID_EXP_PER_POINT;
 		m_pp.raid_leadership_points++;
-		Message_StringID(MT_Leadership, GAIN_RAID_LEADERSHIP_POINT);
+		MessageString(Chat::LeaderShip, GAIN_RAID_LEADERSHIP_POINT);
 	}
 
 	m_pp.group_leadership_exp = group_exp;
@@ -1644,12 +1655,29 @@ uint32 Client::GetCharMaxLevelFromQGlobal() {
 	while(iter != globalMap.end()) {
 		if((*iter).name.compare("CharMaxLevel") == 0){
 			return atoi((*iter).value.c_str());
-		} 
+		}
 		++iter;
 		++gcount;
 	}
 
-	return false;
+	return 0;
+}
+
+uint32 Client::GetCharMaxLevelFromBucket()
+{
+	uint32      char_id = this->CharacterID();
+	std::string query   = StringFormat("SELECT value FROM data_buckets WHERE `key` = '%i-CharMaxLevel'", char_id);
+	auto        results = database.QueryDatabase(query);
+	if (!results.Success()) {
+		LogError("Data bucket for CharMaxLevel for char ID [{}] failed", char_id);
+		return 0;
+	}
+
+	if (results.RowCount() > 0) {
+		auto row = results.begin();
+		return atoi(row[0]);
+	}
+	return 0;
 }
 
 uint32 Client::GetRequiredAAExperience() {

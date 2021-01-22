@@ -24,6 +24,8 @@
 #include "entity.h"
 #include "mob.h"
 #include "trap.h"
+#include "../common/repositories/criteria/content_filter_criteria.h"
+
 /*
 
 Schema:
@@ -103,7 +105,7 @@ bool Trap::Process()
 		reset_timer.Disable();
 		charid = 0;
 	}
-	
+
 	if (respawn_timer.Enabled() && respawn_timer.Check())
 	{
 		detected = false;
@@ -134,7 +136,7 @@ void Trap::Trigger(Mob* trigger)
 				entity_list.MessageClose(trigger,false,100,13,"%s",message.c_str());
 			}
 			if(hiddenTrigger){
-				hiddenTrigger->SpellFinished(effectvalue, trigger, EQEmu::CastingSlot::Item, 0, -1, spells[effectvalue].ResistDiff);
+				hiddenTrigger->SpellFinished(effectvalue, trigger, EQ::spells::CastingSlot::Item, 0, -1, spells[effectvalue].ResistDiff);
 			}
 			break;
 		case trapTypeAlarm:
@@ -161,11 +163,11 @@ void Trap::Trigger(Mob* trigger)
 
 			for (i = 0; i < effectvalue2; i++)
 			{
-				if ((tmp = database.LoadNPCTypesData(effectvalue)))
+				if ((tmp = content_db.LoadNPCTypesData(effectvalue)))
 				{
 					auto randomOffset = glm::vec4(zone->random.Int(-5, 5),zone->random.Int(-5, 5),zone->random.Int(-5, 5), zone->random.Int(0, 249));
 					auto spawnPosition = randomOffset + glm::vec4(m_Position, 0.0f);
-					auto new_npc = new NPC(tmp, nullptr, spawnPosition, FlyMode3);
+					auto new_npc = new NPC(tmp, nullptr, spawnPosition, GravityBehavior::Flying);
 					new_npc->AddLootTable();
 					if (new_npc->DropsGlobalLoot())
 						new_npc->CheckGlobalLootTables();
@@ -186,11 +188,11 @@ void Trap::Trigger(Mob* trigger)
 
 			for (i = 0; i < effectvalue2; i++)
 			{
-				if ((tmp = database.LoadNPCTypesData(effectvalue)))
+				if ((tmp = content_db.LoadNPCTypesData(effectvalue)))
 				{
 					auto randomOffset = glm::vec4(zone->random.Int(-2, 2), zone->random.Int(-2, 2), zone->random.Int(-2, 2), zone->random.Int(0, 249));
 					auto spawnPosition = randomOffset + glm::vec4(m_Position, 0.0f);
-					auto new_npc = new NPC(tmp, nullptr, spawnPosition, FlyMode3);
+					auto new_npc = new NPC(tmp, nullptr, spawnPosition, GravityBehavior::Flying);
 					new_npc->AddLootTable();
 					if (new_npc->DropsGlobalLoot())
 						new_npc->CheckGlobalLootTables();
@@ -224,13 +226,13 @@ void Trap::Trigger(Mob* trigger)
 				safe_delete(outapp);
 			}
 	}
-	
+
 	if (trigger && trigger->IsClient())
 	{
 		trigger->CastToClient()->trapid = trap_id;
 		charid = trigger->CastToClient()->CharacterID();
 	}
-	
+
 	bool update = false;
 	if (despawn_when_triggered)
 	{
@@ -241,16 +243,16 @@ void Trap::Trigger(Mob* trigger)
 	{
 		reset_timer.Start(5000);
 	}
-	
+
 	if (triggered_number > 0)
 		++times_triggered;
-	
+
 	if (triggered_number > 0 && triggered_number <= times_triggered)
 	{
 		Log(Logs::General, Logs::Traps, "Triggered number for trap %d reached. %d/%d", trap_id, times_triggered, triggered_number);
 		update = true;
 	}
-	
+
 	if (update)
 	{
 		UpdateTrap();
@@ -289,7 +291,7 @@ Trap* EntityList::FindNearbyTrap(Mob* searcher, float max_dist, float &trap_curd
 	}
 	else
 		 trap_curdist = INVALID_INDEX;
-	
+
 	return current_trap;
 }
 
@@ -372,13 +374,13 @@ void EntityList::GetTrapInfo(Client* client)
 		if (cur->IsTrap())
 		{
 			bool isset = (cur->chkarea_timer.Enabled() && !cur->reset_timer.Enabled());
-			client->Message(CC_Default, " Trap: (%d) found at %0.2f,%0.2f,%0.2f. Times Triggered: %d Is Active: %d Group: %d Message: %s", cur->trap_id, cur->m_Position.x, cur->m_Position.y, cur->m_Position.z, cur->times_triggered, isset, cur->group, cur->message.c_str());
+			client->Message(Chat::Default, " Trap: (%d) found at %0.2f,%0.2f,%0.2f. Times Triggered: %d Is Active: %d Group: %d Message: %s", cur->trap_id, cur->m_Position.x, cur->m_Position.y, cur->m_Position.z, cur->times_triggered, isset, cur->group, cur->message.c_str());
 			++count;
 		}
 		++it;
 	}
 
-	client->Message(CC_Default, "%d traps found.", count);
+	client->Message(Chat::Default, "%d traps found.", count);
 }
 
 void EntityList::ClearTrapPointers()
@@ -398,9 +400,14 @@ void EntityList::ClearTrapPointers()
 
 bool ZoneDatabase::LoadTraps(const char* zonename, int16 version) {
 
-	std::string query = StringFormat("SELECT id, x, y, z, effect, effectvalue, effectvalue2, skill, "
+	std::string query = StringFormat(
+		"SELECT id, x, y, z, effect, effectvalue, effectvalue2, skill, "
 		"maxzdiff, radius, chance, message, respawn_time, respawn_var, level, "
-		"`group`, triggered_number, despawn_when_triggered, undetectable  FROM traps WHERE zone='%s' AND version=%u", zonename, version);
+		"`group`, triggered_number, despawn_when_triggered, undetectable  FROM traps WHERE zone='%s' AND version=%u %s",
+		zonename,
+		version,
+		ContentFilterCriteria::apply().c_str()
+	);
 
 	auto results = QueryDatabase(query);
 	if (!results.Success()) {
@@ -451,11 +458,11 @@ void Trap::CreateHiddenTrigger()
 	if(hiddenTrigger)
 		return;
 
-	const NPCType *base_type = database.LoadNPCTypesData(500);
+	const NPCType *base_type = content_db.LoadNPCTypesData(500);
 	auto make_npc = new NPCType;
 	memcpy(make_npc, base_type, sizeof(NPCType));
 	make_npc->max_hp = 100000;
-	make_npc->cur_hp = 100000;
+	make_npc->current_hp = 100000;
 	strcpy(make_npc->name, "a_trap");
 	make_npc->runspeed = 0.0f;
 	make_npc->bodytype = BT_Special;
@@ -468,7 +475,7 @@ void Trap::CreateHiddenTrigger()
 	make_npc->trackable = 0;
 	make_npc->level = level;
 	strcpy(make_npc->special_abilities, "19,1^20,1^24,1^25,1");
-	NPC* npca = new NPC(make_npc, nullptr, glm::vec4(m_Position, 0.0f), FlyMode3);
+	NPC* npca = new NPC(make_npc, nullptr, glm::vec4(m_Position, 0.0f), GravityBehavior::Flying);
 	npca->GiveNPCTypeData(make_npc);
 	entity_list.AddNPC(npca);
 
@@ -556,6 +563,6 @@ void Trap::UpdateTrap(bool respawn, bool repopnow)
 	charid = 0;
 	if (respawn)
 	{
-		database.SetTrapData(this, repopnow);
+		content_db.SetTrapData(this, repopnow);
 	}
 }

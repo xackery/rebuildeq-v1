@@ -22,34 +22,29 @@
 
 #ifdef BOTS
 
-#include "../common/dbcore.h"
-#include "../common/eq_packet_structs.h"
-
 #include <list>
 #include <map>
 #include <vector>
 
 
 class Bot;
+class Client;
 struct BotsAvailableList;
+struct InspectMessage_Struct;
 
-namespace EQEmu
+namespace EQ
 {
 	class ItemInstance;
 	class InventoryProfile;
 }
 
 
-class BotDatabase : public DBcore
+class BotDatabase
 {
 public:
-	BotDatabase();
-	BotDatabase(const char* host, const char* user, const char* passwd, const char* database, uint32 port);
-	virtual ~BotDatabase();
-
-	bool Connect(const char* host, const char* user, const char* passwd, const char* database, uint32 port);
-
 	bool LoadBotCommandSettings(std::map<std::string, std::pair<uint8, std::vector<std::string>>> &bot_command_settings);
+	bool UpdateInjectedBotCommandSettings(const std::vector<std::pair<std::string, uint8>> &injected);
+	bool UpdateOrphanedBotCommandSettings(const std::vector<std::string> &orphaned);
 	bool LoadBotSpellCastingChances();
 
 
@@ -57,7 +52,7 @@ public:
 	bool QueryNameAvailablity(const std::string& bot_name, bool& available_flag);
 	bool QueryBotCount(const uint32 owner_id, uint32& bot_count);
 	bool LoadQuestableSpawnCount(const uint32 owner_id, int& spawn_count);
-	bool LoadBotsList(const uint32 owner_id, std::list<BotsAvailableList>& bots_list);
+	bool LoadBotsList(const uint32 owner_id, std::list<BotsAvailableList>& bots_list, bool ByAccount = false);
 
 	bool LoadOwnerID(const std::string& bot_name, uint32& owner_id);
 	bool LoadOwnerID(const uint32 bot_id, uint32& owner_id);
@@ -90,13 +85,13 @@ public:
 	/* Bot inventory functions   */
 	bool QueryInventoryCount(const uint32 bot_id, uint32& item_count);
 
-	bool LoadItems(const uint32 bot_id, EQEmu::InventoryProfile &inventory_inst);
+	bool LoadItems(const uint32 bot_id, EQ::InventoryProfile &inventory_inst);
 	bool SaveItems(Bot* bot_inst);
 	bool DeleteItems(const uint32 bot_id);
 
 	bool LoadItemBySlot(Bot* bot_inst);
 	bool LoadItemBySlot(const uint32 bot_id, const uint32 slot_id, uint32& item_id);
-	bool SaveItemBySlot(Bot* bot_inst, const uint32 slot_id, const EQEmu::ItemInstance* item_inst);
+	bool SaveItemBySlot(Bot* bot_inst, const uint32 slot_id, const EQ::ItemInstance* item_inst);
 	bool DeleteItemBySlot(const uint32 bot_id, const uint32 slot_id);
 
 	bool LoadEquipmentColor(const uint32 bot_id, const uint8 material_slot_id, uint32& rgb);
@@ -145,7 +140,10 @@ public:
 
 	bool SaveStopMeleeLevel(const uint32 owner_id, const uint32 bot_id, const uint8 sml_value);
 
-
+	bool LoadOwnerOptions(Client *owner);
+	bool SaveOwnerOption(const uint32 owner_id, size_t type, const bool flag);
+	bool SaveOwnerOption(const uint32 owner_id, const std::pair<size_t, size_t> type, const std::pair<bool, bool> flag);
+	
 	/* Bot bot-group functions   */
 	bool QueryBotGroupExistence(const std::string& botgroup_name, bool& extant_flag);
 
@@ -292,8 +290,6 @@ public:
 	private:
 		std::string query;
 };
-
-extern BotDatabase botdb;
 
 #endif
 

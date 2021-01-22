@@ -27,10 +27,11 @@ Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA
 #include "../common/json/json.h"
 #include "../common/event_sub.h"
 #include "web_interface.h"
+#include "world_store.h"
 
 extern uint32 numzones;
 extern bool holdzones;
-extern EQEmu::Random emu_random;
+extern EQ::Random emu_random;
 extern WebInterfaceList web_interface;
 volatile bool UCSServerAvailable_ = false;
 void CatchSignal(int sig_num);
@@ -39,7 +40,6 @@ ZSList::ZSList()
 {
 	NextID = 1;
 	CurGroupID = 1;
-	LastAllocatedPort = 0;
 	memset(pLockedZones, 0, sizeof(pLockedZones));
 
 	m_tick.reset(new EQ::Timer(5000, true, std::bind(&ZSList::OnTick, this, std::placeholders::_1)));
@@ -67,16 +67,21 @@ void ZSList::ShowUpTime(WorldTCPConnection* con, const char* adminname) {
 }
 
 void ZSList::Add(ZoneServer* zoneserver) {
-	list.push_back(std::unique_ptr<ZoneServer>(zoneserver));
+	zone_server_list.push_back(std::unique_ptr<ZoneServer>(zoneserver));
 	zoneserver->SendGroupIDs();
 }
 
 void ZSList::Remove(const std::string &uuid)
 {
-	auto iter = list.begin();
-	while (iter != list.end()) {
+	auto iter = zone_server_list.begin();
+	while (iter != zone_server_list.end()) {
 		if ((*iter)->GetUUID().compare(uuid) == 0) {
-			list.erase(iter);
+			auto port = (*iter)->GetCPort();
+			zone_server_list.erase(iter);
+
+			if (port != 0) {
+				m_ports_free.push_back(port);
+			}
 			return;
 		}
 		iter++;
@@ -84,17 +89,17 @@ void ZSList::Remove(const std::string &uuid)
 }
 
 void ZSList::KillAll() {
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
+	auto iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		(*iterator)->Disconnect();
-		iterator = list.erase(iterator);
+		iterator = zone_server_list.erase(iterator);
 	}
 }
 
 void ZSList::Process() {
 
 	if (shutdowntimer && shutdowntimer->Check()) {
-		Log(Logs::Detail, Logs::World_Server, "Shutdown timer has expired. Telling all zones to shut down and exiting. (fake sigint)");
+		LogInfo("Shutdown timer has expired. Telling all zones to shut down and exiting. (fake sigint)");
 		auto pack2 = new ServerPacket;
 		pack2->opcode = ServerOP_ShutdownAll;
 		pack2->size = 0;
@@ -110,8 +115,8 @@ void ZSList::Process() {
 }
 
 bool ZSList::SendPacket(ServerPacket* pack) {
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
+	auto iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		(*iterator)->SendPacket(pack);
 		iterator++;
 	}
@@ -119,8 +124,8 @@ bool ZSList::SendPacket(ServerPacket* pack) {
 }
 
 bool ZSList::SendPacket(uint32 ZoneID, ServerPacket* pack) {
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
+	auto iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		if ((*iterator)->GetZoneID() == ZoneID) {
 			ZoneServer* tmp = (*iterator).get();
 			tmp->SendPacket(pack);
@@ -134,8 +139,8 @@ bool ZSList::SendPacket(uint32 ZoneID, ServerPacket* pack) {
 bool ZSList::SendPacket(uint32 ZoneID, uint16 instanceID, ServerPacket* pack) {
 	if (instanceID != 0)
 	{
-		auto iterator = list.begin();
-		while (iterator != list.end()) {
+		auto iterator = zone_server_list.begin();
+		while (iterator != zone_server_list.end()) {
 			if ((*iterator)->GetInstanceID() == instanceID) {
 				ZoneServer* tmp = (*iterator).get();
 				tmp->SendPacket(pack);
@@ -146,8 +151,8 @@ bool ZSList::SendPacket(uint32 ZoneID, uint16 instanceID, ServerPacket* pack) {
 	}
 	else
 	{
-		auto iterator = list.begin();
-		while (iterator != list.end()) {
+		auto iterator = zone_server_list.begin();
+		while (iterator != zone_server_list.end()) {
 			if ((*iterator)->GetZoneID() == ZoneID
 				&& (*iterator)->GetInstanceID() == 0) {
 				ZoneServer* tmp = (*iterator).get();
@@ -161,8 +166,8 @@ bool ZSList::SendPacket(uint32 ZoneID, uint16 instanceID, ServerPacket* pack) {
 }
 
 ZoneServer* ZSList::FindByName(const char* zonename) {
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
+	auto iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		if (strcasecmp((*iterator)->GetZoneName(), zonename) == 0) {
 			ZoneServer* tmp = (*iterator).get();
 			return tmp;
@@ -173,8 +178,8 @@ ZoneServer* ZSList::FindByName(const char* zonename) {
 }
 
 ZoneServer* ZSList::FindByID(uint32 ZoneID) {
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
+	auto iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		if ((*iterator)->GetID() == ZoneID) {
 			ZoneServer* tmp = (*iterator).get();
 			return tmp;
@@ -185,8 +190,8 @@ ZoneServer* ZSList::FindByID(uint32 ZoneID) {
 }
 
 ZoneServer* ZSList::FindByZoneID(uint32 ZoneID) {
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
+	auto iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		ZoneServer* tmp = (*iterator).get();
 		if (tmp->GetZoneID() == ZoneID && tmp->GetInstanceID() == 0) {
 			return tmp;
@@ -197,8 +202,8 @@ ZoneServer* ZSList::FindByZoneID(uint32 ZoneID) {
 }
 
 ZoneServer* ZSList::FindByPort(uint16 port) {
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
+	auto iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		if ((*iterator)->GetCPort() == port) {
 			ZoneServer* tmp = (*iterator).get();
 			return tmp;
@@ -210,8 +215,8 @@ ZoneServer* ZSList::FindByPort(uint16 port) {
 
 ZoneServer* ZSList::FindByInstanceID(uint32 InstanceID)
 {
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
+	auto iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		if ((*iterator)->GetInstanceID() == InstanceID) {
 			ZoneServer* tmp = (*iterator).get();
 			return tmp;
@@ -239,6 +244,14 @@ bool ZSList::SetLockedZone(uint16 iZoneID, bool iLock) {
 	return false;
 }
 
+void ZSList::Init()
+{
+	const WorldConfig* Config = WorldConfig::get();
+	for (uint16 i = Config->ZonePortLow; i <= Config->ZonePortHigh; ++i) {
+		m_ports_free.push_back(i);
+	}
+}
+
 bool ZSList::IsZoneLocked(uint16 iZoneID) {
 	for (auto &zone : pLockedZones) {
 		if (zone == iZoneID)
@@ -251,7 +264,7 @@ void ZSList::ListLockedZones(const char* to, WorldTCPConnection* connection) {
 	int x = 0;
 	for (auto &zone : pLockedZones) {
 		if (zone) {
-			connection->SendEmoteMessageRaw(to, 0, 0, 0, database.GetZoneName(zone, true));
+			connection->SendEmoteMessageRaw(to, 0, 0, 0, ZoneName(zone, true));
 			x++;
 		}
 	}
@@ -289,8 +302,8 @@ void ZSList::SendZoneStatus(const char* to, int16 admin, WorldTCPConnection* con
 
 	ZoneServer* zone_server_data = 0;
 
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
+	auto iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		zone_server_data = (*iterator).get();
 		auto addr = zone_server_data->GetIP();
 
@@ -432,6 +445,7 @@ void ZSList::SendChannelMessageRaw(const char* from, const char* to, uint8 chan_
 	}
 
 	scm->language = language;
+	scm->lang_skill = 100;
 	scm->chan_num = chan_num;
 	strcpy(&scm->message[0], message);
 
@@ -516,7 +530,7 @@ void ZSList::SOPZoneBootup(const char* adminname, uint32 ZoneServerID, const cha
 	ZoneServer* zs = 0;
 	ZoneServer* zs2 = 0;
 	uint32 zoneid;
-	if (!(zoneid = database.GetZoneID(zonename)))
+	if (!(zoneid = ZoneID(zonename)))
 		SendEmoteMessage(adminname, 0, 0, 0, "Error: SOP_ZoneBootup: zone '%s' not found in 'zone' table. Typo protection=ON.", zonename);
 	else {
 		if (ZoneServerID != 0)
@@ -540,8 +554,8 @@ void ZSList::SOPZoneBootup(const char* adminname, uint32 ZoneServerID, const cha
 void ZSList::RebootZone(const char* ip1, uint16 port, const char* ip2, uint32 skipid, uint32 zoneid) {
 	// get random zone
 	uint32 x = 0;
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
+	auto iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		x++;
 		iterator++;
 	}
@@ -550,8 +564,8 @@ void ZSList::RebootZone(const char* ip1, uint16 port, const char* ip2, uint32 sk
 	auto tmp = new ZoneServer *[x];
 	uint32 y = 0;
 
-	iterator = list.begin();
-	while (iterator != list.end()) {
+	iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		if (!strcmp((*iterator)->GetCAddress(), ip2) && !(*iterator)->IsBootingUp() && (*iterator)->GetID() != skipid) {
 			tmp[y++] = (*iterator).get();
 		}
@@ -570,43 +584,28 @@ void ZSList::RebootZone(const char* ip1, uint16 port, const char* ip2, uint32 sk
 	s->port = port;
 	s->zoneid = zoneid;
 	if (zoneid != 0)
-		Log(Logs::Detail, Logs::World_Server, "Rebooting static zone with the ID of: %i", zoneid);
+		LogInfo("Rebooting static zone with the ID of: [{}]", zoneid);
 	tmp[z]->SendPacket(pack);
 	delete pack;
 	safe_delete_array(tmp);
 }
 
-uint16	ZSList::GetAvailableZonePort()
+uint16 ZSList::GetAvailableZonePort()
 {
-	const WorldConfig *Config = WorldConfig::get();
-	int i;
-	uint16 port = 0;
-
-	if (LastAllocatedPort == 0)
-		i = Config->ZonePortLow;
-	else
-		i = LastAllocatedPort + 1;
-
-	while (i != LastAllocatedPort && port == 0) {
-		if (i>Config->ZonePortHigh)
-			i = Config->ZonePortLow;
-
-		if (!FindByPort(i)) {
-			port = i;
-			break;
-		}
-		i++;
+	if (m_ports_free.empty()) {
+		return 0;
 	}
-	LastAllocatedPort = port;
 
-	return port;
+	auto first = m_ports_free.front();
+	m_ports_free.pop_front();
+	return first;
 }
 
 uint32 ZSList::TriggerBootup(uint32 iZoneID, uint32 iInstanceID) {
 	if (iInstanceID > 0)
 	{
-		auto iterator = list.begin();
-		while (iterator != list.end()) {
+		auto iterator = zone_server_list.begin();
+		while (iterator != zone_server_list.end()) {
 			if ((*iterator)->GetInstanceID() == iInstanceID)
 			{
 				return (*iterator)->GetID();
@@ -614,8 +613,8 @@ uint32 ZSList::TriggerBootup(uint32 iZoneID, uint32 iInstanceID) {
 			iterator++;
 		}
 
-		iterator = list.begin();
-		while (iterator != list.end()) {
+		iterator = zone_server_list.begin();
+		while (iterator != zone_server_list.end()) {
 			if ((*iterator)->GetZoneID() == 0 && !(*iterator)->IsBootingUp()) {
 				ZoneServer* zone = (*iterator).get();
 				zone->TriggerBootup(iZoneID, iInstanceID);
@@ -627,8 +626,8 @@ uint32 ZSList::TriggerBootup(uint32 iZoneID, uint32 iInstanceID) {
 	}
 	else
 	{
-		auto iterator = list.begin();
-		while (iterator != list.end()) {
+		auto iterator = zone_server_list.begin();
+		while (iterator != zone_server_list.end()) {
 			if ((*iterator)->GetZoneID() == iZoneID && (*iterator)->GetInstanceID() == 0)
 			{
 				return (*iterator)->GetID();
@@ -636,8 +635,8 @@ uint32 ZSList::TriggerBootup(uint32 iZoneID, uint32 iInstanceID) {
 			iterator++;
 		}
 
-		iterator = list.begin();
-		while (iterator != list.end()) {
+		iterator = zone_server_list.begin();
+		while (iterator != zone_server_list.end()) {
 			if ((*iterator)->GetZoneID() == 0 && !(*iterator)->IsBootingUp()) {
 				ZoneServer* zone = (*iterator).get();
 				zone->TriggerBootup(iZoneID);
@@ -650,8 +649,8 @@ uint32 ZSList::TriggerBootup(uint32 iZoneID, uint32 iInstanceID) {
 }
 
 void ZSList::SendLSZones() {
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
+	auto iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		ZoneServer* zs = (*iterator).get();
 		zs->LSBootUpdate(zs->GetZoneID(), true);
 		iterator++;
@@ -659,12 +658,12 @@ void ZSList::SendLSZones() {
 }
 
 int ZSList::GetZoneCount() {
-	return(list.size());
+	return(zone_server_list.size());
 }
 
 void ZSList::GetZoneIDList(std::vector<uint32> &zones) {
-	auto iterator = list.begin();
-	while (iterator != list.end()) {
+	auto iterator = zone_server_list.begin();
+	while (iterator != zone_server_list.end()) {
 		ZoneServer* zs = (*iterator).get();
 		zones.push_back(zs->GetID());
 		iterator++;
@@ -708,6 +707,18 @@ void ZSList::WorldShutDown(uint32 time, uint32 interval)
 	}
 }
 
+void ZSList::DropClient(uint32 lsid, ZoneServer *ignore_zoneserver) {
+	ServerPacket packet(ServerOP_DropClient, sizeof(ServerZoneDropClient_Struct));
+	auto drop = (ServerZoneDropClient_Struct*)packet.pBuffer;
+	drop->lsid = lsid;
+
+	for (auto &zs : zone_server_list) {
+		if (zs.get() != ignore_zoneserver) {
+			zs->SendPacket(&packet);
+		}
+	}
+}
+
 void ZSList::OnTick(EQ::Timer *t)
 {
 	if (!EventSubscriptionWatcher::Get()->IsSubscribed("EQW::ZoneUpdate")) {
@@ -718,7 +729,7 @@ void ZSList::OnTick(EQ::Timer *t)
 	out["event"] = "EQW::ZoneUpdate";
 	out["data"] = Json::Value();
 
-	for (auto &zone : list)
+	for (auto &zone : zone_server_list)
 	{
 		Json::Value outzone;
 
@@ -750,7 +761,12 @@ void ZSList::OnTick(EQ::Timer *t)
 
 void ZSList::OnKeepAlive(EQ::Timer *t)
 {
-	for (auto &zone : list) {
+	for (auto &zone : zone_server_list) {
 		zone->SendKeepAlive();
 	}
+}
+
+const std::list<std::unique_ptr<ZoneServer>> &ZSList::getZoneServerList() const
+{
+	return zone_server_list;
 }

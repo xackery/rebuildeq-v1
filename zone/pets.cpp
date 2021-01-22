@@ -28,6 +28,9 @@
 
 #include "pets.h"
 #include "zonedb.h"
+#include "zone_store.h"
+
+#include <string>
 
 #include <string>
 
@@ -46,11 +49,12 @@ void GetRandPetName(char *name)
 {
 	std::string temp;
 	temp.reserve(64);
-    // note these orders are used to make the exclusions cheap :P
+	// note these orders are used to make the exclusions cheap :P
 	static const char *part1[] = {"G", "J", "K", "L", "V", "X", "Z"};
 	static const char *part2[] = {nullptr, "ab", "ar", "as", "eb", "en", "ib", "ob", "on"};
 	static const char *part3[] = {nullptr, "an", "ar", "ek", "ob"};
-    static const char *part4[] = {"er", "ab", "n", "tik"};
+	static const char *part4[] = {"er", "ab", "n", "tik"};
+
 	const char *first = part1[zone->random.Int(0, (sizeof(part1) / sizeof(const char *)) - 1)];
 	const char *second = part2[zone->random.Int(0, (sizeof(part2) / sizeof(const char *)) - 1)];
 	const char *third = part3[zone->random.Int(0, (sizeof(part3) / sizeof(const char *)) - 1)];
@@ -59,14 +63,15 @@ void GetRandPetName(char *name)
 	if (second == nullptr && third == nullptr)
 		fourth = part4[(sizeof(part4) / sizeof(const char *)) - 1];
 
-    // "ektik" isn't allowed either I guess?
-    if (third == part3[3] && fourth == part4[3])
-        fourth = part4[zone->random.Int(0, (sizeof(part4) / sizeof(const char *)) - 2)];
-    // "Laser" isn't allowed either I guess?
-    if (first == part1[3] && second == part2[3] && third == nullptr && fourth == part4[0])
-        fourth = part4[zone->random.Int(1, (sizeof(part4) / sizeof(const char *)) - 2)];
+	// "ektik" isn't allowed either I guess?
+	if (third == part3[3] && fourth == part4[3])
+		fourth = part4[zone->random.Int(0, (sizeof(part4) / sizeof(const char *)) - 2)];
 
-    temp += first;
+	// "Laser" isn't allowed either I guess?
+	if (first == part1[3] && second == part2[3] && third == nullptr && fourth == part4[0])
+		fourth = part4[zone->random.Int(1, (sizeof(part4) / sizeof(const char *)) - 2)];
+
+	temp += first;
 	if (second != nullptr)
 		temp += second;
 	if (third != nullptr)
@@ -260,7 +265,7 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 		}
 #ifdef BOTS
 		else if (this->IsBot())
-			act_power = CastToBot()->GetBotFocusEffect(Bot::BotfocusPetPower, spell_id);
+			act_power = CastToBot()->GetBotFocusEffect(focusPetPower, spell_id);
 #endif
 	}
 	else if (petpower > 0)
@@ -278,9 +283,9 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 
 	//lookup our pets table record for this type
 	PetRecord record;
-	if (!database.GetPoweredPetEntry(pettype, act_power, &record)) {
-		Message(13, "Unable to find data for pet %s", pettype);
-		Log(Logs::General, Logs::Error, "Unable to find data for pet %s, check pets table.", pettype);
+	if(!content_db.GetPoweredPetEntry(pettype, act_power, &record)) {
+		Message(Chat::Red, "Unable to find data for pet %s", pettype);
+		LogError("Unable to find data for pet [{}], check pets table", pettype);
 		return;
 	}
 
@@ -290,10 +295,10 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 	}
 	
 	//find the NPC data for the specified NPC type
-	const NPCType *base = database.LoadNPCTypesData(record.npc_type);
-	if (base == nullptr) {
-		Message(13, "Unable to load NPC data for pet %s", pettype);
-		Log(Logs::General, Logs::Error, "Unable to load NPC data for pet %s (NPC ID %d), check pets and npc_types tables.", pettype, record.npc_type);
+	const NPCType *base = content_db.LoadNPCTypesData(record.npc_type);
+	if(base == nullptr) {
+		Message(Chat::Red, "Unable to load NPC data for pet %s", pettype);
+		LogError("Unable to load NPC data for pet [{}] (NPC ID [{}]), check pets and npc_types tables", pettype, record.npc_type);
 		return;
 	}
 
@@ -312,7 +317,7 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 		if (scale_power > 0)
 		{
 			npc_type->max_hp *= (1 + scale_power);
-			npc_type->cur_hp = npc_type->max_hp;
+			npc_type->current_hp = npc_type->max_hp;
 			npc_type->AC *= (1 + scale_power);
 			npc_type->level += 1 + ((int)act_power / 25) > npc_type->level + RuleR(Pets, PetPowerLevelCap) ? RuleR(Pets, PetPowerLevelCap) : 1 + ((int)act_power / 25); // gains an additional level for every 25 pet power
 			npc_type->min_dmg = (npc_type->min_dmg * (1 + (scale_power / 2)));
@@ -633,7 +638,7 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 
 	if (MaxHP){
 		npc_type->max_hp += (npc_type->max_hp*MaxHP)/100;
-		npc_type->cur_hp = npc_type->max_hp;
+		npc_type->current_hp = npc_type->max_hp;
 	}
 
 	//TODO: think about regen (engaged vs. not engaged)
@@ -728,7 +733,7 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 									"130, 139, 141, 183, 236, 237, 238, 239, 254, 266, 329, 330, 378, 379, "
 									"380, 381, 382, 383, 404, 522) "
 									"ORDER BY RAND() LIMIT 1", zone->GetShortName());
-		auto results = database.QueryDatabase(query);
+		auto results = content_db.QueryDatabase(query);
 		if (!results.Success()) {
 			safe_delete(npc_type);
 			return;
@@ -744,7 +749,7 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 			monsterid = 567;
 
 		// give the summoned pet the attributes of the monster we found
-		const NPCType* monster = database.LoadNPCTypesData(monsterid);
+		const NPCType* monster = content_db.LoadNPCTypesData(monsterid);
 		if(monster) {
 			npc_type->race = monster->race;
 			npc_type->size = monster->size;
@@ -754,7 +759,7 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 			npc_type->helmtexture = monster->helmtexture;
 			npc_type->herosforgemodel = monster->herosforgemodel;
 		} else
-			Log(Logs::General, Logs::Error, "Error loading NPC data for monster summoning pet (NPC ID %d)", monsterid);
+			LogError("Error loading NPC data for monster summoning pet (NPC ID [{}])", monsterid);
 
 	}
 
@@ -766,15 +771,15 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 	// the base items for the pet. These are always loaded
 	// so that a rank 1 suspend minion does not kill things
 	// like the special back items some focused pets may receive.
-	uint32 petinv[EQEmu::invslot::EQUIPMENT_COUNT];
+	uint32 petinv[EQ::invslot::EQUIPMENT_COUNT];
 	memset(petinv, 0, sizeof(petinv));
-	const EQEmu::ItemData *item = nullptr;
+	const EQ::ItemData *item = nullptr;
 
-	if (database.GetBasePetItems(record.equipmentset, petinv)) {
-		for (int i = EQEmu::invslot::EQUIPMENT_BEGIN; i <= EQEmu::invslot::EQUIPMENT_END; i++)
+	if (content_db.GetBasePetItems(record.equipmentset, petinv)) {
+		for (int i = EQ::invslot::EQUIPMENT_BEGIN; i <= EQ::invslot::EQUIPMENT_END; i++)
 			if (petinv[i]) {
 				item = database.GetItem(petinv[i]);
-				npc->AddLootDrop(item, &npc->itemlist, 0, 1, 127, true, true);
+				npc->AddLootDrop(item, &npc->itemlist, NPC::NewLootDropEntry(), true);
 			}
 	}
 
@@ -824,14 +829,28 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 into walls or objects (+10), this sometimes creates the "ghost" effect. I changed to +2 (as close as I
 could get while it still looked good). I also noticed this can happen if an NPC is spawned on the same spot of another or in a related bad spot.*/
 Pet::Pet(NPCType *type_data, Mob *owner, PetType type, uint16 spell_id, int16 power)
-: NPC(type_data, 0, owner->GetPosition() + glm::vec4(2.0f, 2.0f, 0.0f, 0.0f), FlyMode3)
+: NPC(type_data, 0, owner->GetPosition() + glm::vec4(2.0f, 2.0f, 0.0f, 0.0f), GravityBehavior::Water)
 {
 	GiveNPCTypeData(type_data);
 	typeofpet = type;
 	petpower = power;
 	SetOwnerID(owner->GetID());
 	SetPetSpellID(spell_id);
-	taunting = true;
+
+	// All pets start at false on newer clients. The client
+	// turns it on and tracks the state.
+	taunting=false;
+
+	// Older clients didn't track state, and default taunting is on (per @mackal)
+	// Familiar and animation pets don't get taunt until an AA.
+	if (owner && owner->IsClient()) {
+		if (!(owner->CastToClient()->ClientVersionBit() & EQ::versions::maskUFAndLater)) {
+			if ((typeofpet != petFamiliar && typeofpet != petAnimation) || 
+				aabonuses.PetCommands[PET_TAUNT]) {
+				taunting=true;
+			}
+		}
+	}
 
 	// Class should use npc constructor to set light properties
 }
@@ -945,10 +964,10 @@ void NPC::GetPetState(SpellBuff_Struct *pet_buffs, uint32 *items, char *name) {
 	strn0cpy(name, GetName(), 64);
 
 	//save their items, we only care about what they are actually wearing
-	memcpy(items, equipment, sizeof(uint32) * EQEmu::invslot::EQUIPMENT_COUNT);
+	memcpy(items, equipment, sizeof(uint32) * EQ::invslot::EQUIPMENT_COUNT);
 
 	//save their buffs.
-	for (int i=0; i < GetPetMaxTotalSlots(); i++) {
+	for (int i=EQ::invslot::EQUIPMENT_BEGIN; i < GetPetMaxTotalSlots(); i++) {
 		if (buffs[i].spellid != SPELL_UNKNOWN) {
 			pet_buffs[i].spellid = buffs[i].spellid;
 			pet_buffs[i].effect_type = i+1;
@@ -1033,19 +1052,19 @@ void NPC::SetPetState(SpellBuff_Struct *pet_buffs, uint32 *items) {
 	}
 
 	//restore their equipment...
-	for (i = EQEmu::invslot::EQUIPMENT_BEGIN; i <= EQEmu::invslot::EQUIPMENT_END; i++) {
-		if(items[i] == 0)
+	for (i = EQ::invslot::EQUIPMENT_BEGIN; i <= EQ::invslot::EQUIPMENT_END; i++) {
+		if (items[i] == 0) {
 			continue;
+		}
 
-		const EQEmu::ItemData* item2 = database.GetItem(items[i]);
+		const EQ::ItemData *item2 = database.GetItem(items[i]);
 
 		if (item2) {
-			bool noDrop=(item2->NoDrop == 0); // Field is reverse logic
-			bool petCanHaveNoDrop = (RuleB(Pets, CanTakeNoDrop) &&
-									 _CLIENTPET(this) && GetPetType() <= petOther);
+			bool noDrop           = (item2->NoDrop == 0); // Field is reverse logic
+			bool petCanHaveNoDrop = (RuleB(Pets, CanTakeNoDrop) && _CLIENTPET(this) && GetPetType() <= petOther);
 
 			if (!noDrop || petCanHaveNoDrop) {
-				AddLootDrop(item2, &itemlist, 0, 1, 255, true, true);
+				AddLootDrop(item2, &itemlist, NPC::NewLootDropEntry(), true);
 			}
 		}
 	}
@@ -1086,7 +1105,7 @@ bool ZoneDatabase::GetBasePetItems(int32 equipmentset, uint32 *items) {
 
 		if (results.RowCount() != 1) {
 			// invalid set reference, it doesn't exist
-			Log(Logs::General, Logs::Error, "Error in GetBasePetItems equipment set '%d' does not exist", curset);
+			LogError("Error in GetBasePetItems equipment set [{}] does not exist", curset);
 			return false;
 		}
 
@@ -1100,7 +1119,7 @@ bool ZoneDatabase::GetBasePetItems(int32 equipmentset, uint32 *items) {
 			{
 				slot = atoi(row[0]);
 
-				if (slot > EQEmu::invslot::EQUIPMENT_END)
+				if (slot > EQ::invslot::EQUIPMENT_END)
 					continue;
 
 				if (items[slot] == 0)

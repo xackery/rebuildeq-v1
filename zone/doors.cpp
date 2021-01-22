@@ -28,6 +28,8 @@
 #include "string_ids.h"
 #include "worldserver.h"
 #include "zonedb.h"
+#include "zone_store.h"
+#include "../common/repositories/criteria/content_filter_criteria.h"
 
 #include <iostream>
 #include <string.h>
@@ -40,7 +42,7 @@
 extern EntityList entity_list;
 extern WorldServer worldserver;
 
-Doors::Doors(const Door* door) :
+Doors::Doors(const Door *door) :
 		close_timer(5000),
 		m_Position(door->pos_x, door->pos_y, door->pos_z, door->heading),
 		m_Destination(door->dest_x, door->dest_y, door->dest_z, door->dest_heading) {
@@ -83,8 +85,8 @@ Doors::Doors(const char *model, const glm::vec4 &position, uint8 open_type, uint
 	strn0cpy(door_name, model, 32);
 	strn0cpy(destination_zone_name, "NONE", 32);
 
-	this->database_id = (uint32) database.GetDoorsCountPlusOne(zone->GetShortName(), zone->GetInstanceVersion());
-	this->door_id     = (uint8) database.GetDoorsDBCountPlusOne(zone->GetShortName(), zone->GetInstanceVersion());
+	this->database_id = (uint32) content_db.GetDoorsCountPlusOne(zone->GetShortName(), zone->GetInstanceVersion());
+	this->door_id     = (uint8) content_db.GetDoorsDBCountPlusOne(zone->GetShortName(), zone->GetInstanceVersion());
 
 	this->open_type               = open_type;
 	this->size                    = size;
@@ -117,14 +119,14 @@ bool Doors::Process()
 	if (close_timer.Enabled() && close_timer.Check() && IsDoorOpen()) {
 		if (open_type == 40 || GetTriggerType() == 1) {
 			auto outapp = new EQApplicationPacket(OP_MoveDoor, sizeof(MoveDoor_Struct));
-			MoveDoor_Struct* md = (MoveDoor_Struct*)outapp->pBuffer;
+			MoveDoor_Struct *md = (MoveDoor_Struct *) outapp->pBuffer;
 			md->doorid = door_id;
 			md->action = invert_state == 0 ? CLOSE_DOOR : CLOSE_INVDOOR;
 			entity_list.QueueClients(0, outapp);
 			safe_delete(outapp);
 		}
 
-		triggered=false;
+		triggered = false;
 		close_timer.Disable();
 		SetOpenState(false);
 	}
@@ -133,33 +135,33 @@ bool Doors::Process()
 
 void Doors::HandleClick(Client* sender, uint8 trigger) {
 	Log(Logs::Detail, Logs::Doors,
-		"%s clicked door %s (dbid %d, eqid %d) at %s",
-		sender->GetName(),
-		this->door_name,
-		this->database_id,
-		this->door_id,
-		to_string(m_Position).c_str()
+	    "%s clicked door %s (dbid %d, eqid %d) at %s",
+	    sender->GetName(),
+	    this->door_name,
+	    this->database_id,
+	    this->door_id,
+	    to_string(m_Position).c_str()
 	);
 
 	Log(Logs::Detail, Logs::Doors,
-		"incline %d, open_type %d, lockpick %d, key %d, nokeyring %d, trigger %d type %d, param %d",
-		this->incline,
-		this->open_type,
-		this->lockpick,
-		this->key_item_id,
-		this->no_key_ring,
-		this->trigger_door,
-		this->trigger_type,
-		this->door_param
+	    "incline %d, open_type %d, lockpick %d, key %d, nokeyring %d, trigger %d type %d, param %d",
+	    this->incline,
+	    this->open_type,
+	    this->lockpick,
+	    this->key_item_id,
+	    this->no_key_ring,
+	    this->trigger_door,
+	    this->trigger_type,
+	    this->door_param
 	);
 
 	Log(Logs::Detail, Logs::Doors,
-		"disable_timer '%s',size %d, invert %d, dest: %s %s",
-		(this->disable_timer ? "true" : "false"),
-		this->size,
-		this->invert_state,
-		this->destination_zone_name,
-		to_string(m_Destination).c_str()
+	    "disable_timer '%s',size %d, invert %d, dest: %s %s",
+	    (this->disable_timer ? "true" : "false"),
+	    this->size,
+	    this->invert_state,
+	    this->destination_zone_name,
+	    to_string(m_Destination).c_str()
 	);
 
 	auto outapp = new EQApplicationPacket(OP_MoveDoor, sizeof(MoveDoor_Struct));
@@ -171,7 +173,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 			if (RuleI(Adventure, ItemIDToEnablePorts) != 0) {
 				if (!sender->KeyRingCheck(RuleI(Adventure, ItemIDToEnablePorts))) {
 					if (sender->GetInv().HasItem(RuleI(Adventure, ItemIDToEnablePorts)) == INVALID_INDEX) {
-						sender->Message_StringID(13, DUNGEON_SEALED);
+						sender->MessageString(Chat::Red, DUNGEON_SEALED);
 						safe_delete(outapp);
 						return;
 					} else {
@@ -205,12 +207,14 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 		}
 	}
 
+	// todo: if IsDzDoor() call Client::MovePCDynamicZone(target_zone_id) (for systems that use dzs)
+
 	uint32 required_key_item       = GetKeyItem();
 	uint8  disable_add_to_key_ring = GetNoKeyring();
 	uint32 player_has_key          = 0;
 	uint32 player_key              = 0;
 
-	const EQEmu::ItemInstance *lock_pick_item = sender->GetInv().GetItem(EQEmu::invslot::slotCursor);
+	const EQ::ItemInstance *lock_pick_item = sender->GetInv().GetItem(EQ::invslot::slotCursor);
 	player_has_key = static_cast<uint32>(sender->GetInv().HasItem(required_key_item, 1));
 
 	if (player_has_key != INVALID_INDEX) {
@@ -266,7 +270,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 				strcpy(door_message, "Door is locked by an unknown guild");
 			}
 
-			sender->Message(4, door_message);
+			sender->Message(Chat::LightBlue, door_message);
 			safe_delete(outapp);
 			return;
 		}
@@ -274,13 +278,13 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 		/**
 		 * Key required
 		 */
-		sender->Message(4, "This is locked...");
+		sender->Message(Chat::LightBlue, "This is locked...");
 
 		/**
 		 * GM can always open locks
 		 */
 		if (sender->GetGM()) {
-			sender->Message_StringID(4,DOORS_GM);
+			sender->MessageString(Chat::LightBlue, DOORS_GM);
 
 			if (!IsDoorOpen() || (open_type == 58)) {
 				move_door_packet->action = static_cast<uint8>(invert_state == 0 ? OPEN_DOOR : OPEN_INVDOOR);
@@ -290,22 +294,22 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 
 		}
 
-			/**
-             * Player has something they are trying to open it with
-             */
+		/**
+		 * Player has something they are trying to open it with
+		 */
 		else if (player_key) {
 
 			/**
 			 * Key required and client is using the right key
 			 */
 			if (required_key_item &&
-				(required_key_item == player_key)) {
+			    (required_key_item == player_key)) {
 
 				if (!disable_add_to_key_ring) {
 					sender->KeyRingAdd(player_key);
 				}
 
-				sender->Message(4, "You got it open!");
+				sender->Message(Chat::LightBlue, "You got it open!");
 
 				if (!IsDoorOpen() || (open_type == 58)) {
 					move_door_packet->action = static_cast<uint8>(invert_state == 0 ? OPEN_DOOR : OPEN_INVDOOR);
@@ -315,16 +319,16 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 			}
 		}
 
-			/**
-             * Try Lock pick
-             */
+		/**
+		 * Try Lock pick
+		 */
 		else if (lock_pick_item != nullptr) {
-			if (sender->GetSkill(EQEmu::skills::SkillPickLock)) {
-				if (lock_pick_item->GetItem()->ItemType == EQEmu::item::ItemTypeLockPick) {
-					float player_pick_lock_skill = sender->GetSkill(EQEmu::skills::SkillPickLock);
-					sender->CheckIncreaseSkill(EQEmu::skills::SkillPickLock, nullptr, 1);
+			if (sender->GetSkill(EQ::skills::SkillPickLock)) {
+				if (lock_pick_item->GetItem()->ItemType == EQ::item::ItemTypeLockPick) {
+					float player_pick_lock_skill = sender->GetSkill(EQ::skills::SkillPickLock);
+					sender->CheckIncreaseSkill(EQ::skills::SkillPickLock, nullptr, 1);
 
-					Log(Logs::General, Logs::Skills, "Client has lockpicks: skill=%f", player_pick_lock_skill);
+					LogSkills("Client has lockpicks: skill=[{}]", player_pick_lock_skill);
 
 					if (GetLockpick() <= player_pick_lock_skill) {
 						if (!IsDoorOpen()) {
@@ -332,27 +336,27 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 						} else {
 							move_door_packet->action = static_cast<uint8>(invert_state == 0 ? CLOSE_DOOR : CLOSE_INVDOOR);
 						}
-						sender->Message_StringID(4, DOORS_SUCCESSFUL_PICK);
+						sender->MessageString(Chat::LightBlue, DOORS_SUCCESSFUL_PICK);
 					} else {
-						sender->Message_StringID(4, DOORS_INSUFFICIENT_SKILL);
+						sender->MessageString(Chat::LightBlue, DOORS_INSUFFICIENT_SKILL);
 						safe_delete(outapp);
 						return;
 					}
 				} else {
-					sender->Message_StringID(4, DOORS_NO_PICK);
+					sender->MessageString(Chat::LightBlue, DOORS_NO_PICK);
 					safe_delete(outapp);
 					return;
 				}
 			} else {
-				sender->Message_StringID(4, DOORS_CANT_PICK);
+				sender->MessageString(Chat::LightBlue, DOORS_CANT_PICK);
 				safe_delete(outapp);
 				return;
 			}
 		}
 
-			/**
-             * Locked door and nothing to open it with
-             */
+		/**
+		 * Locked door and nothing to open it with
+		 */
 		else {
 
 			/**
@@ -360,14 +364,14 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 			 */
 			if (sender->KeyRingCheck(required_key_item)) {
 				player_key = required_key_item;
-				sender->Message(4, "You got it open!"); // more debug spam
+				sender->Message(Chat::LightBlue, "You got it open!"); // more debug spam
 				if (!IsDoorOpen() || (open_type == 58)) {
 					move_door_packet->action = static_cast<uint8>(invert_state == 0 ? OPEN_DOOR : OPEN_INVDOOR);
 				} else {
 					move_door_packet->action = static_cast<uint8>(invert_state == 0 ? CLOSE_DOOR : CLOSE_INVDOOR);
 				}
 			} else {
-				sender->Message_StringID(4, DOORS_LOCKED);
+				sender->MessageString(Chat::LightBlue, DOORS_LOCKED);
 				safe_delete(outapp);
 				return;
 			}
@@ -402,18 +406,18 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 	if ((GetTriggerDoorID() != 0) && (GetTriggerType() == 1)) {
 		Doors *trigger_door_entity = entity_list.FindDoor(GetTriggerDoorID());
 		if (trigger_door_entity && !trigger_door_entity->triggered) {
-			triggered=true;
+			triggered = true;
 			trigger_door_entity->HandleClick(sender, 1);
 		} else {
-			triggered=false;
+			triggered = false;
 		}
 	} else if ((GetTriggerDoorID() != 0) && (GetTriggerType() != 1)) {
 		Doors *trigger_door_entity = entity_list.FindDoor(GetTriggerDoorID());
 		if (trigger_door_entity && !trigger_door_entity->triggered) {
-			triggered=true;
+			triggered = true;
 			trigger_door_entity->HandleClick(sender, 0);
 		} else {
-			triggered=false;
+			triggered = false;
 		}
 	}
 
@@ -421,7 +425,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 	 * Teleport door
 	 */
 	if (((open_type == 57) || (open_type == 58)) &&
-		(strncmp(destination_zone_name, "NONE", strlen("NONE")) != 0)) {
+	    (strncmp(destination_zone_name, "NONE", strlen("NONE")) != 0)) {
 
 		/**
 		 * If click destination is same zone and doesn't require a key
@@ -439,18 +443,18 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 					m_Destination.w
 			);
 		}
-			/**
-             * If requires a key
-             */
+		/**
+		 * If requires a key
+		 */
 		else if (
 				(!IsDoorOpen() || open_type == 58) &&
 				(required_key_item && ((required_key_item == player_key) || sender->GetGM()))
-				) {
+		) {
 
 			if (!disable_add_to_key_ring) {
 				sender->KeyRingAdd(player_key);
 			}
-			if (database.GetZoneID(destination_zone_name) == zone->GetZoneID()) {
+			if (ZoneID(destination_zone_name) == zone->GetZoneID()) {
 				sender->MovePC(
 						zone->GetZoneID(),
 						zone->GetInstanceID(),
@@ -461,7 +465,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 				);
 			} else {
 				sender->MovePC(
-						database.GetZoneID(destination_zone_name),
+						ZoneID(destination_zone_name),
 						static_cast<uint32>(destination_instance_id),
 						m_Destination.x,
 						m_Destination.y,
@@ -472,7 +476,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 		}
 
 		if ((!IsDoorOpen() || open_type == 58) && (!required_key_item)) {
-			if (database.GetZoneID(destination_zone_name) == zone->GetZoneID()) {
+			if (ZoneID(destination_zone_name) == zone->GetZoneID()) {
 				sender->MovePC(
 						zone->GetZoneID(),
 						zone->GetInstanceID(),
@@ -483,7 +487,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 				);
 			} else {
 				sender->MovePC(
-						database.GetZoneID(destination_zone_name),
+					ZoneID(destination_zone_name),
 						static_cast<uint32>(this->destination_instance_id),
 						m_Destination.x,
 						m_Destination.y,
@@ -495,7 +499,7 @@ void Doors::HandleClick(Client* sender, uint8 trigger) {
 	}
 }
 
-void Doors::NPCOpen(NPC* sender, bool alt_mode)
+void Doors::Open(Mob* sender, bool alt_mode)
 {
 	if (sender) {
 		if (GetTriggerType() == 255 || GetTriggerDoorID() > 0 || GetLockpick() != 0 || GetKeyItem() != 0 || open_type == 59 || open_type == 58 || !sender->IsNPC()) { // this object isnt triggered or door is locked - NPCs should not open locked doors!
@@ -633,13 +637,13 @@ int32 ZoneDatabase::GetDoorsCount(uint32* oMaxID, const char *zone_name, int16 v
 }
 
 int32 ZoneDatabase::GetDoorsCountPlusOne(const char *zone_name, int16 version) {
-	std::string query = StringFormat(
-			"SELECT MAX(id) FROM doors WHERE zone = '%s' AND version = %u",
-			zone_name,
-			version
-	);
-	auto results = QueryDatabase(query);
-	if (!results.Success()) {
+    std::string query = StringFormat(
+    		"SELECT MAX(id) FROM doors WHERE zone = '%s' AND version = %u",
+		    zone_name,
+		    version
+    );
+    auto results = QueryDatabase(query);
+    if (!results.Success()) {
 		return -1;
 	}
 
@@ -678,7 +682,7 @@ int32 ZoneDatabase::GetDoorsDBCountPlusOne(const char *zone_name, int16 version)
 }
 
 bool ZoneDatabase::LoadDoors(int32 door_count, Door *into, const char *zone_name, int16 version) {
-	Log(Logs::General, Logs::Status, "Loading Doors from database...");
+	LogInfo("Loading Doors from database");
 
 	std::string query = StringFormat(
 			" SELECT "
@@ -715,10 +719,12 @@ bool ZoneDatabase::LoadDoors(int32 door_count, Door *into, const char *zone_name
 			" WHERE "
 			" 	zone = '%s'  "
 			" 	AND ( version = % u OR version = - 1 )  "
+            " %s "
 			" ORDER BY "
 			" 	doorid ASC ",
 			zone_name,
-			version
+			version,
+			ContentFilterCriteria::apply().c_str()
 	);
 	auto results = QueryDatabase(query);
 	if (!results.Success()) {
@@ -819,25 +825,40 @@ void Doors::SetDisableTimer(bool flag) {
 
 void Doors::CreateDatabaseEntry()
 {
-	if(database.GetDoorsDBCountPlusOne(zone->GetShortName(), zone->GetInstanceVersion()) - 1 >= 255) {
+	if (content_db.GetDoorsDBCountPlusOne(zone->GetShortName(), zone->GetInstanceVersion()) - 1 >= 255) {
 		return;
 	}
 
 	/**
 	 * Persist
 	 */
-	database.InsertDoor(
-			GetDoorDBID(),
-			GetDoorID(),
-			GetDoorName(),
-			m_Position,
-			GetOpenType(),
-			static_cast<uint16>(GetGuildID()),
-			GetLockpick(),
-			GetKeyItem(),
-			static_cast<uint8>(GetDoorParam()),
-			static_cast<uint8>(GetInvertState()),
-			GetIncline(),
-			GetSize()
+	content_db.InsertDoor(
+		GetDoorDBID(),
+		GetDoorID(),
+		GetDoorName(),
+		m_Position,
+		GetOpenType(),
+		static_cast<uint16>(GetGuildID()),
+		GetLockpick(),
+		GetKeyItem(),
+		static_cast<uint8>(GetDoorParam()),
+		static_cast<uint8>(GetInvertState()),
+		GetIncline(),
+		GetSize()
 	);
+}
+
+float Doors::GetX()
+{
+	return m_Position.x;
+}
+
+float Doors::GetY()
+{
+	return m_Position.y;
+}
+
+float Doors::GetZ()
+{
+	return m_Position.z;
 }

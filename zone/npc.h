@@ -23,7 +23,9 @@
 #include "mob.h"
 #include "qglobals.h"
 #include "zonedb.h"
+#include "zone_store.h"
 #include "zonedump.h"
+#include "../common/loottable.h"
 
 #include <deque>
 #include <list>
@@ -51,6 +53,7 @@ typedef struct {
 	float min_z;
 	float max_z;
 	bool say;
+	bool proximity_set;
 } NPCProximity;
 
 struct AISpells_Struct {
@@ -101,7 +104,7 @@ class Raid;
 class Spawn2;
 class Aura;
 
-namespace EQEmu
+namespace EQ
 {
 	struct ItemData;
 }
@@ -113,16 +116,18 @@ public:
 	static bool	SpawnZoneController();
 	static int8 GetAILevel(bool iForceReRead = false);
 
-	NPC(const NPCType* data, Spawn2* respawn, const glm::vec4& position, int iflymode, bool IsCorpse = false);
+	NPC(const NPCType* npc_type_data, Spawn2* respawn, const glm::vec4& position, GravityBehavior iflymode, bool IsCorpse = false);
 
 	virtual ~NPC();
 
-	static NPC *SpawnGridNodeNPC(std::string name, const glm::vec4 &position, uint32 grid_id, uint32 grid_number, uint32 pause);
+	static NPC *SpawnNodeNPC(std::string name, std::string last_name, const glm::vec4 &position);
+	static void SpawnGridNodeNPC(const glm::vec4 &position, int32 grid_number, int32 zoffset);
+	static void SpawnZonePointNodeNPC(std::string name, const glm::vec4 &position);
 
 	//abstract virtual function implementations requird by base abstract class
-	virtual bool Death(Mob* killerMob, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill);
-	virtual void Damage(Mob* from, int32 damage, uint16 spell_id, EQEmu::skills::SkillType attack_skill, bool avoidable = true, int8 buffslot = -1, bool iBuffTic = false, eSpecialAttacks special = eSpecialAttacks::None);
-	virtual bool Attack(Mob* other, int Hand = EQEmu::invslot::slotPrimary, bool FromRiposte = false, bool IsStrikethrough = false,
+	virtual bool Death(Mob* killerMob, int32 damage, uint16 spell_id, EQ::skills::SkillType attack_skill);
+	virtual void Damage(Mob* from, int32 damage, uint16 spell_id, EQ::skills::SkillType attack_skill, bool avoidable = true, int8 buffslot = -1, bool iBuffTic = false, eSpecialAttacks special = eSpecialAttacks::None);
+	virtual bool Attack(Mob* other, int Hand = EQ::invslot::slotPrimary, bool FromRiposte = false, bool IsStrikethrough = false,
 		bool IsFromSpell = false, ExtraAttackOptions *opts = nullptr);
 	virtual bool HasRaid() { return false; }
 	virtual bool HasGroup() { return false; }
@@ -148,13 +153,13 @@ public:
 	virtual bool	AI_IdleCastCheck();
 	virtual void	AI_Event_SpellCastFinished(bool iCastSucceeded, uint16 slot);
 
+	bool AICheckCloseBeneficialSpells(NPC* caster, uint8 chance, float cast_range, uint32 spell_types);
+	void AIYellForHelp(Mob* sender, Mob* attacker);
+
 	void LevelScale();
-	void CalcNPCResists();
-	void CalcNPCRegen();
-	void CalcNPCDamage();
 
 	virtual void SetTarget(Mob* mob);
-	virtual uint16 GetSkill(EQEmu::skills::SkillType skill_num) const { if (skill_num <= EQEmu::skills::HIGHEST_SKILL) { return skills[skill_num]; } return 0; }
+	virtual uint16 GetSkill(EQ::skills::SkillType skill_num) const { if (skill_num <= EQ::skills::HIGHEST_SKILL) { return skills[skill_num]; } return 0; }
 
 	void CalcItemBonuses(StatBonuses *newbon);
 	virtual void CalcBonuses();
@@ -175,7 +180,7 @@ public:
 	virtual void	RangedAttack(Mob* other);
 	virtual void	ThrowingAttack(Mob* other) { }
 	int32 GetNumberOfAttacks() const { return attack_count; }
-	void DoRangedAttackDmg(Mob* other, bool Launch = true, int16 damage_mod = 0, int16 chance_mod = 0, EQEmu::skills::SkillType skill = EQEmu::skills::SkillArchery, float speed = 4.0f, const char *IDFile = nullptr);
+	void DoRangedAttackDmg(Mob* other, bool Launch = true, int16 damage_mod = 0, int16 chance_mod = 0, EQ::skills::SkillType skill = EQ::skills::SkillArchery, float speed = 4.0f, const char *IDFile = nullptr);
 
 	bool	DatabaseCastAccepted(int spell_id);
 	bool	IsFactionListAlly(uint32 other_faction);
@@ -192,7 +197,7 @@ public:
 	virtual void SpellProcess();
 	virtual void FillSpawnStruct(NewSpawn_Struct* ns, Mob* ForWho);
 
-	void	AddItem(const EQEmu::ItemData* item, uint16 charges, bool equipitem = true);
+	void	AddItem(const EQ::ItemData* item, uint16 charges, bool equipitem = true);
 	void	AddItem(uint32 itemid, uint16 charges, bool equipitem = true, uint32 aug1 = 0, uint32 aug2 = 0, uint32 aug3 = 0, uint32 aug4 = 0, uint32 aug5 = 0, uint32 aug6 = 0);
 	void	AddLootTable();
 	void	AddLootTable(uint32 ldid);
@@ -203,7 +208,7 @@ public:
 	void AddTierTable();
 	void	DescribeAggro(Client *towho, Mob *mob, bool verbose);
 	void	RemoveItem(uint32 item_id, uint16 quantity = 0, uint16 slot = 0);
-	void	CheckMinMaxLevel(Mob *them);
+	void	CheckTrivialMinMaxLevelDrop(Mob *killer);
 	void	ClearItemList();
 	ServerLootItem_Struct*	GetItem(int slot_id);
 	void	AddCash(uint16 in_copper, uint16 in_silver, uint16 in_gold, uint16 in_platinum);
@@ -228,22 +233,19 @@ public:
 
 	virtual int32 CalcMaxMana();
 	void SetGrid(int32 grid_){ grid=grid_; }
-	void SetSp2(uint32 sg2){ spawn_group=sg2; }
+	void SetSpawnGroupId(uint32 sg2){ spawn_group_id =sg2; }
 	void SetWaypointMax(uint16 wp_){ wp_m=wp_; }
 	void SetSaveWaypoint(uint16 wp_){ save_wp=wp_; }
 
 	uint16 GetWaypointMax() const { return wp_m; }
 	int32 GetGrid() const { return grid; }
-	uint32 GetSp2() const { return spawn_group; }
+	uint32 GetSpawnGroupId() const { return spawn_group_id; }
 	uint32 GetSpawnPointID() const;
 
 	glm::vec4 const GetSpawnPoint() const { return m_SpawnPoint; }
 	glm::vec4 const GetGuardPoint() const { return m_GuardPoint; }
 	EmuAppearance GetGuardPointAnim() const { return guard_anim; }
 	void SaveGuardPointAnim(EmuAppearance anim) { guard_anim = anim; }
-
-	void SetFlyMode(uint8 FlyMode){ flymode=FlyMode; }
-	uint32 GetFlyMode() const { return flymode; }
 
 	uint8 GetPrimSkill()	const { return prim_melee_type; }
 	uint8 GetSecSkill()	const { return sec_melee_type; }
@@ -268,12 +270,23 @@ public:
 
 	void	SignalNPC(int _signal_id);
 
-	inline int32	GetNPCFactionID()	const { return npc_faction_id; }
-	inline int32			GetPrimaryFaction()	const { return primary_faction; }
-	int32	GetNPCHate(Mob* in_ent) {return hate_list.GetEntHateAmount(in_ent);}
-	bool	IsOnHatelist(Mob*p) { return hate_list.IsEntOnHateList(p);}
+	inline int32 GetNPCFactionID() const
+	{ return npc_faction_id; }
 
-	void	SetNPCFactionID(int32 in) { npc_faction_id = in; database.GetFactionIdsForNPC(npc_faction_id, &faction_list, &primary_faction); }
+	inline int32 GetPrimaryFaction() const
+	{ return primary_faction; }
+
+	int32 GetNPCHate(Mob *in_ent)
+	{ return hate_list.GetEntHateAmount(in_ent); }
+
+	bool IsOnHatelist(Mob *p)
+	{ return hate_list.IsEntOnHateList(p); }
+
+	void SetNPCFactionID(int32 in)
+	{
+		npc_faction_id = in;
+		content_db.GetFactionIdsForNPC(npc_faction_id, &faction_list, &primary_faction);
+	}
 
     glm::vec4 m_SpawnPoint;
 
@@ -292,20 +305,35 @@ public:
 	void	PickPocket(Client* thief);
 	void	Disarm(Client* client, int chance);
 	void	StartSwarmTimer(uint32 duration) { swarm_timer.Start(duration); }
-	void	AddLootDrop(const EQEmu::ItemData*dbitem, ItemList* itemlistconst, int16 charges, uint8 minlevel, uint8 maxlevel, bool equipit, bool wearchange = false, uint32 aug1 = 0, uint32 aug2 = 0, uint32 aug3 = 0, uint32 aug4 = 0, uint32 aug5 = 0, uint32 aug6 = 0);
+
+	void AddLootDrop(
+		const EQ::ItemData *item2,
+		ItemList *itemlist,
+		LootDropEntries_Struct loot_drop,
+		bool wear_change = false,
+		uint32 aug1 = 0,
+		uint32 aug2 = 0,
+		uint32 aug3 = 0,
+		uint32 aug4 = 0,
+		uint32 aug5 = 0,
+		uint32 aug6 = 0
+	);
+
+	bool MeetsLootDropLevelRequirements(LootDropEntries_Struct loot_drop);
+
 	virtual void DoClassAttacks(Mob *target);
 	void	CheckSignal();
 	inline bool IsNotTargetableWithHotkey() const { return no_target_hotkey; }
 	int32 GetNPCHPRegen() const { return hp_regen + itembonuses.HPRegen + spellbonuses.HPRegen; }
 	inline const char* GetAmmoIDfile() const { return ammo_idfile; }
 
-	void ModifyStatsOnCharm(bool bRemoved);
+	void ModifyStatsOnCharm(bool is_charm_removed);
 
 	//waypoint crap
 	int					GetMaxWp() const { return max_wp; }
 	void				DisplayWaypointInfo(Client *to);
 	void				CalculateNewWaypoint();
-	void				AssignWaypoints(int32 grid);
+	void				AssignWaypoints(int32 grid_id, int start_wp = 0);
 	void				SetWaypointPause();
 	void				UpdateWaypoint(int wp_index);
 
@@ -314,18 +342,30 @@ public:
 	void				ResumeWandering();
 	void				PauseWandering(int pausetime);
 	void				MoveTo(const glm::vec4& position, bool saveguardspot);
-	void				GetClosestWaypoint(std::list<wplist> &wp_list, int count, const glm::vec3& location);
+	void				GetClosestWaypoints(std::list<wplist> &wp_list, int count, const glm::vec3& location);
+	int					GetClosestWaypoint(const glm::vec3& location);
 
-	uint32				GetEquipment(uint8 material_slot) const;	// returns item id
+	uint32				GetEquippedItemFromTextureSlot(uint8 material_slot) const;	// returns item id
 	int32				GetEquipmentMaterial(uint8 material_slot) const;
 
 	void				NextGuardPosition();
-	void				SaveGuardSpot(bool iClearGuardSpot = false);
+	void				SaveGuardSpot(const glm::vec4 &pos);
 	inline bool			IsGuarding() const { return(m_GuardPoint.w != 0); }
 	void				SaveGuardSpotCharm();
-	void				RestoreGuardSpotCharm();
-	void				AI_SetRoambox(float iDist, float iRoamDist, uint32 iDelay = 2500, uint32 iMinDelay = 2500);
-	void				AI_SetRoambox(float iDist, float iMaxX, float iMinX, float iMaxY, float iMinY, uint32 iDelay = 2500, uint32 iMinDelay = 2500);
+
+	uint16 GetMeleeTexture1() const;
+	uint16 GetMeleeTexture2() const;
+
+	void RestoreGuardSpotCharm();
+
+	void AI_SetRoambox(
+		float max_distance,
+		float roam_distance_variance,
+		uint32 delay = 2500,
+		uint32 min_delay = 2500
+	);
+
+	void				AI_SetRoambox(float distance, float max_x, float min_x, float max_y, float min_y, uint32 delay = 2500, uint32 min_delay = 2500);
 
 	//mercenary stuff
 	void	LoadMercTypes();
@@ -345,6 +385,14 @@ public:
 	inline const uint32 GetNPCSpellsID()	const { return npc_spells_id; }
 	inline const uint32 GetNPCSpellsEffectsID()	const { return npc_spells_effects_id; }
 
+	float GetProximityMinX();
+	float GetProximityMaxX();
+	float GetProximityMinY();
+	float GetProximityMaxY();
+	float GetProximityMinZ();
+	float GetProximityMaxZ();
+	bool  IsProximitySet();
+
 	ItemList	itemlist; //kathgar - why is this public? Doing other things or I would check the code
 
 	NPCProximity* proximity;
@@ -361,7 +409,7 @@ public:
 	void	SetAvoidanceRating(int32 d) { avoidance_rating = d;}
 	int32 GetRawAC() const { return AC; }
 
-	void	ModifyNPCStat(const char *identifier, const char *newValue);
+	void	ModifyNPCStat(const char *identifier, const char *new_value);
 	virtual void SetLevel(uint8 in_level, bool command = false);
 
 	bool IsLDoNTrapped() const { return (ldon_trapped); }
@@ -388,7 +436,7 @@ public:
 	/* Only allows players that killed corpse to loot */
 	const bool HasPrivateCorpse() const { return NPCTypedata->private_corpse; }
 
-	const bool IsUnderwaterOnly() const { return NPCTypedata->underwater; }
+	virtual const bool IsUnderwaterOnly() const { return NPCTypedata->underwater; }
 	const char* GetRawNPCTypeName() const { return NPCTypedata->name; }
 
 	void ChangeLastName(const char* in_lastname);
@@ -425,7 +473,7 @@ public:
 	uint32	GetSpawnKillCount();
 	int	GetScore();
 	void	mod_prespawn(Spawn2 *sp);
-	int	mod_npc_damage(int damage, EQEmu::skills::SkillType skillinuse, int hand, const EQEmu::ItemData* weapon, Mob* other);
+	int	mod_npc_damage(int damage, EQ::skills::SkillType skillinuse, int hand, const EQ::ItemData* weapon, Mob* other);
 	void	mod_npc_killed_merit(Mob* c);
 	void	mod_npc_killed(Mob* oos);
 	void	AISpellsList(Client *c);
@@ -435,15 +483,32 @@ public:
 	void	SetHeroForgeModel(uint32 model) { herosforgemodel = model; }
 
 	bool IsRaidTarget() const { return raid_target; };
-	void ResetHPUpdateTimer() { sendhpupdate_timer.Start(); }	
+	void ResetHPUpdateTimer() { send_hp_update_timer.Start(); }
 	std::vector<SpecialLoot_Struct> SpecialLoot(bool card_only);
-
 	bool IgnoreDespawn() { return ignore_despawn; }
+
+	void SetSimpleRoamBox(float box_size, float move_distance = 0, int move_delay = 0);
+
+	float GetRoamboxMaxX() const;
+	float GetRoamboxMaxY() const;
+	float GetRoamboxMinX() const;
+	float GetRoamboxMinY() const;
+	float GetRoamboxDistance() const;
+	float GetRoamboxDestinationX() const;
+	float GetRoamboxDestinationY() const;
+	float GetRoamboxDestinationZ() const;
+	uint32 GetRoamboxDelay() const;
+	uint32 GetRoamboxMinDelay() const;
 
 	std::unique_ptr<Timer> AIautocastspell_timer;
 
-	bool is_hidden_stash_used;
+	virtual int GetStuckBehavior() const { return NPCTypedata_ours ? NPCTypedata_ours->stuck_behavior : NPCTypedata->stuck_behavior; }
 
+	inline bool IsSkipAutoScale() const { return skip_auto_scale; }
+
+	void RecalculateSkills();
+
+	static LootDropEntries_Struct NewLootDropEntry();
 protected:
 
 	const NPCType*	NPCTypedata;
@@ -452,26 +517,27 @@ protected:
 	friend class EntityList;
 	friend class Aura;
 	std::list<struct NPCFaction*> faction_list;
-	uint32	copper;
-	uint32	silver;
-	uint32	gold;
-	uint32	platinum;
-	int32	grid;
-	uint32	spawn_group;
-	uint16	wp_m;
+	uint32                        copper;
+	uint32                        silver;
+	uint32                        gold;
+	uint32                        platinum;
+	int32                         grid;
+	uint32                        spawn_group_id;
+	uint16                        wp_m;
 
 	int32	npc_faction_id;
 	int32	primary_faction;
 
 	Timer	attacked_timer;		//running while we are being attacked (damaged)
 	Timer	swarm_timer;
+	Timer	monkattack_timer;	//additional timer for tiger claw usage
 	Timer	classattack_timer;
 	Timer	knightattack_timer;
 	Timer	assist_timer;		//ask for help from nearby mobs
 	Timer	qglobal_purge_timer;
 
 	bool	combat_event;	//true if we are in combat, false otherwise
-	Timer	sendhpupdate_timer;
+	Timer	send_hp_update_timer;
 	Timer	enraged_timer;
 	Timer *reface_timer;
 
@@ -513,6 +579,7 @@ protected:
 	int default_accuracy_rating;
 	int default_avoidance_rating;
 	int default_atk;
+	char default_special_abilities[512];
 
 	// when charmed, switch to these
 	int charm_ac;
@@ -545,17 +612,19 @@ protected:
 	float roambox_min_x;
 	float roambox_min_y;
 	float roambox_distance;
-	float roambox_movingto_x;
-	float roambox_movingto_y;
+	float roambox_destination_x;
+	float roambox_destination_y;
+	float roambox_destination_z;
 	uint32 roambox_delay;
 	uint32 roambox_min_delay;
 
-	uint16	skills[EQEmu::skills::HIGHEST_SKILL + 1];
+	uint16	skills[EQ::skills::HIGHEST_SKILL + 1];
 
-	uint32	equipment[EQEmu::invslot::EQUIPMENT_COUNT];	//this is an array of item IDs
+	uint32	equipment[EQ::invslot::EQUIPMENT_COUNT];	//this is an array of item IDs
 
 	uint32	herosforgemodel;			//this is the Hero Forge Armor Model (i.e 63 or 84 or 203)
-	uint16	d_melee_texture1;			//this is an item Material value
+	uint16	d_melee_texture1;
+	//this is an item Material value
 	uint16	d_melee_texture2;			//this is an item Material value (offhand)
 	const char*	ammo_idfile;			//this determines projectile graphic "IT###" (see item field 'idfile')
 	uint8	prim_melee_type;			//Sets the Primary Weapon attack message and animation
@@ -584,7 +653,9 @@ protected:
 private:
 	uint32	loottable_id;
 	bool	skip_global_loot;
+	bool	skip_auto_scale;
 	bool	p_depop;
+
 };
 
 #endif

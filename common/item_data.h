@@ -47,7 +47,7 @@
 #include "emu_constants.h"
 
 
-namespace EQEmu
+namespace EQ
 {
 	namespace item {
 		enum ItemClass {
@@ -413,7 +413,7 @@ namespace EQEmu
 		int32	SkillModMax;	// Max skill point modification
 		uint32	SkillModType;	// Type of skill for SkillModValue to apply to
 		uint32	BaneDmgRace;	// Bane Damage Race
-		int8	BaneDmgAmt;		// Bane Damage Body Amount
+		int32	BaneDmgAmt;		// Bane Damage Body Amount
 		uint32	BaneDmgBody;	// Bane Damage Body
 		bool	Magic;			// True=Magic Item, False=not
 		int32	CastTime_;
@@ -434,6 +434,7 @@ namespace EQEmu
 		//uint32	Unk054;
 		int16	MaxCharges;		// Maximum charges items can hold: -1 if not a chargeable item
 		uint8	ItemType;		// Item Type/Skill (itemClass* from above)
+		int32	SubType;		// Some items have sub types that can be used for other things (unbreakable fishing poles, SE_FFItemClass)
 		uint8	Material;		// Item material type
 		uint32	HerosForgeModel;// Hero's Forge Armor Model Type (2-13?)
 		float	SellRate;		// Sell rate

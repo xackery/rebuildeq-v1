@@ -60,23 +60,40 @@ Temp/
 *.out
 *.app
 
+.bash_history
+
 # CMake
 CMakeCache.txt
 CMakeFiles
 Makefile
 cmake_install.cmake
 install_manifest.txt
-
-# Visual Studio files
-*.vcxproj
-*.filters
-
-!RebuildEQ.exe
-dailyreport.yml
-
-# OS X Indexes
-.DS_Store
-
-#Jetbrains
+[Bb]uild*/
+log/
+logs/
+vcpkg/
+perl/
 
 .idea/*
+*cbp
+
+submodules/*
+cmake-build-debug/
+
+.nfs.*
+
+# Visual Studio and CMAKE Generated Files
+/.vs/
+*.vcxproj
+*.vcxproj.filters
+*.vcxproj.user
+*.cmake
+*.ilk
+*.pdb
+*.sln
+*.dir/
+libs/
+bin/
+/Win32
+/x64
+/client_files/**/CMakeFiles/

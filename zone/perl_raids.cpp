@@ -247,13 +247,14 @@ XS(XS_Raid_SplitMoney); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Raid_SplitMoney) {
 	dXSARGS;
 	if (items != 5)
-		Perl_croak(aTHX_ "Usage: Raid::SplitMoney(THIS, uint32 copper, uint32 silver, uint32 gold, uint32 platinum)");
+		Perl_croak(aTHX_ "Usage: Raid::SplitMoney(THIS, uint32 gid, uint32 copper, uint32 silver, uint32 gold, uint32 platinum)");
 	{
 		Raid   *THIS;
-		uint32 copper   = (uint32) SvUV(ST(1));
-		uint32 silver   = (uint32) SvUV(ST(2));
-		uint32 gold     = (uint32) SvUV(ST(3));
-		uint32 platinum = (uint32) SvUV(ST(4));
+		uint32 gid      = (uint32) SvUV(ST(1));
+		uint32 copper   = (uint32) SvUV(ST(2));
+		uint32 silver   = (uint32) SvUV(ST(3));
+		uint32 gold     = (uint32) SvUV(ST(4));
+		uint32 platinum = (uint32) SvUV(ST(5));
 
 		if (sv_derived_from(ST(0), "Raid")) {
 			IV tmp = SvIV((SV *) SvRV(ST(0)));
@@ -263,7 +264,7 @@ XS(XS_Raid_SplitMoney) {
 		if (THIS == nullptr)
 			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
 
-		THIS->SplitMoney(copper, silver, gold, platinum);
+		THIS->SplitMoney(gid, copper, silver, gold, platinum);
 	}
 	XSRETURN_EMPTY;
 }
@@ -420,8 +421,7 @@ XS(XS_Raid_TeleportGroup); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Raid_TeleportGroup) {
 	dXSARGS;
 	if (items != 8)
-		Perl_croak(aTHX_
-		           "Usage: Raid::TeleportGroup(THIS, Mob* sender, uint32 zone_id, float x, float y, float z, float heading, uint32 group_id)");
+		Perl_croak(aTHX_ "Usage: Raid::TeleportGroup(THIS, Mob* sender, uint32 zone_id, float x, float y, float z, float heading, uint32 group_id)");
 	{
 		Raid   *THIS;
 		Mob    *sender;
@@ -457,8 +457,7 @@ XS(XS_Raid_TeleportRaid); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Raid_TeleportRaid) {
 	dXSARGS;
 	if (items != 7)
-		Perl_croak(aTHX_
-		           "Usage: Raid::TeleportRaid(THIS, Mob* sender, uint32 zone_id, float x, float y, float z, float heading)");
+		Perl_croak(aTHX_ "Usage: Raid::TeleportRaid(THIS, Mob* sender, uint32 zone_id, float x, float y, float z, float heading)");
 	{
 		Raid   *THIS;
 		Mob    *sender;
@@ -546,6 +545,31 @@ XS(XS_Raid_GetMember) {
 	XSRETURN(1);
 }
 
+XS(XS_Raid_DoesAnyMemberHaveExpeditionLockout);
+XS(XS_Raid_DoesAnyMemberHaveExpeditionLockout) {
+	dXSARGS;
+	if (items != 3 && items != 4) {
+		Perl_croak(aTHX_ "Usage: Raid::DoesAnyMemberHaveExpeditionLockout(THIS, string expedition_name, string event_name, [int max_check_count = 0])");
+	}
+
+	Raid* THIS = nullptr;
+	if (sv_derived_from(ST(0), "Raid")) {
+		IV tmp = SvIV((SV *) SvRV(ST(0)));
+		THIS = INT2PTR(Raid *, tmp);
+	} else
+		Perl_croak(aTHX_ "THIS is not of type Raid");
+	if (THIS == nullptr)
+		Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+	std::string expedition_name(SvPV_nolen(ST(1)));
+	std::string event_name(SvPV_nolen(ST(2)));
+	int max_check_count = (items == 4) ? static_cast<int>(SvIV(ST(3))) : 0;
+
+	bool result = THIS->DoesAnyMemberHaveExpeditionLockout(expedition_name, event_name, max_check_count);
+	ST(0) = boolSV(result);
+	XSRETURN(1);
+}
+
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -571,7 +595,7 @@ XS(boot_Raid) {
 	newXSproto(strcpy(buf, "GetGroup"), XS_Raid_GetGroup, file, "$$");
 	newXSproto(strcpy(buf, "SplitExp"), XS_Raid_SplitExp, file, "$$$");
 	newXSproto(strcpy(buf, "GetTotalRaidDamage"), XS_Raid_GetTotalRaidDamage, file, "$$");
-	newXSproto(strcpy(buf, "SplitMoney"), XS_Raid_SplitMoney, file, "$$$$$");
+	newXSproto(strcpy(buf, "SplitMoney"), XS_Raid_SplitMoney, file, "$$$$$$");
 	newXSproto(strcpy(buf, "BalanceHP"), XS_Raid_BalanceHP, file, "$$$");
 	newXSproto(strcpy(buf, "IsLeader"), XS_Raid_IsLeader, file, "$$");
 	newXSproto(strcpy(buf, "IsGroupLeader"), XS_Raid_IsGroupLeader, file, "$$");
@@ -582,6 +606,7 @@ XS(boot_Raid) {
 	newXSproto(strcpy(buf, "TeleportRaid"), XS_Raid_TeleportRaid, file, "$$$$$$$");
 	newXSproto(strcpy(buf, "GetID"), XS_Raid_GetID, file, "$");
 	newXSproto(strcpy(buf, "GetMember"), XS_Raid_GetMember, file, "$$");
+	newXSproto(strcpy(buf, "DoesAnyMemberHaveExpeditionLockout"), XS_Raid_DoesAnyMemberHaveExpeditionLockout, file, "$$$;$");
 	XSRETURN_YES;
 }
 

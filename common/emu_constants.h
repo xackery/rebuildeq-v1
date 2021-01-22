@@ -27,7 +27,7 @@
 
 
 // local definitions are the result of using hybrid-client or server-only values and methods
-namespace EQEmu
+namespace EQ
 {
 	using RoF2::IINVALID;
 	using RoF2::INULL;
@@ -77,29 +77,40 @@ namespace EQEmu
 
 	} // namespace invtype
 
-	namespace invslot {
-		using namespace Titanium::invslot::enum_;
+	namespace DevTools {
+		const int32 GM_ACCOUNT_STATUS_LEVEL = 150;
+	}
 
-		const int16 SLOT_POWER_SOURCE = 9999;
+	namespace popupresponse {
+		const int32 SERVER_INTERNAL_USE_BASE = 2000000000;
+		const int32 MOB_INFO_DISMISS         = 2000000001;
+	}
+
+	namespace invslot {
+		using namespace RoF2::invslot::enum_;
 
 		using RoF2::invslot::SLOT_INVALID;
 		using RoF2::invslot::SLOT_BEGIN;
 
-		using Titanium::invslot::POSSESSIONS_BEGIN;
-		using Titanium::invslot::POSSESSIONS_END;
-		using SoF::invslot::POSSESSIONS_COUNT;
+		using Titanium::invslot::SLOT_TRADESKILL_EXPERIMENT_COMBINE;
 
-		using Titanium::invslot::EQUIPMENT_BEGIN;
-		using Titanium::invslot::EQUIPMENT_END;
-		using Titanium::invslot::EQUIPMENT_COUNT;
+		const int16 SLOT_AUGMENT_GENERIC_RETURN = 1001; // clients don't appear to use this method... (internal inventory return value)
 
-		using Titanium::invslot::GENERAL_BEGIN;
-		using Titanium::invslot::GENERAL_END;
-		using Titanium::invslot::GENERAL_COUNT;
+		using RoF2::invslot::POSSESSIONS_BEGIN;
+		using RoF2::invslot::POSSESSIONS_END;
+		using RoF2::invslot::POSSESSIONS_COUNT;
 
-		using Titanium::invslot::BONUS_BEGIN;
-		using Titanium::invslot::BONUS_STAT_END;
-		using Titanium::invslot::BONUS_SKILL_END;
+		using RoF2::invslot::EQUIPMENT_BEGIN;
+		using RoF2::invslot::EQUIPMENT_END;
+		using RoF2::invslot::EQUIPMENT_COUNT;
+
+		using RoF2::invslot::GENERAL_BEGIN;
+		using RoF2::invslot::GENERAL_END;
+		using RoF2::invslot::GENERAL_COUNT;
+
+		using RoF2::invslot::BONUS_BEGIN;
+		using RoF2::invslot::BONUS_STAT_END;
+		using RoF2::invslot::BONUS_SKILL_END;
 
 		using Titanium::invslot::BANK_BEGIN;
 		using SoF::invslot::BANK_END;
@@ -124,6 +135,9 @@ namespace EQEmu
 		const int16 CORPSE_BEGIN = invslot::slotGeneral1;
 		const int16 CORPSE_END = CORPSE_BEGIN + invslot::slotCursor;
 
+		using RoF2::invslot::EQUIPMENT_BITMASK;
+		using RoF2::invslot::GENERAL_BITMASK;
+		using RoF2::invslot::CURSOR_BITMASK;
 		using RoF2::invslot::POSSESSIONS_BITMASK;
 		using RoF2::invslot::CORPSE_BITMASK;
 
@@ -145,7 +159,7 @@ namespace EQEmu
 		const int16 GENERAL_BAGS_8_COUNT = 8 * SLOT_COUNT;
 		const int16 GENERAL_BAGS_8_END = (GENERAL_BAGS_BEGIN + GENERAL_BAGS_8_COUNT) - 1;
 
-		const int16 CURSOR_BAG_BEGIN = 331;
+		const int16 CURSOR_BAG_BEGIN = 351;
 		const int16 CURSOR_BAG_COUNT = SLOT_COUNT;
 		const int16 CURSOR_BAG_END = (CURSOR_BAG_BEGIN + CURSOR_BAG_COUNT) - 1;
 
@@ -179,7 +193,11 @@ namespace EQEmu
 	} // namespace invaug
 
 	namespace constants {
-		const EQEmu::versions::ClientVersion CHARACTER_CREATION_CLIENT = EQEmu::versions::ClientVersion::Titanium;
+		const EQ::versions::ClientVersion CHARACTER_CREATION_CLIENT = EQ::versions::ClientVersion::Titanium;
+
+		using RoF2::constants::EXPANSION;
+		using RoF2::constants::EXPANSION_BIT;
+		using RoF2::constants::EXPANSIONS_MASK;
 
 		using RoF2::constants::CHARACTER_CREATION_LIMIT;
 		
@@ -189,13 +207,25 @@ namespace EQEmu
 		const size_t SAY_LINK_CLOSER_SIZE = 1;
 		const size_t SAY_LINK_MAXIMUM_SIZE = (SAY_LINK_OPENER_SIZE + SAY_LINK_BODY_SIZE + SAY_LINK_TEXT_SIZE + SAY_LINK_CLOSER_SIZE);
 
-		const int LongBuffs = RoF2::constants::LongBuffs;
-		const int ShortBuffs = RoF2::constants::ShortBuffs;
-		const int DiscBuffs = RoF2::constants::DiscBuffs;
-		const int TotalBuffs = RoF2::constants::TotalBuffs;
-		const int NPCBuffs = RoF2::constants::NPCBuffs;
-		const int PetBuffs = RoF2::constants::PetBuffs;
-		const int MercBuffs = RoF2::constants::MercBuffs;
+		enum StanceType : int {
+			stanceUnknown = 0,
+			stancePassive,
+			stanceBalanced,
+			stanceEfficient,
+			stanceReactive,
+			stanceAggressive,
+			stanceAssist,
+			stanceBurn,
+			stanceEfficient2,
+			stanceBurnAE
+		};
+
+		const char *GetStanceName(StanceType stance_type);
+		int ConvertStanceTypeToIndex(StanceType stance_type);
+
+		const int STANCE_TYPE_FIRST = stancePassive;
+		const int STANCE_TYPE_LAST = stanceBurnAE;
+		const int STANCE_TYPE_COUNT = stanceBurnAE;
 
 	} /*constants*/
 
@@ -213,6 +243,42 @@ namespace EQEmu
 		using RoF2::behavior::CoinHasWeight;
 
 	} // namespace behavior
+
+	namespace spells {
+		enum class CastingSlot : uint32 { // hybrid declaration
+			Gem1 = 0,
+			Gem2 = 1,
+			Gem3 = 2,
+			Gem4 = 3,
+			Gem5 = 4,
+			Gem6 = 5,
+			Gem7 = 6,
+			Gem8 = 7,
+			Gem9 = 8,
+			Gem10 = 9,
+			Gem11 = 10,
+			Gem12 = 11,
+			MaxGems = 12,
+			Ability = 20, // HT/LoH for Tit
+			PotionBelt = 21, // Tit uses a different slot for PB
+			Item = 22,
+			Discipline = 23,
+			AltAbility = 0xFF
+		};
+
+		using RoF2::spells::SPELL_ID_MAX;
+		using RoF2::spells::SPELLBOOK_SIZE;
+		using UF::spells::SPELL_GEM_COUNT; // RoF+ clients define more than UF client..but, they are not valid beyond UF
+
+		using RoF2::spells::LONG_BUFFS;
+		using RoF2::spells::SHORT_BUFFS;
+		using RoF2::spells::DISC_BUFFS;
+		using RoF2::spells::TOTAL_BUFFS;
+		using RoF2::spells::NPC_BUFFS;
+		using RoF2::spells::PET_BUFFS;
+		using RoF2::spells::MERC_BUFFS;
+
+	} // namespace spells
 
 	namespace bug {
 		enum CategoryID : uint32 {
@@ -245,26 +311,20 @@ namespace EQEmu
 
 	} // namespace bug
 
-	enum class CastingSlot : uint32 {
-		Gem1       = 0,
-		Gem2       = 1,
-		Gem3       = 2,
-		Gem4       = 3,
-		Gem5       = 4,
-		Gem6       = 5,
-		Gem7       = 6,
-		Gem8       = 7,
-		Gem9       = 8,
-		Gem10      = 9,
-		Gem11      = 10,
-		Gem12      = 11,
-		MaxGems    = 12,
-		Ability    = 20, // HT/LoH for Tit
-		PotionBelt = 21, // Tit uses a different slot for PB
-		Item       = 22,
-		Discipline = 23,
-		AltAbility = 0xFF
+	enum WaypointStatus : int {
+		RoamBoxPauseInProgress = -3,
+		QuestControlNoGrid = -2,
+		QuestControlGrid = -1
 	};
+
+	namespace consent {
+		enum eConsentType : uint8 {
+			Normal = 0,
+			Group,
+			Raid,
+			Guild
+		};
+	}; // namespace consent
 
 } /*EQEmu*/
 
@@ -272,6 +332,6 @@ namespace EQEmu
 
 /*	hack list to prevent circular references
 	
-	eq_limits.h:EQEmu::inventory::LookupEntry::InventoryTypeSize[n];
+	eq_limits.h:EQ::inventory::LookupEntry::InventoryTypeSize[n];
 
 */

@@ -98,6 +98,11 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 		database.LogPlayerTrade(QS, QS->_detail_count);
 		break;
 	}
+	case ServerOP_QSPlayerDropItem: {
+		QSPlayerDropItem_Struct *QS = (QSPlayerDropItem_Struct *) p.Data();
+		database.LogPlayerDropItem(QS);
+		break;
+	}
 	case ServerOP_QSPlayerLogHandins: {
 		QSPlayerLogHandin_Struct *QS = (QSPlayerLogHandin_Struct*)p.Data();
 		database.LogPlayerHandin(QS, QS->_detail_count);
@@ -163,7 +168,7 @@ void WorldServer::HandleMessage(uint16 opcode, const EQ::Net::Packet &p)
 			break;
 		}
 		default:
-			Log(Logs::Detail, Logs::QS_Server, "Received unhandled ServerOP_QueryServGeneric", Type);
+			LogInfo("Received unhandled ServerOP_QueryServGeneric", Type);
 			break;
 		}
 		break;

@@ -10,29 +10,58 @@
 #include <stdio.h>
 #include <string.h>
 
+/**
+ * @param name
+ * @return
+ */
+inline bool file_exists(const std::string& name) {
+	std::ifstream f(name.c_str());
+	return f.good();
+}
+
+/**
+ * @param zone_name
+ * @return
+ */
 WaterMap* WaterMap::LoadWaterMapfile(std::string zone_name) {
 	std::transform(zone_name.begin(), zone_name.end(), zone_name.begin(), ::tolower);
 
-	std::string file_path = Config->MapDir + "water/" + zone_name + std::string(".wtr");
+	std::string filename;
+	if (file_exists("maps")) {
+		filename = "maps";
+	}
+	else if (file_exists("Maps")) {
+		filename = "Maps";
+	}
+	else {
+		filename = Config->MapDir;
+	}
+
+	std::string file_path = filename + "/water/" + zone_name + std::string(".wtr");
+	LogDebug("Attempting to load water map with path [{}]", file_path.c_str());
 	FILE *f = fopen(file_path.c_str(), "rb");
 	if(f) {
 		char magic[10];
 		uint32 version;
 		if(fread(magic, 10, 1, f) != 1) {
+			LogDebug("Failed to load water map, error reading magic string in header");
 			fclose(f);
 			return nullptr;
 		}
 		
 		if(strncmp(magic, "EQEMUWATER", 10)) {
+			LogDebug("Failed to load water map, bad magic string in header");
 			fclose(f);
 			return nullptr;
 		}
 		
 		if(fread(&version, sizeof(version), 1, f) != 1) {
+			LogDebug("Failed to load water map, error reading version");
 			fclose(f);
 			return nullptr;
 		}
 		
+		LogDebug("Attempting to V[{}] load water map [{}]", version, file_path.c_str());
 		if(version == 1) {
 			auto wm = new WaterMapV1();
 			if(!wm->Load(f)) {
@@ -40,7 +69,7 @@ WaterMap* WaterMap::LoadWaterMapfile(std::string zone_name) {
 				wm = nullptr;
 			}
 
-			Log(Logs::General, Logs::Status, "Loaded Water Map V%u file %s", version, file_path.c_str());
+			LogInfo("Loaded Water Map V[{}] file [{}]", version, file_path.c_str());
 
 			fclose(f);
 			return wm;
@@ -51,15 +80,17 @@ WaterMap* WaterMap::LoadWaterMapfile(std::string zone_name) {
 				wm = nullptr;
 			}
 
-			Log(Logs::General, Logs::Status, "Loaded Water Map V%u file %s", version, file_path.c_str());
+			LogInfo("Loaded Water Map V[{}] file [{}]", version, file_path.c_str());
 
 			fclose(f);
 			return wm;
 		} else {
+			LogDebug("Failed to load water map, unsupported version V[{}]", version);
 			fclose(f);
 			return nullptr;
 		}
 	}
 	
+	LogDebug("Failed to load water map, could not open file for reading [{}]", file_path.c_str());
 	return nullptr;
 }

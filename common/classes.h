@@ -61,6 +61,7 @@
 #define CORPSE_CLASS 62	// only seen on Danvi's Corpse in Akheva so far..
 #define TRIBUTE_MASTER 63
 #define GUILD_TRIBUTE_MASTER 64	// not sure
+#define GUILD_BANKER 66
 #define NORRATHS_KEEPERS_MERCHANT 67
 #define DARK_REIGN_MERCHANT 68
 #define FELLOWSHIP_MASTER 69
@@ -135,6 +136,7 @@ uint8 GetClassIDFromPlayerClassBit(uint32 player_class_bit);
 bool IsFighterClass(uint8 class_id);
 bool IsSpellFighterClass(uint8 class_id);
 bool IsNonSpellFighterClass(uint8 class_id);
+bool IsHybridClass(uint8 class_id);
 bool IsCasterClass(uint8 class_id);
 bool IsINTCasterClass(uint8 class_id);
 bool IsWISCasterClass(uint8 class_id);

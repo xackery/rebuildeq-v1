@@ -21,6 +21,7 @@
 #include "launcher_link.h"
 #include "launcher_list.h"
 #include "../common/string_util.h"
+#include "world_store.h"
 #include <cstdlib>
 #include <cstring>
 
@@ -42,7 +43,7 @@ void EQLConfig::LoadSettings() {
     std::string query = StringFormat("SELECT dynamics FROM launcher WHERE name = '%s'", namebuf);
     auto results = database.QueryDatabase(query);
 	if (!results.Success()) {
-		Log(Logs::General, Logs::Error, "EQLConfig::LoadSettings: %s", results.ErrorMessage().c_str());
+		LogError("EQLConfig::LoadSettings: {}", results.ErrorMessage().c_str());
 	}
     else {
         auto row = results.begin();
@@ -52,7 +53,7 @@ void EQLConfig::LoadSettings() {
 	query = StringFormat("SELECT zone, port FROM launcher_zones WHERE launcher = '%s'", namebuf);
 	results = database.QueryDatabase(query);
 	if (!results.Success()) {
-        Log(Logs::General, Logs::Error, "EQLConfig::LoadSettings: %s", results.ErrorMessage().c_str());
+        LogError("EQLConfig::LoadSettings: {}", results.ErrorMessage().c_str());
         return;
     }
 
@@ -156,7 +157,7 @@ void EQLConfig::StartZone(Const_char *zone_ref) {
 
 bool EQLConfig::BootStaticZone(Const_char *short_name, uint16 port) {
 	//make sure the short name is valid.
-	if(database.GetZoneID(short_name) == 0)
+	if(ZoneID(short_name) == 0)
 		return false;
 
 	//database update
@@ -191,7 +192,7 @@ bool EQLConfig::BootStaticZone(Const_char *short_name, uint16 port) {
 
 bool EQLConfig::ChangeStaticZone(Const_char *short_name, uint16 port) {
 	//make sure the short name is valid.
-	if(database.GetZoneID(short_name) == 0)
+	if(ZoneID(short_name) == 0)
 		return false;
 
 	//check internal state
@@ -199,7 +200,7 @@ bool EQLConfig::ChangeStaticZone(Const_char *short_name, uint16 port) {
 	res = m_zones.find(short_name);
 	if(res == m_zones.end()) {
 		//not found.
-		Log(Logs::General, Logs::Error, "Update for unknown zone %s", short_name);
+		LogError("Update for unknown zone {}", short_name);
 		return false;
 	}
 
@@ -235,7 +236,7 @@ bool EQLConfig::DeleteStaticZone(Const_char *short_name) {
 	res = m_zones.find(short_name);
 	if(res == m_zones.end()) {
 		//not found.
-		Log(Logs::General, Logs::Error, "Update for unknown zone %s", short_name);
+		LogError("Update for unknown zone {}", short_name);
 		return false;
 	}
 

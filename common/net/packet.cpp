@@ -1,7 +1,7 @@
 #include "packet.h"
 #include "endian.h"
-#include <fmt/format.h>
 #include <cctype>
+#include <fmt/format.h>
 
 void EQ::Net::Packet::PutInt8(size_t offset, int8_t value)
 {
@@ -350,4 +350,5 @@ bool EQ::Net::StaticPacket::Resize(size_t new_size)
 	}
 
 	m_data_length = new_size;
+	return true;
 }

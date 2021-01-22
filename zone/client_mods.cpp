@@ -45,7 +45,7 @@ int32 Client::GetMaxStat() const
 	if (level < 61) {
 		base = 255;
 	}
-	else if (ClientVersion() >= EQEmu::versions::ClientVersion::SoF) {
+	else if (ClientVersion() >= EQ::versions::ClientVersion::SoF) {
 		base = 255 + 5 * (level - 60);
 	}
 	else if (level < 71) {
@@ -276,8 +276,9 @@ int32 Client::CalcHPRegen(bool bCombat)
 	if (!skip_innate && m_pp.InnateSkills[InnateRegen] != InnateDisabled) {
 		if (level >= 50) {
 			++base;
-			if (level >= 55)
+			if (level >= 55) {
 				++base;
+			}
 		}
 		base *= 2;
 	}
@@ -294,7 +295,10 @@ int32 Client::CalcHPRegen(bool bCombat)
 	int regen = base + item_regen + spellbonuses.HPRegen; // TODO: client does this in buff tick
 
 	if (!bCombat && CanFastRegen() && (IsSitting() || CanMedOnHorse())) {
-		regen += RestRegenHP;
+		auto max_hp = GetMaxHP();
+		int fast_regen = 6 * (max_hp / zone->newzone_data.FastRegenHP);
+		if (base < fast_regen) // weird, but what the client is doing
+			base = fast_regen;
 	}
 
 	if (GetBuildRank(DRUID, RB_DRU_REGENERATION) > 0) {
@@ -333,158 +337,164 @@ int32 Client::CalcMaxHP()
 	max_hp += spellbonuses.HP + aabonuses.HP;
 	max_hp += GroupLeadershipAAHealthEnhancement();
 	max_hp += max_hp * ((spellbonuses.MaxHPChange + itembonuses.MaxHPChange) / 10000.0f);
-	if (cur_hp > max_hp) {
-		cur_hp = max_hp;
+	if (current_hp > max_hp) {
+		current_hp = max_hp;
 	}
 	int hp_perc_cap = spellbonuses.HPPercCap[0];
 	if (hp_perc_cap) {
 		int curHP_cap = (max_hp * hp_perc_cap) / 100;
-		if (cur_hp > curHP_cap || (spellbonuses.HPPercCap[1] && cur_hp > spellbonuses.HPPercCap[1])) {
-			cur_hp = curHP_cap;
+		if (current_hp > curHP_cap || (spellbonuses.HPPercCap[1] && current_hp > spellbonuses.HPPercCap[1])) {
+
+			current_hp = curHP_cap;
 		}
 	}
+
+	// hack fix for client health not reflecting server value
+	last_max_hp = 0;
+
 	return max_hp;
 }
 
 uint32 Mob::GetClassLevelFactor()
 {
 	uint32 multiplier = 0;
-	uint8 mlevel = GetLevel();
+	uint8  mlevel     = GetLevel();
 	switch (GetClass()) {
 		case WARRIOR: {
-				if (mlevel < 20) {
-					multiplier = 220;
-				}
-				else if (mlevel < 30) {
-					multiplier = 230;
-				}
-				else if (mlevel < 40) {
-					multiplier = 250;
-				}
-				else if (mlevel < 53) {
-					multiplier = 270;
-				}
-				else if (mlevel < 57) {
-					multiplier = 280;
-				}
-				else if (mlevel < 60) {
-					multiplier = 290;
-				}
-				else if (mlevel < 70) {
-					multiplier = 300;
-				}
-				else {
-					multiplier = 311;
-				}
-				break;
+			if (mlevel < 20) {
+				multiplier = 220;
 			}
+			else if (mlevel < 30) {
+				multiplier = 230;
+			}
+			else if (mlevel < 40) {
+				multiplier = 250;
+			}
+			else if (mlevel < 53) {
+				multiplier = 270;
+			}
+			else if (mlevel < 57) {
+				multiplier = 280;
+			}
+			else if (mlevel < 60) {
+				multiplier = 290;
+			}
+			else if (mlevel < 70) {
+				multiplier = 300;
+			}
+			else {
+				multiplier = 311;
+			}
+			break;
+		}
 		case DRUID:
 		case CLERIC:
 		case SHAMAN: {
-				if (mlevel < 70) {
-					multiplier = 150;
-				}
-				else {
-					multiplier = 157;
-				}
-				break;
+			if (mlevel < 70) {
+				multiplier = 150;
 			}
+			else {
+				multiplier = 157;
+			}
+			break;
+		}
 		case BERSERKER:
 		case PALADIN:
 		case SHADOWKNIGHT: {
-				if (mlevel < 35) {
-					multiplier = 210;
-				}
-				else if (mlevel < 45) {
-					multiplier = 220;
-				}
-				else if (mlevel < 51) {
-					multiplier = 230;
-				}
-				else if (mlevel < 56) {
-					multiplier = 240;
-				}
-				else if (mlevel < 60) {
-					multiplier = 250;
-				}
-				else if (mlevel < 68) {
-					multiplier = 260;
-				}
-				else {
-					multiplier = 270;
-				}
-				break;
+			if (mlevel < 35) {
+				multiplier = 210;
 			}
+			else if (mlevel < 45) {
+				multiplier = 220;
+			}
+			else if (mlevel < 51) {
+				multiplier = 230;
+			}
+			else if (mlevel < 56) {
+				multiplier = 240;
+			}
+			else if (mlevel < 60) {
+				multiplier = 250;
+			}
+			else if (mlevel < 68) {
+				multiplier = 260;
+			}
+			else {
+				multiplier = 270;
+			}
+			break;
+		}
 		case MONK:
 		case BARD:
 		case ROGUE:
 		case BEASTLORD: {
-				if (mlevel < 51) {
-					multiplier = 180;
-				}
-				else if (mlevel < 58) {
-					multiplier = 190;
-				}
-				else if (mlevel < 70) {
-					multiplier = 200;
-				}
-				else {
-					multiplier = 210;
-				}
-				break;
+			if (mlevel < 51) {
+				multiplier = 180;
 			}
+			else if (mlevel < 58) {
+				multiplier = 190;
+			}
+			else if (mlevel < 70) {
+				multiplier = 200;
+			}
+			else {
+				multiplier = 210;
+			}
+			break;
+		}
 		case RANGER: {
-				if (mlevel < 58) {
-					multiplier = 200;
-				}
-				else if (mlevel < 70) {
-					multiplier = 210;
-				}
-				else {
-					multiplier = 220;
-				}
-				break;
+			if (mlevel < 58) {
+				multiplier = 200;
 			}
+			else if (mlevel < 70) {
+				multiplier = 210;
+			}
+			else {
+				multiplier = 220;
+			}
+			break;
+		}
 		case MAGICIAN:
 		case WIZARD:
 		case NECROMANCER:
 		case ENCHANTER: {
-				if (mlevel < 70) {
-					multiplier = 120;
-				}
-				else {
-					multiplier = 127;
-				}
-				break;
+			if (mlevel < 70) {
+				multiplier = 120;
 			}
+			else {
+				multiplier = 127;
+			}
+			break;
+		}
 		default: {
-				if (mlevel < 35) {
-					multiplier = 210;
-				}
-				else if (mlevel < 45) {
-					multiplier = 220;
-				}
-				else if (mlevel < 51) {
-					multiplier = 230;
-				}
-				else if (mlevel < 56) {
-					multiplier = 240;
-				}
-				else if (mlevel < 60) {
-					multiplier = 250;
-				}
-				else {
-					multiplier = 260;
-				}
-				break;
+			if (mlevel < 35) {
+				multiplier = 210;
 			}
+			else if (mlevel < 45) {
+				multiplier = 220;
+			}
+			else if (mlevel < 51) {
+				multiplier = 230;
+			}
+			else if (mlevel < 56) {
+				multiplier = 240;
+			}
+			else if (mlevel < 60) {
+				multiplier = 250;
+			}
+			else {
+				multiplier = 260;
+			}
+			break;
+		}
 	}
+
 	return multiplier;
 }
 
 int32 Client::CalcBaseHP()
 {
-	if (ClientVersion() >= EQEmu::versions::ClientVersion::SoF && RuleB(Character, SoDClientUseSoDHPManaEnd)) {
+	if (ClientVersion() >= EQ::versions::ClientVersion::SoF && RuleB(Character, SoDClientUseSoDHPManaEnd)) {
 		int stats = GetSTA();
 		if (stats > 255) {
 			stats = (stats - 255) / 2;
@@ -560,545 +570,14 @@ int32 Client::GetRawItemAC()
 {
 	int32 Total = 0;
 	// this skips MainAmmo..add an '=' conditional if that slot is required (original behavior)
-	for (int16 slot_id = EQEmu::invslot::BONUS_BEGIN; slot_id <= EQEmu::invslot::BONUS_STAT_END; slot_id++) {
-		const EQEmu::ItemInstance* inst = m_inv[slot_id];
+	for (int16 slot_id = EQ::invslot::BONUS_BEGIN; slot_id <= EQ::invslot::BONUS_STAT_END; slot_id++) {
+		const EQ::ItemInstance* inst = m_inv[slot_id];
 		if (inst && inst->IsClassCommon()) {
 			Total += inst->GetItem()->AC;
 		}
 	}
 	return Total;
 }
-
-int32 Client::acmod()
-{
-	int agility = GetAGI();
-	int level = GetLevel();
-	if (agility < 1 || level < 1) {
-		return (0);
-	}
-	if (agility <= 74) {
-		if (agility == 1) {
-			return -24;
-		}
-		else if (agility <= 3) {
-			return -23;
-		}
-		else if (agility == 4) {
-			return -22;
-		}
-		else if (agility <= 6) {
-			return -21;
-		}
-		else if (agility <= 8) {
-			return -20;
-		}
-		else if (agility == 9) {
-			return -19;
-		}
-		else if (agility <= 11) {
-			return -18;
-		}
-		else if (agility == 12) {
-			return -17;
-		}
-		else if (agility <= 14) {
-			return -16;
-		}
-		else if (agility <= 16) {
-			return -15;
-		}
-		else if (agility == 17) {
-			return -14;
-		}
-		else if (agility <= 19) {
-			return -13;
-		}
-		else if (agility == 20) {
-			return -12;
-		}
-		else if (agility <= 22) {
-			return -11;
-		}
-		else if (agility <= 24) {
-			return -10;
-		}
-		else if (agility == 25) {
-			return -9;
-		}
-		else if (agility <= 27) {
-			return -8;
-		}
-		else if (agility == 28) {
-			return -7;
-		}
-		else if (agility <= 30) {
-			return -6;
-		}
-		else if (agility <= 32) {
-			return -5;
-		}
-		else if (agility == 33) {
-			return -4;
-		}
-		else if (agility <= 35) {
-			return -3;
-		}
-		else if (agility == 36) {
-			return -2;
-		}
-		else if (agility <= 38) {
-			return -1;
-		}
-		else if (agility <= 65) {
-			return 0;
-		}
-		else if (agility <= 70) {
-			return 1;
-		}
-		else if (agility <= 74) {
-			return 5;
-		}
-	}
-	else if (agility <= 137) {
-		if (agility == 75) {
-			if (level <= 6) {
-				return 9;
-			}
-			else if (level <= 19) {
-				return 23;
-			}
-			else if (level <= 39) {
-				return 33;
-			}
-			else {
-				return 39;
-			}
-		}
-		else if (agility >= 76 && agility <= 79) {
-			if (level <= 6) {
-				return 10;
-			}
-			else if (level <= 19) {
-				return 23;
-			}
-			else if (level <= 39) {
-				return 33;
-			}
-			else {
-				return 40;
-			}
-		}
-		else if (agility == 80) {
-			if (level <= 6) {
-				return 11;
-			}
-			else if (level <= 19) {
-				return 24;
-			}
-			else if (level <= 39) {
-				return 34;
-			}
-			else {
-				return 41;
-			}
-		}
-		else if (agility >= 81 && agility <= 85) {
-			if (level <= 6) {
-				return 12;
-			}
-			else if (level <= 19) {
-				return 25;
-			}
-			else if (level <= 39) {
-				return 35;
-			}
-			else {
-				return 42;
-			}
-		}
-		else if (agility >= 86 && agility <= 90) {
-			if (level <= 6) {
-				return 12;
-			}
-			else if (level <= 19) {
-				return 26;
-			}
-			else if (level <= 39) {
-				return 36;
-			}
-			else {
-				return 42;
-			}
-		}
-		else if (agility >= 91 && agility <= 95) {
-			if (level <= 6) {
-				return 13;
-			}
-			else if (level <= 19) {
-				return 26;
-			}
-			else if (level <= 39) {
-				return 36;
-			}
-			else {
-				return 43;
-			}
-		}
-		else if (agility >= 96 && agility <= 99) {
-			if (level <= 6) {
-				return 14;
-			}
-			else if (level <= 19) {
-				return 27;
-			}
-			else if (level <= 39) {
-				return 37;
-			}
-			else {
-				return 44;
-			}
-		}
-		else if (agility == 100 && level >= 7) {
-			if (level <= 19) {
-				return 28;
-			}
-			else if (level <= 39) {
-				return 38;
-			}
-			else {
-				return 45;
-			}
-		}
-		else if (level <= 6) {
-			return 15;
-		}
-		//level is >6
-		else if (agility >= 101 && agility <= 105) {
-			if (level <= 19) {
-				return 29;
-			}
-			else if (level <= 39) {
-				return 39;    // not verified
-			}
-			else {
-				return 45;
-			}
-		}
-		else if (agility >= 106 && agility <= 110) {
-			if (level <= 19) {
-				return 29;
-			}
-			else if (level <= 39) {
-				return 39;    // not verified
-			}
-			else {
-				return 46;
-			}
-		}
-		else if (agility >= 111 && agility <= 115) {
-			if (level <= 19) {
-				return 30;
-			}
-			else if (level <= 39) {
-				return 40;    // not verified
-			}
-			else {
-				return 47;
-			}
-		}
-		else if (agility >= 116 && agility <= 119) {
-			if (level <= 19) {
-				return 31;
-			}
-			else if (level <= 39) {
-				return 41;
-			}
-			else {
-				return 47;
-			}
-		}
-		else if (level <= 19) {
-			return 32;
-		}
-		//level is > 19
-		else if (agility == 120) {
-			if (level <= 39) {
-				return 42;
-			}
-			else {
-				return 48;
-			}
-		}
-		else if (agility <= 125) {
-			if (level <= 39) {
-				return 42;
-			}
-			else {
-				return 49;
-			}
-		}
-		else if (agility <= 135) {
-			if (level <= 39) {
-				return 42;
-			}
-			else {
-				return 50;
-			}
-		}
-		else {
-			if (level <= 39) {
-				return 42;
-			}
-			else {
-				return 51;
-			}
-		}
-	}
-	else if (agility <= 300) {
-		if (level <= 6) {
-			if (agility <= 139) {
-				return (21);
-			}
-			else if (agility == 140) {
-				return (22);
-			}
-			else if (agility <= 145) {
-				return (23);
-			}
-			else if (agility <= 150) {
-				return (23);
-			}
-			else if (agility <= 155) {
-				return (24);
-			}
-			else if (agility <= 159) {
-				return (25);
-			}
-			else if (agility == 160) {
-				return (26);
-			}
-			else if (agility <= 165) {
-				return (26);
-			}
-			else if (agility <= 170) {
-				return (27);
-			}
-			else if (agility <= 175) {
-				return (28);
-			}
-			else if (agility <= 179) {
-				return (28);
-			}
-			else if (agility == 180) {
-				return (29);
-			}
-			else if (agility <= 185) {
-				return (30);
-			}
-			else if (agility <= 190) {
-				return (31);
-			}
-			else if (agility <= 195) {
-				return (31);
-			}
-			else if (agility <= 199) {
-				return (32);
-			}
-			else if (agility <= 219) {
-				return (33);
-			}
-			else if (agility <= 239) {
-				return (34);
-			}
-			else {
-				return (35);
-			}
-		}
-		else if (level <= 19) {
-			if (agility <= 139) {
-				return (34);
-			}
-			else if (agility == 140) {
-				return (35);
-			}
-			else if (agility <= 145) {
-				return (36);
-			}
-			else if (agility <= 150) {
-				return (37);
-			}
-			else if (agility <= 155) {
-				return (37);
-			}
-			else if (agility <= 159) {
-				return (38);
-			}
-			else if (agility == 160) {
-				return (39);
-			}
-			else if (agility <= 165) {
-				return (40);
-			}
-			else if (agility <= 170) {
-				return (40);
-			}
-			else if (agility <= 175) {
-				return (41);
-			}
-			else if (agility <= 179) {
-				return (42);
-			}
-			else if (agility == 180) {
-				return (43);
-			}
-			else if (agility <= 185) {
-				return (43);
-			}
-			else if (agility <= 190) {
-				return (44);
-			}
-			else if (agility <= 195) {
-				return (45);
-			}
-			else if (agility <= 199) {
-				return (45);
-			}
-			else if (agility <= 219) {
-				return (46);
-			}
-			else if (agility <= 239) {
-				return (47);
-			}
-			else {
-				return (48);
-			}
-		}
-		else if (level <= 39) {
-			if (agility <= 139) {
-				return (44);
-			}
-			else if (agility == 140) {
-				return (45);
-			}
-			else if (agility <= 145) {
-				return (46);
-			}
-			else if (agility <= 150) {
-				return (47);
-			}
-			else if (agility <= 155) {
-				return (47);
-			}
-			else if (agility <= 159) {
-				return (48);
-			}
-			else if (agility == 160) {
-				return (49);
-			}
-			else if (agility <= 165) {
-				return (50);
-			}
-			else if (agility <= 170) {
-				return (50);
-			}
-			else if (agility <= 175) {
-				return (51);
-			}
-			else if (agility <= 179) {
-				return (52);
-			}
-			else if (agility == 180) {
-				return (53);
-			}
-			else if (agility <= 185) {
-				return (53);
-			}
-			else if (agility <= 190) {
-				return (54);
-			}
-			else if (agility <= 195) {
-				return (55);
-			}
-			else if (agility <= 199) {
-				return (55);
-			}
-			else if (agility <= 219) {
-				return (56);
-			}
-			else if (agility <= 239) {
-				return (57);
-			}
-			else {
-				return (58);
-			}
-		}
-		else {	//lvl >= 40
-			if (agility <= 139) {
-				return (51);
-			}
-			else if (agility == 140) {
-				return (52);
-			}
-			else if (agility <= 145) {
-				return (53);
-			}
-			else if (agility <= 150) {
-				return (53);
-			}
-			else if (agility <= 155) {
-				return (54);
-			}
-			else if (agility <= 159) {
-				return (55);
-			}
-			else if (agility == 160) {
-				return (56);
-			}
-			else if (agility <= 165) {
-				return (56);
-			}
-			else if (agility <= 170) {
-				return (57);
-			}
-			else if (agility <= 175) {
-				return (58);
-			}
-			else if (agility <= 179) {
-				return (58);
-			}
-			else if (agility == 180) {
-				return (59);
-			}
-			else if (agility <= 185) {
-				return (60);
-			}
-			else if (agility <= 190) {
-				return (61);
-			}
-			else if (agility <= 195) {
-				return (61);
-			}
-			else if (agility <= 199) {
-				return (62);
-			}
-			else if (agility <= 219) {
-				return (63);
-			}
-			else if (agility <= 239) {
-				return (64);
-			}
-			else {
-				return (65);
-			}
-		}
-	}
-	else {
-		//seems about 21 agil per extra AC pt over 300...
-		return (65 + ((agility - 300) / 21));
-	}
-	Log(Logs::Detail, Logs::Error, "Error in Client::acmod(): Agility: %i, Level: %i", agility, level);
-	return 0;
-};
 
 int32 Client::CalcMaxMana()
 {
@@ -1113,7 +592,7 @@ int32 Client::CalcMaxMana()
 				break;
 			}
 		default: {
-				Log(Logs::Detail, Logs::Spells, "Invalid Class '%c' in CalcMaxMana", GetCasterClass());
+				LogSpells("Invalid Class [{}] in CalcMaxMana", GetCasterClass());
 				max_mana = 0;
 				break;
 			}
@@ -1131,7 +610,7 @@ int32 Client::CalcMaxMana()
 			current_mana = curMana_cap;
 		}
 	}
-	Log(Logs::Detail, Logs::Spells, "Client::CalcMaxMana() called for %s - returning %d", GetName(), max_mana);
+	LogSpells("Client::CalcMaxMana() called for [{}] - returning [{}]", GetName(), max_mana);
 	return max_mana;
 }
 
@@ -1146,15 +625,14 @@ int32 Client::CalcBaseMana()
 	switch (GetCasterClass()) {
 		case 'I':
 			WisInt = GetINT();
-			if (ClientVersion() >= EQEmu::versions::ClientVersion::SoF && RuleB(Character, SoDClientUseSoDHPManaEnd)) {
+			if (ClientVersion() >= EQ::versions::ClientVersion::SoF && RuleB(Character, SoDClientUseSoDHPManaEnd)) {
+				ConvertedWisInt = WisInt;
+				int over200 = WisInt;
 				if (WisInt > 100) {
-					ConvertedWisInt = (((WisInt - 100) * 5 / 2) + 100);
-					if (WisInt > 201) {
-						ConvertedWisInt -= ((WisInt - 201) * 5 / 4);
+					if (WisInt > 200) {
+						over200 = (WisInt - 200) / -2 + WisInt;
 					}
-				}
-				else {
-					ConvertedWisInt = WisInt;
+					ConvertedWisInt = (3 * over200 - 300) / 2 + over200;
 				}
 				auto base_data = database.GetBaseData(GetLevel(), GetClass());
 				if (base_data) {
@@ -1179,15 +657,14 @@ int32 Client::CalcBaseMana()
 			break;
 		case 'W':
 			WisInt = GetWIS();
-			if (ClientVersion() >= EQEmu::versions::ClientVersion::SoF && RuleB(Character, SoDClientUseSoDHPManaEnd)) {
+			if (ClientVersion() >= EQ::versions::ClientVersion::SoF && RuleB(Character, SoDClientUseSoDHPManaEnd)) {
+				ConvertedWisInt = WisInt;
+				int over200 = WisInt;
 				if (WisInt > 100) {
-					ConvertedWisInt = (((WisInt - 100) * 5 / 2) + 100);
-					if (WisInt > 201) {
-						ConvertedWisInt -= ((WisInt - 201) * 5 / 4);
+					if (WisInt > 200) {
+						over200 = (WisInt - 200) / -2 + WisInt;
 					}
-				}
-				else {
-					ConvertedWisInt = WisInt;
+					ConvertedWisInt = (3 * over200 - 300) / 2 + over200;
 				}
 				auto base_data = database.GetBaseData(GetLevel(), GetClass());
 				if (base_data) {
@@ -1215,13 +692,13 @@ int32 Client::CalcBaseMana()
 				break;
 			}
 		default: {
-				Log(Logs::General, Logs::None, "Invalid Class '%c' in CalcMaxMana", GetCasterClass());
+				LogDebug("Invalid Class [{}] in CalcMaxMana", GetCasterClass());
 				max_m = 0;
 				break;
 			}
 	}
 	#if EQDEBUG >= 11
-	Log(Logs::General, Logs::None, "Client::CalcBaseMana() called for %s - returning %d", GetName(), max_m);
+	LogDebug("Client::CalcBaseMana() called for [{}] - returning [{}]", GetName(), max_m);
 	#endif
 	return max_m;
 }
@@ -1231,8 +708,8 @@ int32 Client::CalcBaseManaRegen()
 	uint8 clevel = GetLevel();
 	int32 regen = 0;
 	if (IsSitting() || (GetHorseId() != 0)) {
-		if (HasSkill(EQEmu::skills::SkillMeditate)) {
-			regen = (((GetSkill(EQEmu::skills::SkillMeditate) / 10) + (clevel - (clevel / 4))) / 4) + 4;
+		if (HasSkill(EQ::skills::SkillMeditate)) {
+			regen = (((GetSkill(EQ::skills::SkillMeditate) / 10) + (clevel - (clevel / 4))) / 4) + 4;
 		}
 		else {
 			regen = 2;
@@ -1258,7 +735,7 @@ int32 Client::CalcManaRegen(bool bCombat)
 			// kind of weird to do it here w/e
 			// client does some base medding regen for shrouds here
 			if (GetClass() != BARD) {
-				auto skill = GetSkill(EQEmu::skills::SkillMeditate);
+				auto skill = GetSkill(EQ::skills::SkillMeditate);
 				if (skill > 0) {
 					regen++;
 					if (skill > 1)
@@ -1304,9 +781,8 @@ int32 Client::CalcManaRegen(bool bCombat)
 	regen = regen * 100.0f * AreaManaRegen * 0.01f + 0.5f;
 
 	if (!bCombat && CanFastRegen() && (IsSitting() || CanMedOnHorse())) {
-		/*auto fast_mod = RuleI(Character, RestRegenMana); // TODO: this is actually zone based
 		auto max_mana = GetMaxMana();
-		int fast_regen = 6 * (max_mana / fast_mod);
+		int fast_regen = 6 * (max_mana / zone->newzone_data.FastRegenMana);
 		if (regen < fast_regen) // weird, but what the client is doing
 			regen = fast_regen;*/
 		regen += RestRegenMana;
@@ -1325,11 +801,11 @@ int32 Client::CalcManaRegenCap()
 
 uint32 Client::CalcCurrentWeight()
 {
-	const EQEmu::ItemData* TempItem = nullptr;
-	EQEmu::ItemInstance* ins = nullptr;
+	const EQ::ItemData* TempItem = nullptr;
+	EQ::ItemInstance* ins = nullptr;
 	uint32 Total = 0;
 	int x;
-	for (x = EQEmu::invslot::POSSESSIONS_BEGIN; x <= EQEmu::invslot::POSSESSIONS_END; x++) {
+	for (x = EQ::invslot::POSSESSIONS_BEGIN; x <= EQ::invslot::POSSESSIONS_END; x++) {
 		TempItem = 0;
 		ins = GetInv().GetItem(x);
 		if (ins) {
@@ -1339,7 +815,7 @@ uint32 Client::CalcCurrentWeight()
 			Total += TempItem->Weight;
 		}
 	}
-	for (x = EQEmu::invbag::GENERAL_BAGS_BEGIN; x <= EQEmu::invbag::CURSOR_BAG_END; x++) {
+	for (x = EQ::invbag::GENERAL_BAGS_BEGIN; x <= EQ::invbag::CURSOR_BAG_END; x++) {
 		int TmpWeight = 0;
 		TempItem = 0;
 		ins = GetInv().GetItem(x);
@@ -1352,14 +828,14 @@ uint32 Client::CalcCurrentWeight()
 		if (TmpWeight > 0) {
 			// this code indicates that weight redux bags can only be in the first general inventory slot to be effective...
 			// is this correct? or can we scan for the highest weight redux and use that? (need client verifications)
-			int bagslot = EQEmu::invslot::slotGeneral1;
+			int bagslot = EQ::invslot::slotGeneral1;
 			int reduction = 0;
-			for (int m = EQEmu::invbag::GENERAL_BAGS_BEGIN + EQEmu::invbag::SLOT_COUNT; m <= EQEmu::invbag::CURSOR_BAG_END; m += EQEmu::invbag::SLOT_COUNT) {
+			for (int m = EQ::invbag::GENERAL_BAGS_BEGIN + EQ::invbag::SLOT_COUNT; m <= EQ::invbag::CURSOR_BAG_END; m += EQ::invbag::SLOT_COUNT) {
 				if (x >= m) {
 					bagslot += 1;
 				}
 			}
-			EQEmu::ItemInstance* baginst = GetInv().GetItem(bagslot);
+			EQ::ItemInstance* baginst = GetInv().GetItem(bagslot);
 			if (baginst && baginst->GetItem() && baginst->IsClassBag()) {
 				reduction = baginst->GetItem()->BagWR;
 			}
@@ -1378,7 +854,7 @@ uint32 Client::CalcCurrentWeight()
 	    This is the ONLY instance I have seen where the client is hard coded to particular Item IDs to set a certain property for an item. It is very odd.
 	*/
 	// SoD+ client has no weight for coin
-	if (EQEmu::behavior::Lookup(EQEmu::versions::ConvertClientVersionToMobVersion(ClientVersion()))->CoinHasWeight) {
+	if (EQ::behavior::StaticLookup(EQ::versions::ConvertClientVersionToMobVersion(ClientVersion()))->CoinHasWeight) {
 		Total += (m_pp.platinum + m_pp.gold + m_pp.silver + m_pp.copper) / 4;
 	}
 	float Packrat = (float)spellbonuses.Packrat + (float)aabonuses.Packrat + (float)itembonuses.Packrat;
@@ -2069,10 +1545,10 @@ uint32 Mob::GetInstrumentMod(uint16 spell_id) const
 	// clickies (Symphony of Battle) that have a song skill don't get AA bonus for some reason
 	// but clickies that are songs (selo's on Composers Greaves) do get AA mod as well
 	switch (spells[spell_id].skill) {
-	case EQEmu::skills::SkillPercussionInstruments:
+	case EQ::skills::SkillPercussionInstruments:
 		if (itembonuses.percussionMod == 0 && spellbonuses.percussionMod == 0)
 			effectmod = 10;
-		else if (GetSkill(EQEmu::skills::SkillPercussionInstruments) == 0)
+		else if (GetSkill(EQ::skills::SkillPercussionInstruments) == 0)
 			effectmod = 10;
 		else if (itembonuses.percussionMod > spellbonuses.percussionMod)
 			effectmod = itembonuses.percussionMod;
@@ -2081,10 +1557,10 @@ uint32 Mob::GetInstrumentMod(uint16 spell_id) const
 		if (IsBardSong(spell_id))
 			effectmod += aabonuses.percussionMod;
 		break;
-	case EQEmu::skills::SkillStringedInstruments:
+	case EQ::skills::SkillStringedInstruments:
 		if (itembonuses.stringedMod == 0 && spellbonuses.stringedMod == 0)
 			effectmod = 10;
-		else if (GetSkill(EQEmu::skills::SkillStringedInstruments) == 0)
+		else if (GetSkill(EQ::skills::SkillStringedInstruments) == 0)
 			effectmod = 10;
 		else if (itembonuses.stringedMod > spellbonuses.stringedMod)
 			effectmod = itembonuses.stringedMod;
@@ -2093,10 +1569,10 @@ uint32 Mob::GetInstrumentMod(uint16 spell_id) const
 		if (IsBardSong(spell_id))
 			effectmod += aabonuses.stringedMod;
 		break;
-	case EQEmu::skills::SkillWindInstruments:
+	case EQ::skills::SkillWindInstruments:
 		if (itembonuses.windMod == 0 && spellbonuses.windMod == 0)
 			effectmod = 10;
-		else if (GetSkill(EQEmu::skills::SkillWindInstruments) == 0)
+		else if (GetSkill(EQ::skills::SkillWindInstruments) == 0)
 			effectmod = 10;
 		else if (itembonuses.windMod > spellbonuses.windMod)
 			effectmod = itembonuses.windMod;
@@ -2105,10 +1581,10 @@ uint32 Mob::GetInstrumentMod(uint16 spell_id) const
 		if (IsBardSong(spell_id))
 			effectmod += aabonuses.windMod;
 		break;
-	case EQEmu::skills::SkillBrassInstruments:
+	case EQ::skills::SkillBrassInstruments:
 		if (itembonuses.brassMod == 0 && spellbonuses.brassMod == 0)
 			effectmod = 10;
-		else if (GetSkill(EQEmu::skills::SkillBrassInstruments) == 0)
+		else if (GetSkill(EQ::skills::SkillBrassInstruments) == 0)
 			effectmod = 10;
 		else if (itembonuses.brassMod > spellbonuses.brassMod)
 			effectmod = itembonuses.brassMod;
@@ -2117,7 +1593,7 @@ uint32 Mob::GetInstrumentMod(uint16 spell_id) const
 		if (IsBardSong(spell_id))
 			effectmod += aabonuses.brassMod;
 		break;
-	case EQEmu::skills::SkillSinging:
+	case EQ::skills::SkillSinging:
 		if (itembonuses.singingMod == 0 && spellbonuses.singingMod == 0)
 			effectmod = 10;
 		else if (itembonuses.singingMod > spellbonuses.singingMod)
@@ -2137,8 +1613,9 @@ uint32 Mob::GetInstrumentMod(uint16 spell_id) const
 		effectmod = 10;
 	if (!nocap && effectmod > effectmodcap) // if the cap is calculated to be 0 using new rules, no cap.
 		effectmod = effectmodcap;
-	Log(Logs::Detail, Logs::Spells, "%s::GetInstrumentMod() spell=%d mod=%d modcap=%d\n", GetName(), spell_id,
-		effectmod, effectmodcap);
+
+	LogSpells("[{}]::GetInstrumentMod() spell=[{}] mod=[{}] modcap=[{}]\n", GetName(), spell_id, effectmod, effectmodcap);
+
 	return effectmod;
 }
 
@@ -2163,7 +1640,7 @@ void Client::CalcMaxEndurance()
 int32 Client::CalcBaseEndurance()
 {
 	int32 base_end = 0;
-	if (ClientVersion() >= EQEmu::versions::ClientVersion::SoF && RuleB(Character, SoDClientUseSoDHPManaEnd)) {
+	if (ClientVersion() >= EQ::versions::ClientVersion::SoF && RuleB(Character, SoDClientUseSoDHPManaEnd)) {
 		double heroic_stats = (GetHeroicSTR() + GetHeroicSTA() + GetHeroicDEX() + GetHeroicAGI()) / 4.0f;
 		double stats = (GetSTR() + GetSTA() + GetDEX() + GetAGI()) / 4.0f;
 		if (stats > 201.0f) {
@@ -2274,9 +1751,8 @@ int32 Client::CalcEnduranceRegen(bool bCombat)
 
 	int regen = base;
 	if (!bCombat && CanFastRegen() && (IsSitting() || CanMedOnHorse())) {
-		auto fast_mod = RuleI(Character, RestRegenEnd); // TODO: this is actually zone based
 		auto max_end = GetMaxEndurance();
-		int fast_regen = 6 * (max_end / fast_mod);
+		int fast_regen = 6 * (max_end / zone->newzone_data.FastRegenEndurance);
 		if (aa_regen < fast_regen) // weird, but what the client is doing
 			aa_regen = fast_regen;
 	}
@@ -2303,12 +1779,12 @@ int Client::GetRawACNoShield(int &shield_ac) const
 {
 	int ac = itembonuses.AC + spellbonuses.AC + aabonuses.AC;
 	shield_ac = 0;
-	const EQEmu::ItemInstance *inst = m_inv.GetItem(EQEmu::invslot::slotSecondary);
+	const EQ::ItemInstance *inst = m_inv.GetItem(EQ::invslot::slotSecondary);
 	if (inst) {
-		if (inst->GetItem()->ItemType == EQEmu::item::ItemTypeShield) {
+		if (inst->GetItem()->ItemType == EQ::item::ItemTypeShield) {
 			ac -= inst->GetItem()->AC;
 			shield_ac = inst->GetItem()->AC;
-			for (uint8 i = EQEmu::invaug::SOCKET_BEGIN; i <= EQEmu::invaug::SOCKET_END; i++) {
+			for (uint8 i = EQ::invaug::SOCKET_BEGIN; i <= EQ::invaug::SOCKET_END; i++) {
 				if (inst->GetAugment(i)) {
 					ac -= inst->GetAugment(i)->GetItem()->AC;
 					shield_ac += inst->GetAugment(i)->GetItem()->AC;

@@ -65,6 +65,7 @@
 #define SILENCED_STRING				207		//You *CANNOT* cast spells, you have been silenced!
 #define CANNOT_AFFECT_PC			210		//That spell can not affect this target PC.
 #define SPELL_NEED_TAR				214		//You must first select a target for this spell!
+#define SUMMON_ONLY_GROUP_CORPSE	215		//You must first target a living group member whose corpse you wish to summon.
 #define ONLY_ON_CORPSES				221		//This spell only works on corpses.
 #define CANT_DRAIN_SELF				224		//You can't drain yourself!
 #define CORPSE_NOT_VALID			230		//This corpse is not valid.
@@ -121,11 +122,13 @@
 #define LOOT_LORE_ERROR				371		//You cannot loot this Lore Item. You already have one.
 #define PICK_LORE					379		//You cannot pick up a lore item you already possess.
 #define POISON_TOO_HIGH				382		// This poison is too high level for you to apply.
+#define CORPSE_TOO_FAR				389		//The corpse is too far away to summon.
 #define CONSENT_DENIED				390		//You do not have consent to summon that corpse.
 #define DISCIPLINE_RDY				393		//You are ready to use a new discipline now.
 #define CONSENT_INVALID_NAME		397		//Not a valid consent name.
 #define CONSENT_NPC					398		//You cannot consent NPC\'s.
 #define CONSENT_YOURSELF			399		//You cannot consent yourself.
+#define CONSENT_WAIT				400		//You must wait 2 seconds between consents.
 #define SONG_NEEDS_DRUM				405		//You need to play a percussion instrument for this song
 #define SONG_NEEDS_WIND				406		//You need to play a wind instrument for this song
 #define SONG_NEEDS_STRINGS			407		//You need to play a stringed instrument for this song
@@ -169,6 +172,7 @@
 #define PVP_ON						552		//You are now player kill and follow the ways of Discord.
 #define GENERIC_STRINGID_SAY		554		//%1 says '%T2'
 #define CANNOT_WAKE					555		//%1 tells you, 'I am unable to wake %2, master.'
+#define SUMMONING_CORPSE_ZONE		596		//Summoning %1's corpse(s).
 #define PET_HOLD_SET_ON				698		//The pet hold mode has been set to on.
 #define PET_HOLD_SET_OFF			699		//The pet hold mode has been set to off.
 #define PET_FOCUS_SET_ON			700		//The pet focus mode has been set to on.
@@ -289,8 +293,47 @@
 #define TRADESKILL_MISSING_ITEM		3455	//You are missing a %1.
 #define TRADESKILL_MISSING_COMPONENTS	3456	//Sorry, but you don't have everything you need for this recipe in your general inventory.
 #define TRADESKILL_LEARN_RECIPE		3457	//You have learned the recipe %1!
-#define EXPEDITION_MIN_REMAIN		3551	//You only have %1 minutes remaining before this expedition comes to an end.
+#define EXPEDITION_YOU_BELONG       3500    //You cannot create this expedition since you already belong to another.
+#define EXPEDITION_YOU_PLAYED_HERE  3501    //You cannot create this expedition for another %1d:%2h:%3m since you have recently played here.
+#define REQUIRED_PLAYER_COUNT       3503    //You do not meet the player count requirement.  You have %1 players.  You must have at least %2 and no more than %3.
+#define EXPEDITION_REPLAY_TIMER     3504    //%1 cannot be added to this expedition for another %2D:%3H:%4M since they have recently played in this area.
+#define EXPEDITION_AVAILABLE        3507    //%1 is now available to you.
+#define DZADD_INVITE                3508    //Sending an invitation to: %1.
+#define DZ_PREVENT_ENTERING         3510    //A strange magical presence prevents you from entering.  It's too dangerous to enter at the moment.
+#define DZADD_INVITE_FAIL           3511    //%1 could not be invited to join you.
+#define UNABLE_RETRIEVE_LEADER      3512    //Unable to retrieve information on the leader to check permissions.
+#define EXPEDITION_NOT_LEADER       3513    //You are not the expedition leader, only %1 can issue this command.
+#define EXPEDITION_NOT_MEMBER       3514    //%1 is not a member of this expedition.
+#define EXPEDITION_REMOVED          3516    //%1 has been removed from %2.
+#define DZSWAP_INVITE               3517    //Sending an invitation to: %1.  They must accept in order to swap party members.
+#define DZMAKELEADER_NOT_ONLINE     3518    //%1 is not currently online.  You can only transfer leadership to an online member of the expedition you are in.
+#define DZLIST_REPLAY_TIMER         3519    //You have %1d:%2h:%3m remaining until you may enter %4.
+#define DZMAKELEADER_NAME           3520    //%1 has been made the leader for this expedition.
+#define DZMAKELEADER_YOU            3521    //You have been made the leader of this expedition.
+#define EXPEDITION_INVITE_ACCEPTED  3522    //%1 has accepted your offer to join your expedition.
+#define EXPEDITION_MEMBER_ADDED     3523    //%1 has been added to %2.
+#define EXPEDITION_INVITE_ERROR     3524    //%1 accepted your offer to join your expedition but could not due to error(s).
+#define EXPEDITION_INVITE_DECLINED  3525    //%1 has declined your offer to join your expedition.
+#define EXPEDITION_ASKED_TO_JOIN    3527    //%1 has asked you to join the expedition:  %2.        Would you like to join?
+#define DYNAMICZONE_WAY_IS_BLOCKED  3528    //The way is blocked to you.  Perhaps you would be able to enter if there was a reason to come here.
+#define EXPEDITION_NO_TIMERS        3529    //You have no outstanding timers.
+#define EXPEDITION_MIN_REMAIN       3551    //You only have %1 minutes remaining before this expedition comes to an end.
+#define EXPEDITION_LEADER           3552    //Expedition Leader: %1
+#define EXPEDITION_MEMBERS          3553    //Expedition Members: %1
+#define EXPEDITION_EVENT_TIMER      3561    //%1 cannot be added to this expedition since they have recently experienced %2.  They must wait another %3D:%4H:%5M until they can experience it again.  They may be added to the expedition later, once %2 has been completed.
 #define LOOT_NOT_ALLOWED			3562	//You are not allowed to loot the item: %1.
+#define DZ_UNABLE_RETRIEVE_LEADER   3583    //Unable to retrieve dynamic zone leader to check permissions.
+#define DZADD_NOT_ALLOWING          3585    //The expedition is not allowing players to be added.
+#define DZADD_NOT_ONLINE            3586    //%1 is not currently online.  A player needs to be online to be added to a Dynamic Zone
+#define DZADD_EXCEED_MAX            3587    //You can not add another player since you currently have the maximum number of players allowed (%1) in this zone.
+#define DZADD_ALREADY_PART          3588    //You can not add %1 since they are already part of this zone.
+#define DZADD_LEAVE_ZONE_FIRST      3589    //You can not add %1 since they first need to leave the zone before being allowed back in.
+#define DZADD_ALREADY_ASSIGNED      3590    //%1 can not be added to this dynamic zone since they are already assigned to another dynamic zone.
+#define DZADD_REPLAY_TIMER          3591    //%1 can not be added to this dynamic zone for another %2D:%3H:%4M since they have recently played this zone.
+#define DZADD_EVENT_TIMER           3592    //%1 can not be added to this dynamic zone since they have recently experienced %2.  They must wait for another %3D:%4H:%5M, or until event %2 has occurred.
+#define DZADD_PENDING               3593    //%1 currently has an outstanding invitation to join this Dynamic Zone.
+#define DZADD_PENDING_OTHER         3594    //%1 currently has an outstanding invitation to join another Dynamic Zone.  Players may only have one invitation outstanding.
+#define DZSWAP_CANNOT_REMOVE        3595    //%1 can not be removed from this dynamic zone since they are not assigned to it.
 #define NOT_YOUR_TRAP				3671	//You cannot remove this, you are only allowed to remove traps you have set.
 #define NO_CAST_ON_PET				4045	//You cannot cast this spell on your pet.
 #define REWIND_WAIT					4059	//You must wait a bit longer before using the rewind command again.
@@ -306,6 +349,7 @@
 #define WHOALL_NO_RESULTS			5029	//There are no players in EverQuest that match those who filters.
 #define TELL_QUEUED_MESSAGE			5045	//You told %1 '%T2. %3'
 #define TOLD_NOT_ONLINE				5046	//%1 is not online at this time.
+#define ZONING_NO_EXPANSION         5052	//The zone that you are attempting to enter is part of an expansion that you do not yet own.  You may need to return to the Login screen and enter an account key for that expansion.  If you have received this message in error, please /petition or send an email to EQAccounts@soe.sony.com
 #define PETITION_NO_DELETE			5053	//You do not have a petition in the queue.
 #define PETITION_DELETED			5054	//Your petition was successfully deleted.
 #define ALREADY_IN_RAID				5060	//%1 is already in a raid.
@@ -359,6 +403,9 @@
 #define LDON_NO_LOCKPICK			7564	//You must have a lock pick in your inventory to do this.
 #define LDON_WAS_NOT_LOCKED			7565	//%1 was not locked.
 #define LDON_WAS_NOT_TRAPPED		7566	//%1 was not trapped
+#define GAIN_SINGLE_AA_SINGLE_AA	8019	//You have gained an ability point!  You now have %1 ability point.
+#define GAIN_SINGLE_AA_MULTI_AA		8020	//You have gained an ability point!  You now have %1 ability points.
+#define GAIN_MULTI_AA_MULTI_AA		8021	//You have gained %1 ability point(s)!  You now have %2 ability point(s).
 #define GAIN_GROUP_LEADERSHIP_POINT	8585	//
 #define GAIN_RAID_LEADERSHIP_POINT	8589	//
 #define MAX_GROUP_LEADERSHIP_POINTS	8584	//
@@ -415,9 +462,11 @@
 #define TARGET_PLAYER_FOR_GUILD_STATUS		12260
 #define GROUP_INVITEE_NOT_FOUND		12268	//You must target a player or use /invite <name> to invite someone to your group.
 #define GROUP_INVITEE_SELF			12270	//12270 You cannot invite yourself.
+#define ALREADY_IN_PARTY			12272	//That person is already in your party.
 #define NO_LONGER_HIDDEN			12337   //You are no longer hidden.
 #define STOP_SNEAKING				12338	//You stop sneaking
 #define NOT_IN_CONTROL				12368	//You do not have control of yourself right now.
+#define STAND_TO_CAST				12441	//You must be standing to cast a spell.
 #define ALREADY_CASTING				12442	//You are already casting a spell!
 #define SHIMMERS_BRIEFLY			12444	//Your %1 shimmers briefly.
 #define SENSE_CORPSE_NOT_NAME		12446	//You don't sense any corpses of that name.

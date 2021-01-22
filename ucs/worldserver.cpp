@@ -60,74 +60,110 @@ void WorldServer::ProcessMessage(uint16 opcode, EQ::Net::Packet &p) {
 	ServerPacket tpack(opcode, p);
 	ServerPacket *pack = &tpack;
 
-	Log(Logs::Detail, Logs::UCS_Server, "Received Opcode: %4X", opcode);
+	LogNetcode("Received Opcode: {:#04x}", opcode);
 
-	switch (opcode) {
-		case 0: {
+	switch (opcode)
+	{
+	case 0: {
+		break;
+	}
+	case ServerOP_KeepAlive:
+	{
+		break;
+	}
+	case ServerOP_UCSMessage:
+	{
+		char *Buffer = (char *)pack->pBuffer;
+
+		auto From = new char[strlen(Buffer) + 1];
+
+		VARSTRUCT_DECODE_STRING(From, Buffer);
+
+		std::string Message = Buffer;
+
+		LogInfo("Player: [{}], Sent Message: [{}]", From, Message.c_str());
+
+		Client *c = g_Clientlist->FindCharacter(From);
+
+		safe_delete_array(From);
+
 			break;
 		}
-		case ServerOP_KeepAlive: {
+
+		if (!c)
+		{
+			LogInfo("Client not found");
 			break;
 		}
-		case ServerOP_UCSMessage: {
-			char *Buffer = (char *) pack->pBuffer;
+	}
+}
 
-			auto From = new char[strlen(Buffer) + 1];
+void Client45ToServerSayLink(std::string& serverSayLink, const std::string& clientSayLink) {
+	if (clientSayLink.find('\x12') == std::string::npos) {
+		serverSayLink = clientSayLink;
+		return;
+	}
 
-			VARSTRUCT_DECODE_STRING(From, Buffer);
-
-			std::string Message = Buffer;
-
-			Log(Logs::Detail, Logs::UCS_Server, "Player: %s, Sent Message: %s", From, Message.c_str());
-
-			Client *c = g_Clientlist->FindCharacter(From);
-
-			safe_delete_array(From);
-
-			if (Message.length() < 2)
+		if (Message[0] == ';')
+		{
+			std::string new_message;
+			switch (c->GetClientVersion()) {
+			case EQ::versions::ClientVersion::Titanium:
+				Client45ToServerSayLink(new_message, Message.substr(1, std::string::npos));
 				break;
-
-			if (!c) {
-				Log(Logs::Detail, Logs::UCS_Server, "Client not found.");
+			case EQ::versions::ClientVersion::SoF:
+			case EQ::versions::ClientVersion::SoD:
+			case EQ::versions::ClientVersion::UF:
+				Client50ToServerSayLink(new_message, Message.substr(1, std::string::npos));
+				break;
+			case EQ::versions::ClientVersion::RoF:
+				Client55ToServerSayLink(new_message, Message.substr(1, std::string::npos));
+				break;
+			case EQ::versions::ClientVersion::RoF2:
+			default:
+				new_message = Message.substr(1, std::string::npos);
 				break;
 			}
 
-			if (Message[0] == ';') {
-				std::string new_message;
-				switch (c->GetClientVersion()) {
-					case EQEmu::versions::ClientVersion::Titanium:
-						Client45ToServerSayLink(new_message, Message.substr(1, std::string::npos));
-						break;
-					case EQEmu::versions::ClientVersion::SoF:
-					case EQEmu::versions::ClientVersion::SoD:
-					case EQEmu::versions::ClientVersion::UF:
-						Client50ToServerSayLink(new_message, Message.substr(1, std::string::npos));
-						break;
-					case EQEmu::versions::ClientVersion::RoF:
-						Client55ToServerSayLink(new_message, Message.substr(1, std::string::npos));
-						break;
-					case EQEmu::versions::ClientVersion::RoF2:
-					default:
-						new_message = Message.substr(1, std::string::npos);
-						break;
-				}
+			c->SendChannelMessageByNumber(new_message);
+		}
+		else {
+			serverSayLink.append(segments[segment_iter]);
+		}
+	}
+}
 
-				c->SendChannelMessageByNumber(new_message);
-			} else if (Message[0] == '[') {
-				g_Clientlist->ProcessOPMailCommand(c, Message.substr(1, std::string::npos));
+void Client50ToServerSayLink(std::string& serverSayLink, const std::string& clientSayLink) {
+	if (clientSayLink.find('\x12') == std::string::npos) {
+		serverSayLink = clientSayLink;
+		return;
+	}
+
+	auto segments = SplitString(clientSayLink, '\x12');
+
+	for (size_t segment_iter = 0; segment_iter < segments.size(); ++segment_iter) {
+		if (segment_iter & 1) {
+			if (segments[segment_iter].length() <= 50) {
+				serverSayLink.append(segments[segment_iter]);
+				// TODO: log size mismatch error
+				continue;
 			}
 
-			break;
-		}
+			// Idx:  0 1     6     11    16    21    26          31 32    36 37    42       (Source)
+			// SoF:  X XXXXX XXXXX XXXXX XXXXX XXXXX XXXXX       X  XXXX  X  XXXXX XXXXXXXX (50)
+			// RoF2: X XXXXX XXXXX XXXXX XXXXX XXXXX XXXXX XXXXX X  XXXX XX  XXXXX XXXXXXXX (56)
+			// Diff:                                       ^^^^^         ^
 
-		case ServerOP_UCSMailMessage: {
-			ServerMailMessageHeader_Struct *mail = (ServerMailMessageHeader_Struct *) pack->pBuffer;
-			database.SendMail(std::string("SOE.EQ.") + Config->ShortName + std::string(".") + std::string(mail->to),
-							  std::string(mail->from),
-							  mail->subject,
-							  mail->message,
-							  std::string());
-			break;
+			serverSayLink.push_back('\x12');
+			serverSayLink.append(segments[segment_iter].substr(0, 31));
+			serverSayLink.append("00000");
+			serverSayLink.append(segments[segment_iter].substr(31, 5));
+			serverSayLink.push_back('0');
+			serverSayLink.append(segments[segment_iter].substr(36));
+			serverSayLink.push_back('\x12');
+		}
+		else {
+			serverSayLink.append(segments[segment_iter]);
 		}
 	}
 }

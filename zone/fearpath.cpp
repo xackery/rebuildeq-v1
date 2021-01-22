@@ -30,71 +30,129 @@ extern Zone* zone;
 #define FEAR_PATHING_DEBUG
 
 //this is called whenever we are damaged to process possible fleeing
-void Mob::CheckFlee() {
-	//if were allready fleeing, dont need to check more...
-	if(flee_mode && currently_fleeing)
+void Mob::CheckFlee()
+{
+
+	// if mob is dead why would you run?
+	if (GetHP() == 0) {
 		return;
+	}
+
+	// if were already fleeing, don't need to check more...
+	if (flee_mode && currently_fleeing) {
+		return;
+	}
 
 	//dont bother if we are immune to fleeing
-	if(GetSpecialAbility(IMMUNE_FLEEING) || spellbonuses.ImmuneToFlee)
+	if (GetSpecialAbility(IMMUNE_FLEEING) || spellbonuses.ImmuneToFlee) {
+		LogFlee("Mob [{}] is immune to fleeing via special ability or spell bonus", GetCleanName());
 		return;
+	}
 
-	if(!flee_timer.Check())
-		return;	//only do all this stuff every little while, since
-				//its not essential that we start running RIGHT away
-
-	//see if were possibly hurt enough
-	float ratio = GetHPRatio();
-	float fleeratio = GetSpecialAbility(FLEE_PERCENT);
-	fleeratio = fleeratio > 0 ? fleeratio : RuleI(Combat, FleeHPRatio);
-
-	if(ratio >= fleeratio)
+	// Check if Flee Timer is cleared
+	if (!flee_timer.Check()) {
 		return;
+	}
 
-	//we might be hurt enough, check con now..
-	Mob *hate_top = GetHateTop();
-	if(!hate_top) {
-		//this should never happen...
+	int hp_ratio   = GetIntHPRatio();
+	int flee_ratio = GetSpecialAbility(FLEE_PERCENT); // if a special flee_percent exists
+	Mob *hate_top  = GetHateTop();
+
+	LogFlee("Mob [{}] hp_ratio [{}] flee_ratio [{}]", GetCleanName(), hp_ratio, flee_ratio);
+
+	// Sanity Check for race conditions
+	if (hate_top == nullptr) {
+		return;
+	}
+
+	// If no special flee_percent check for Gray or Other con rates
+	if (GetLevelCon(hate_top->GetLevel(), GetLevel()) == CON_GRAY && flee_ratio == 0 && RuleB(Combat, FleeGray) &&
+		GetLevel() <= RuleI(Combat, FleeGrayMaxLevel)) {
+		flee_ratio = RuleI(Combat, FleeGrayHPRatio);
+		LogFlee("Mob [{}] using combat flee gray hp_ratio [{}] flee_ratio [{}]", GetCleanName(), hp_ratio, flee_ratio);
+	}
+	else if (flee_ratio == 0) {
+		flee_ratio = RuleI(Combat, FleeHPRatio);
+		LogFlee("Mob [{}] using combat flee hp_ratio [{}] flee_ratio [{}]", GetCleanName(), hp_ratio, flee_ratio);
+	}
+
+	bool mob_has_low_enough_health_to_flee = hp_ratio >= flee_ratio;
+	if (mob_has_low_enough_health_to_flee) {
+		LogFlee(
+			"Mob [{}] does not have low enough health to flee | hp_ratio [{}] flee_ratio [{}]",
+			GetCleanName(),
+			hp_ratio,
+			flee_ratio
+		);
+		return;
+	}
+
+	// Sanity Check this should never happen...
+	if (!hate_top) {
+		currently_fleeing = true;
 		StartFleeing();
 		return;
 	}
 
-	float other_ratio = hate_top->GetHPRatio();
-	if(other_ratio < 20) {
-		//our hate top is almost dead too... stay and fight
+	int other_ratio = hate_top->GetIntHPRatio();
+	// If the Client is nearing death the NPC will not flee and instead try to kill the client.
+	if (other_ratio < 20) {
 		return;
 	}
 
-	//base our flee ratio on our con. this is how the
-	//attacker sees the mob, since this is all we can observe
+	// Flee Chance checking based on con.
 	uint32 con = GetLevelCon(hate_top->GetLevel(), GetLevel());
-	float run_ratio;
-	switch(con) {
+	int    flee_chance;
+	switch (con) {
 		//these values are not 100% researched
 		case CON_GRAY:
-			run_ratio = fleeratio;
+			flee_chance = 100;
 			break;
 		case CON_GREEN:
-			run_ratio = fleeratio * 9 / 10;
+			flee_chance = 90;
 			break;
 		case CON_LIGHTBLUE:
-			run_ratio = fleeratio * 9 / 10;
+			flee_chance = 90;
 			break;
 		case CON_BLUE:
-			run_ratio = fleeratio * 8 / 10;
+			flee_chance = 80;
 			break;
 		default:
-			run_ratio = fleeratio * 7 / 10;
+			flee_chance = 70;
 			break;
 	}
-	if(ratio < run_ratio)
-	{
-		if (RuleB(Combat, FleeIfNotAlone) ||
-			GetSpecialAbility(ALWAYS_FLEE) ||
-			(!RuleB(Combat, FleeIfNotAlone) && (entity_list.GetHatedCount(hate_top, this) == 0)))
-			StartFleeing();
+
+	LogFlee(
+		"Post con-switch | Mob [{}] con [{}] hp_ratio [{}] flee_ratio [{}] flee_chance [{}]",
+		GetCleanName(),
+		con,
+		hp_ratio,
+		flee_ratio,
+		flee_chance
+	);
+
+	// If we got here we are allowed to roll on flee chance if there is not other hated NPC's in the area.
+	// ALWAYS_FLEE, skip roll
+	// if FleeIfNotAlone is true, we skip alone check
+	// roll chance
+	if (GetSpecialAbility(ALWAYS_FLEE) ||
+		((RuleB(Combat, FleeIfNotAlone) || entity_list.GetHatedCount(hate_top, this, true) == 0) &&
+		 zone->random.Roll(flee_chance))) {
+
+		LogFlee(
+			"Passed all checks to flee | Mob [{}] con [{}] hp_ratio [{}] flee_ratio [{}] flee_chance [{}]",
+			GetCleanName(),
+			con,
+			hp_ratio,
+			flee_ratio,
+			flee_chance
+		);
+
+		currently_fleeing = true;
+		StartFleeing();
 	}
 }
+
 
 void Mob::ProcessFlee()
 {
@@ -102,16 +160,26 @@ void Mob::ProcessFlee()
 	//Stop fleeing if effect is applied after they start to run.
 	//When ImmuneToFlee effect fades it will turn fear back on and check if it can still flee.
 	if (flee_mode && (GetSpecialAbility(IMMUNE_FLEEING) || spellbonuses.ImmuneToFlee) &&
-			!spellbonuses.IsFeared && !spellbonuses.IsBlind) {
+		!spellbonuses.IsFeared && !spellbonuses.IsBlind) {
 		currently_fleeing = false;
 		return;
 	}
 
-	//see if we are still dying, if so, do nothing
-	float fleeratio = GetSpecialAbility(FLEE_PERCENT);
-	fleeratio = fleeratio > 0 ? fleeratio : RuleI(Combat, FleeHPRatio);
-	if (GetHPRatio() < fleeratio)
+	int hpratio = GetIntHPRatio();
+	int fleeratio = GetSpecialAbility(FLEE_PERCENT); // if a special flee_percent exists
+	Mob *hate_top = GetHateTop();
+
+	// If no special flee_percent check for Gray or Other con rates
+	if(hate_top != nullptr && GetLevelCon(hate_top->GetLevel(), GetLevel()) == CON_GRAY && fleeratio == 0 && RuleB(Combat, FleeGray)) {
+		fleeratio = RuleI(Combat, FleeGrayHPRatio);
+	} else if(fleeratio == 0) {
+		fleeratio = RuleI(Combat, FleeHPRatio );
+	}
+
+	// Mob is still too low. Keep Running
+	if(hpratio < fleeratio) {
 		return;
+	}
 
 	//we are not dying anymore... see what we do next
 
@@ -125,37 +193,20 @@ void Mob::ProcessFlee()
 	}
 }
 
-void Mob::CalculateNewFearpoint() {
+void Mob::CalculateNewFearpoint()
+{
 	if (RuleB(Pathing, Fear) && zone->pathing) {
-		auto Node = zone->pathing->GetRandomLocation();
+		auto Node = zone->pathing->GetRandomLocation(glm::vec3(GetX(), GetY(), GetZ()));
 		if (Node.x != 0.0f || Node.y != 0.0f || Node.z != 0.0f) {
+			m_FearWalkTarget  = Node;
+			currently_fleeing = true;
 
-			++Node.z;
-			m_FearWalkTarget = Node;
+			return;
 		}
 
-		Log(Logs::Detail, Logs::None, "No path found to selected node. Falling through to old fear point selection.");
+		LogPathing("No path found to selected node during CalculateNewFearpoint.");
 	}
-
-	int loop = 0;
-	float ranx, rany, ranz;
-
-	currently_fleeing = true;
-	while (loop < 100) //Max 100 tries
-	{
-		int ran = 250 - (loop * 2);
-		loop++;
-		ranx = GetX() + zone->random.Int(0, ran - 1) - zone->random.Int(0, ran - 1);
-		rany = GetY() + zone->random.Int(0, ran - 1) - zone->random.Int(0, ran - 1);
-		ranz = FindGroundZ(ranx, rany);
-		if (ranz == BEST_Z_INVALID)
-			continue;
-		float fdist = ranz - GetZ();
-		if (fdist >= -12 && fdist <= 12 && CheckCoordLosNoZLeaps(GetX(), GetY(), GetZ(), ranx, rany, ranz)) {
-			break;
-		}
-	}
-
+}
 
 	if (currently_fleeing)
 		m_FearWalkTarget = glm::vec3(ranx, rany, ranz);

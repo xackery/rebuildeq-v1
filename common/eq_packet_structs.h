@@ -35,6 +35,8 @@ static const uint32 MAX_MERC = 100;
 static const uint32 MAX_MERC_GRADES = 10;
 static const uint32 MAX_MERC_STANCES = 10;
 static const uint32 BLOCKED_BUFF_COUNT = 20;
+static const uint32 QUESTREWARD_COUNT = 8;
+static const uint32 ADVANCED_LORE_LENGTH = 8192;
 
 
 /*
@@ -127,7 +129,7 @@ struct LDoNTrapTemplate
 
 // All clients translate the character select information to some degree
 
-struct CharSelectEquip : EQEmu::textures::Texture_Struct, EQEmu::textures::Tint_Struct {};
+struct CharSelectEquip : EQ::textures::Texture_Struct, EQ::textures::Tint_Struct {};
 
 // RoF2-based hybrid struct
 struct CharacterSelectEntry_Struct
@@ -142,7 +144,7 @@ struct CharacterSelectEntry_Struct
 	uint16 Instance;
 	uint8 Gender;
 	uint8 Face;
-	CharSelectEquip	Equip[EQEmu::textures::materialCount];
+	CharSelectEquip	Equip[EQ::textures::materialCount];
 	uint8 Unknown15;			// Seen FF
 	uint8 Unknown19;			// Seen FF
 	uint32 DrakkinTattoo;
@@ -251,7 +253,7 @@ struct Spawn_Struct {
 /*0189*/ uint32	petOwnerId;			// If this is a pet, the spawn id of owner
 /*0193*/ uint8	guildrank;			// 0=normal, 1=officer, 2=leader
 /*0194*/ uint8	unknown0194[3];
-/*0197*/ EQEmu::TextureProfile equipment;
+/*0197*/ EQ::TextureProfile equipment;
 /*0233*/ float	runspeed;		// Speed when running
 /*0036*/ uint8	afk;			// 0=no, 1=afk
 /*0238*/ uint32	guildID;		// Current guild
@@ -282,7 +284,7 @@ union
 /*0340*/ uint32 spawnId;		// Spawn Id
 /*0344*/ float bounding_radius; // used in melee, overrides calc
 /*0347*/ uint8 IsMercenary;
-/*0348*/ EQEmu::TintProfile equipment_tint;
+/*0348*/ EQ::TintProfile equipment_tint;
 /*0384*/ uint8	lfg;			// 0=off, 1=lfg on
 /*0385*/
 
@@ -306,7 +308,6 @@ union
 	uint32 DestructibleUnk9;
 	bool targetable_with_hotkey;
 	bool show_name;
-
 };
 
 struct PlayerState_Struct {
@@ -374,9 +375,16 @@ struct NewZone_Struct {
 /*0686*/	uint16	zone_instance;
 /*0688*/	uint32	unknown688;
 /*0692*/	uint8	unknown692[8];
+// Titanium doesn't have a translator, but we can still safely add stuff under here without issues since client memcpy's only what it knows
+// Just wastes some bandwidth sending to tit clients /shrug
 /*0700*/	float	fog_density;
 /*0704*/	uint32	SuspendBuffs;
-/*0704*/
+/*0708*/	uint32	FastRegenHP;
+/*0712*/	uint32	FastRegenMana;
+/*0716*/	uint32	FastRegenEndurance;
+/*0720*/	uint32	NPCAggroMaxDist;
+/*0724*/	uint32	underworld_teleport_index; // > 0 teleports w/ zone point index, invalid succors, if this value is 0, it prevents you from running off edges that would end up underworld
+/*0728*/
 };
 
 /*
@@ -731,7 +739,7 @@ struct BandolierItem_Struct
 struct Bandolier_Struct
 {
 	char Name[32];
-	BandolierItem_Struct Items[EQEmu::profile::BANDOLIER_ITEM_COUNT];
+	BandolierItem_Struct Items[EQ::profile::BANDOLIER_ITEM_COUNT];
 };
 
 //len = 72
@@ -745,7 +753,7 @@ struct PotionBeltItem_Struct
 //len = 288
 struct PotionBelt_Struct
 {
-	PotionBeltItem_Struct Items[EQEmu::profile::POTION_BELT_SIZE];
+	PotionBeltItem_Struct Items[EQ::profile::POTION_BELT_SIZE];
 };
 
 struct MovePotionToBelt_Struct
@@ -836,7 +844,7 @@ struct SuspendedMinion_Struct
 	/*002*/	uint32 HP;
 	/*006*/	uint32 Mana;
 	/*010*/	SpellBuff_Struct Buffs[BUFF_COUNT];
-	/*510*/	EQEmu::TextureMaterialProfile Items;
+	/*510*/	EQ::TextureMaterialProfile Items;
 	/*546*/	char Name[64];
 	/*610*/
 };
@@ -849,10 +857,6 @@ struct SuspendedMinion_Struct
 ** OpCode: 0x006a
  */
 static const uint32 MAX_PP_LANGUAGE = 28;
-static const uint32 MAX_PP_SPELLBOOK = 480;	// Set for all functions
-static const uint32 MAX_PP_MEMSPELL = static_cast<uint32>(EQEmu::CastingSlot::MaxGems); // Set to latest client so functions can work right -- 12
-static const uint32 MAX_PP_REF_SPELLBOOK = 480;	// Set for Player Profile size retain
-static const uint32 MAX_PP_REF_MEMSPELL = 9; // Set for Player Profile size retain
 
 static const uint32 MAX_PP_SKILL		= PACKET_SKILL_ARRAY_SIZE;	// 100 - actual skills buffer size
 static const uint32 MAX_PP_INNATE_SKILL	= 25;
@@ -910,7 +914,7 @@ sed -e 's/_t//g' -e 's/MAX_AA/MAX_PP_AA_ARRAY/g' \
 
 struct PlayerProfile_Struct
 {
-/*0000*/	uint32				checksum;			// Checksum from CRC32::SetEQChecksum
+// /*0000*/	uint32				checksum;			// Checksum from CRC32::SetEQChecksum
 /*0004*/	char				name[64];			// Name of player sizes not right
 /*0068*/	char				last_name[32];		// Last name of player sizes not right
 /*0100*/	uint32				gender;				// Player Gender - 0 Male, 1 Female
@@ -932,7 +936,7 @@ struct PlayerProfile_Struct
 /*0245*/	uint8				guildbanker;
 /*0246*/	uint8				unknown0246[6];		//
 /*0252*/	uint32				intoxication;
-/*0256*/	uint32				spellSlotRefresh[MAX_PP_MEMSPELL];	//in ms
+/*0256*/	uint32				spellSlotRefresh[EQ::spells::SPELL_GEM_COUNT];	//in ms
 /*0292*/	uint32				abilitySlotRefresh;
 /*0296*/	uint8				haircolor;			// Player hair color
 /*0297*/	uint8				beardcolor;			// Player beard color
@@ -945,9 +949,9 @@ struct PlayerProfile_Struct
 /*0304*/	uint8				ability_time_minutes;
 /*0305*/	uint8				ability_time_hours;	//place holder
 /*0306*/	uint8				unknown0306[6];		// @bp Spacer/Flag?
-/*0312*/	EQEmu::TextureMaterialProfile	item_material;	// Item texture/material of worn/held items
+/*0312*/	EQ::TextureMaterialProfile	item_material;	// Item texture/material of worn/held items
 /*0348*/	uint8				unknown0348[44];
-/*0392*/	EQEmu::TintProfile	item_tint;
+/*0392*/	EQ::TintProfile	item_tint;
 /*0428*/	AA_Array			aa_array[MAX_PP_AA_ARRAY];
 /*2348*/	float				unknown2384;		//seen ~128, ~47
 /*2352*/	char				servername[32];		// length probably not right
@@ -971,9 +975,9 @@ struct PlayerProfile_Struct
 /*2505*/	uint8				unknown2541[47];	// ?
 /*2552*/	uint8				languages[MAX_PP_LANGUAGE];
 /*2580*/	uint8				unknown2616[4];
-/*2584*/	uint32				spell_book[MAX_PP_REF_SPELLBOOK];
+/*2584*/	uint32				spell_book[EQ::spells::SPELLBOOK_SIZE];
 /*4504*/	uint8				unknown4540[128];	// Was [428] all 0xff
-/*4632*/	uint32				mem_spells[MAX_PP_MEMSPELL];
+/*4632*/	uint32				mem_spells[EQ::spells::SPELL_GEM_COUNT];
 /*4668*/	uint8				unknown4704[32];	//
 /*4700*/	float				y;					// Player y position
 /*4704*/	float				x;					// Player x position
@@ -1049,7 +1053,7 @@ struct PlayerProfile_Struct
 /*7212*/	uint32				tribute_points;
 /*7216*/	uint32				unknown7252;
 /*7220*/	uint32				tribute_active;		//1=active
-/*7224*/	Tribute_Struct		tributes[EQEmu::invtype::TRIBUTE_SIZE];
+/*7224*/	Tribute_Struct		tributes[EQ::invtype::TRIBUTE_SIZE];
 /*7264*/	Disciplines_Struct	disciplines;
 /*7664*/	uint32				recastTimers[MAX_RECAST_TYPES];	// Timers (GMT of last use)
 /*7744*/	char				unknown7780[160];
@@ -1076,7 +1080,7 @@ struct PlayerProfile_Struct
 /*12800*/	uint32				expAA;
 /*12804*/	uint32				aapoints;			//avaliable, unspent
 /*12808*/	uint8				unknown12844[36];
-/*12844*/	Bandolier_Struct	bandoliers[EQEmu::profile::BANDOLIERS_SIZE];
+/*12844*/	Bandolier_Struct	bandoliers[EQ::profile::BANDOLIERS_SIZE];
 /*14124*/	uint8				unknown14160[4506];
 /*18630*/	SuspendedMinion_Struct	SuspendedMinion; // No longer in use
 /*19240*/	uint32				timeentitledonaccount;
@@ -1092,6 +1096,18 @@ struct PlayerProfile_Struct
 /*19559*/	uint8				unknown19595[5];	// ***Placeholder (6/29/2005)
 /*19564*/	uint32				RestTimer;
 /*19568*/
+
+	// All player profile packets are translated and this overhead is ignored in out-bound packets
+	PlayerProfile_Struct() : m_player_profile_version(EQ::versions::MobVersion::Unknown) { }
+
+	EQ::versions::MobVersion PlayerProfileVersion() { return m_player_profile_version; }
+	void SetPlayerProfileVersion(EQ::versions::MobVersion mob_version) { m_player_profile_version = EQ::versions::ValidateMobVersion(mob_version); }
+	void SetPlayerProfileVersion(EQ::versions::ClientVersion client_version) { SetPlayerProfileVersion(EQ::versions::ConvertClientVersionToMobVersion(client_version)); }
+
+private:
+	// No need for gm flag since pp already has one
+	// No need for lookup pointer since this struct is not tied to any one system
+	EQ::versions::MobVersion m_player_profile_version;
 };
 
 
@@ -1177,19 +1193,33 @@ struct SpecialMesg_Struct
 /*24*/	char	message[1];				// What is being said?
 };
 
+struct SpecialMesgHeader_Struct
+{
+/*00*/	char	SpeakMode;				// 2 shouts, 4 %1 %2, 3 %2, 5 tells group, 0 copy, default says
+/*01*/	char	JournalMode;			// 1 and 2 go to journal
+/*02*/	char	language;
+/*03*/	uint32	msg_type;				// Color of text (see MT_*** below)
+/*07*/	uint32	target_spawn_id;		// Who is it being said to?
+/*11*/ // speaker's name
+/*xx*/ // unknown, location, client doesn't care
+/*xx*/ // unknown
+/*xx*/ // unknown
+/*xx*/ // message
+};
+
 /*
 ** When somebody changes what they're wearing or give a pet a weapon (model changes)
 ** Length: 19 Bytes
 */
-struct WearChange_Struct{
-/*000*/ uint16 spawn_id;
-/*002*/ uint32 material;
-/*006*/ uint32 unknown06;
-/*010*/ uint32 elite_material;	// 1 for Drakkin Elite Material
-/*014*/ uint32 hero_forge_model; // New to VoA
-/*018*/ uint32 unknown18; // New to RoF
-/*022*/ EQEmu::textures::Tint_Struct color;
-/*026*/ uint8 wear_slot_id;
+struct WearChange_Struct {
+/*000*/ uint16                       spawn_id;
+/*002*/ uint32                       material;
+/*006*/ uint32                       unknown06;
+/*010*/ uint32                       elite_material;    // 1 for Drakkin Elite Material
+/*014*/ uint32                       hero_forge_model; // New to VoA
+/*018*/ uint32                       unknown18; // New to RoF
+/*022*/ EQ::textures::Tint_Struct color;
+/*026*/ uint8                        wear_slot_id;
 /*027*/
 };
 
@@ -1253,18 +1283,18 @@ struct Action_Struct
 {
  /* 00 */	uint16 target;	// id of target
  /* 02 */	uint16 source;	// id of caster
-/* 04 */	uint16 level; // level of caster for spells, OSX dump says attack rating, guess spells use it for level
-/* 06 */	uint32 instrument_mod; // OSX dump says base damage, spells use it for bard song (different from newer clients)
-/* 10 */	float force;
-/* 14 */	float hit_heading;
-/* 18 */	float hit_pitch;
-/* 22 */	uint8 type;		// 231 (0xE7) for spells, skill
-/* 23 */	uint16 unknown23; // OSX says min_damage
-/* 25 */	uint16 unknown25; // OSX says tohit
-/* 27 */	uint16 spell;	// spell id being cast
-/* 29 */	uint8 spell_level;
+ /* 04 */	uint16 level; // level of caster for spells, OSX dump says attack rating, guess spells use it for level
+ /* 06 */	uint32 instrument_mod; // OSX dump says base damage, spells use it for bard song (different from newer clients)
+ /* 10 */	float force;
+ /* 14 */	float hit_heading;
+ /* 18 */	float hit_pitch;
+ /* 22 */	uint8 type;		// 231 (0xE7) for spells, skill
+ /* 23 */	uint16 unknown23; // OSX says min_damage
+ /* 25 */	uint16 unknown25; // OSX says tohit
+ /* 27 */	uint16 spell;	// spell id being cast
+ /* 29 */	uint8 spell_level;
 // this field seems to be some sort of success flag, if it's 4
-/* 30 */	uint8 effect_flag;	// if this is 4, a buff icon is made
+ /* 30 */	uint8 effect_flag;	// if this is 4, a buff icon is made
 // newer clients have some data for setting LaunchSpellData when effect_flag & 4
 // /* 31 */	uint8 spell_gem;
 // /* 32 */	uint32 inventory_slot;
@@ -1333,21 +1363,24 @@ struct BecomeCorpse_Struct {
 */
 struct PlayerPositionUpdateServer_Struct
 {
-/*0000*/ uint16		spawn_id;
-/*0002*/ int32		delta_heading:10,	// change in heading
-					x_pos:19,			// x coord
-					padding0002:3;		// ***Placeholder
-/*0006*/ int32		y_pos:19,			// y coord
-					animation:10,		// animation
-					padding0006:3;		// ***Placeholder
-/*0010*/ int32		z_pos:19,			// z coord
-					delta_y:13;			// change in y
-/*0014*/ int32		delta_x:13,			// change in x
-					heading:12,			// heading
-					padding0014:7;		// ***Placeholder
-/*0018*/ int32		delta_z:13,			// change in z
-					padding0018:19;		// ***Placeholder
-/*0022*/
+/*0000*/	uint16		spawn_id;
+/*0002*/	uint16		vehicle_id;
+/*0004*/	signed		padding0004 : 12;
+			signed		y_pos : 19;			// y coord
+			unsigned	padding : 1;
+/*0008*/	signed		delta_z : 13;		// change in z
+			signed		delta_x : 13;		// change in x
+			signed		padding0008 : 6;
+/*0012*/	signed		x_pos : 19;			// x coord
+			unsigned	heading : 12;		// heading
+			signed		padding0016 : 1;
+/*0016*/	signed		delta_heading : 10;	// change in heading
+			signed		z_pos : 19;			// z coord
+			signed		padding0020 : 3;
+/*0020*/	signed		animation : 10;		// animation
+			signed		delta_y : 13;		// change in y
+			signed		padding0024 : 9;
+/*0024*/
 };
 
 /*
@@ -1358,21 +1391,23 @@ struct PlayerPositionUpdateServer_Struct
 */
 struct PlayerPositionUpdateClient_Struct
 {
-/*0000*/ uint16	spawn_id;
-/*0002*/ uint16	sequence;			//increments one each packet
-/*0004*/ float	y_pos;				// y coord
-/*0008*/ float	delta_z;			// Change in z
-/*0012*/ float	delta_x;			// Change in x
-/*0016*/ float	delta_y;			// Change in y
-/*0020*/ int32	animation:10,		// animation
-				delta_heading:10,	// change in heading
-				padding0020:12;		// ***Placeholder (mostly 1)
-/*0024*/ float	x_pos;				// x coord
-/*0028*/ float	z_pos;				// z coord
-/*0032*/ uint16	heading:12,			// Directional heading
-				padding0004:4;		// ***Placeholder
-/*0034*/ uint8	unknown0006[2];		// ***Placeholder
-/*0036*/
+/*0000*/	uint16		sequence;			// increments one each packet - Verified
+/*0002*/	uint16		spawn_id;			// Player's spawn id
+/*0004*/	uint16		vehicle_id;			// Player's vehicle spawn id
+/*0006*/	uint8		unknown0004[4];		// ***Placeholder
+/*0010*/	float		delta_x;			// Change in x
+/*0014*/	unsigned	heading : 12;		// Directional heading
+			unsigned	padding0040 : 20;	// ***Placeholder
+/*0018*/	float		x_pos;				// x coord (2nd loc value)
+/*0022*/	float		delta_z;			// Change in z
+/*0026*/	float		z_pos;				// z coord (3rd loc value)
+/*0030*/	float		y_pos;				// y coord (1st loc value)
+/*0034*/	unsigned	animation : 10;		// ***Placeholder
+			unsigned	padding0024 : 22;	// animation
+/*0038*/	float		delta_y;			// Change in y
+/*0042*/	signed		delta_heading : 10;	// change in heading
+			unsigned	padding0041 : 22;	// ***Placeholder
+/*0046*/
 };
 
 struct SpawnPositionUpdate_Struct
@@ -2091,7 +2126,7 @@ struct AdventureLeaderboard_Struct
 /*struct Item_Shop_Struct {
 	uint16 merchantid;
 	uint8 itemtype;
-	EQEmu::ItemData item;
+	EQ::ItemData item;
 	uint8 iss_unknown001[6];
 };*/
 
@@ -2117,7 +2152,7 @@ struct Illusion_Struct { //size: 256 - SoF
 /*092*/	uint32	drakkin_heritage;	//
 /*096*/	uint32	drakkin_tattoo;		//
 /*100*/	uint32	drakkin_details;	//
-/*104*/	EQEmu::TintProfile	armor_tint;	//
+/*104*/	EQ::TintProfile	armor_tint;	//
 /*140*/	uint8	eyecolor1;		// Field Not Identified in any Illusion Struct
 /*141*/	uint8	eyecolor2;		// Field Not Identified in any Illusion Struct
 /*142*/	uint8	unknown138[114];	//
@@ -2150,14 +2185,7 @@ struct QuestReward_Struct
 	/*024*/ uint32	silver;		// Gives silver to the client
 	/*028*/ uint32	gold;		// Gives gold to the client
 	/*032*/ uint32	platinum;	// Gives platinum to the client
-	/*036*/ uint32	item_id;
-	/*040*/ uint32	unknown040;
-	/*044*/ uint32	unknown044;
-	/*048*/ uint32	unknown048;
-	/*052*/ uint32	unknown052;
-	/*056*/ uint32	unknown056;
-	/*060*/ uint32	unknown060;
-	/*064*/ uint32	unknown064;
+	/*036*/ int32	item_id[QUESTREWARD_COUNT];	// -1 for nothing
 	/*068*/
 };
 
@@ -2942,6 +2970,12 @@ struct	ItemViewRequest_Struct {
 /*046*/	char	unknown046[2];
 };
 
+struct ItemAdvancedLoreText_Struct {
+	int32	item_id;
+	char	item_name[64];
+	char	advanced_lore[ADVANCED_LORE_LENGTH];
+};
+
 struct	LDONItemViewRequest_Struct {
 	uint32	item_id;
 	uint8	unknown004[4];
@@ -3458,8 +3492,8 @@ struct SelectTributeReply_Struct {
 
 struct TributeInfo_Struct {
 	uint32	active;		//0 == inactive, 1 == active
-	uint32	tributes[EQEmu::invtype::TRIBUTE_SIZE];	//-1 == NONE
-	uint32	tiers[EQEmu::invtype::TRIBUTE_SIZE];		//all 00's
+	uint32	tributes[EQ::invtype::TRIBUTE_SIZE];	//-1 == NONE
+	uint32	tiers[EQ::invtype::TRIBUTE_SIZE];		//all 00's
 	uint32	tribute_master_id;
 };
 
@@ -4370,7 +4404,7 @@ struct AnnoyingZoneUnknown_Struct {
 };
 
 struct LoadSpellSet_Struct {
-	uint32 spell[MAX_PP_MEMSPELL];	// 0xFFFFFFFF if no action, slot number if to unmem starting at 0
+	uint32 spell[EQ::spells::SPELL_GEM_COUNT];	// 0xFFFFFFFF if no action, slot number if to unmem starting at 0
 	uint32 unknown;					//there seems to be an extra field in this packet...
 };
 
@@ -4801,17 +4835,98 @@ struct BuffIcon_Struct
 	BuffIconEntry_Struct entries[0];
 };
 
-struct ExpeditionInfo_Struct
+struct ExpeditionInvite_Struct
 {
-/*000*/ uint32 max_players;
-/*004*/ char expedition_name[128];
-/*132*/ char leader_name[64];
+/*000*/ uint32 client_id;            // unique character id
+/*004*/ uint32 unknown004;           // added after titanium
+/*008*/ char   inviter_name[64];
+/*072*/ char   expedition_name[128];
+/*200*/ uint8  swapping;             // 0: adding 1: swapping
+/*201*/ char   swap_name[64];        // if swapping, swap name being removed
+/*265*/ uint8  padding[3];
+/*268*/ uint16 dz_zone_id;           // dz_id zone/instance pair, sent back in reply
+/*270*/ uint16 dz_instance_id;
 };
 
-struct ExpeditionJoinPrompt_Struct
+struct ExpeditionInviteResponse_Struct
 {
-/*000*/ char player_name[64];
-/*064*/ char expedition_name[64];
+/*000*/ uint32 unknown000;
+/*004*/ uint32 unknown004;     // added after titanium
+/*008*/ uint16 dz_zone_id;     // dz_id pair sent in invite
+/*010*/ uint16 dz_instance_id;
+/*012*/ uint8  accepted;       // 0: declined 1: accepted
+/*013*/ uint8  swapping;       // 0: adding 1: swapping (sent in invite)
+/*014*/ char   swap_name[64];  // swap name sent in invite
+/*078*/ uint8  unknown078;     // padding garbage?
+/*079*/ uint8  unknown079;     // padding garbage?
+};
+
+struct ExpeditionInfo_Struct
+{
+/*000*/ uint32 client_id;
+/*004*/ uint32 unknown004; // added after titanium
+/*008*/ uint32 assigned;   // padded bool, 0: not in expedition (clear data), 1: in expedition
+/*012*/ uint32 max_players;
+/*016*/ char   expedition_name[128];
+/*144*/ char   leader_name[64];
+};
+
+struct ExpeditionMemberEntry_Struct
+{
+/*000*/ char  name[64];          // variable length, null terminated, max 0x40 (64)
+/*064*/ uint8 expedition_status; // 0: unknown, 1: Online, 2: Offline, 3: In Dynamic Zone, 4: Link Dead
+};
+
+struct ExpeditionMemberList_Struct
+{
+/*000*/ uint32 client_id;
+/*004*/ uint32 member_count;
+/*008*/ ExpeditionMemberEntry_Struct members[0]; // variable length
+};
+
+struct ExpeditionMemberListName_Struct
+{
+/*000*/ uint32 client_id;
+/*004*/ uint32 unknown004;
+/*008*/ uint32 add_name; // padded bool, 0: remove name, 1: add name with unknown status
+/*012*/ char   name[64];
+};
+
+struct ExpeditionLockoutTimerEntry_Struct
+{
+/*000*/ char   expedition_name[128]; // variable length, null terminated, max 0x80 (128)
+/*000*/ uint32 seconds_remaining;
+/*000*/ int32  event_type;           // seen -1 (0xffffffff) for replay timers and 1 for event timers
+/*000*/ char   event_name[256];      // variable length, null terminated, max 0x100 (256)
+};
+
+struct ExpeditionLockoutTimers_Struct
+{
+/*000*/ uint32 client_id;
+/*004*/ uint32 count;
+/*008*/ ExpeditionLockoutTimerEntry_Struct timers[0];
+};
+
+struct ExpeditionSetLeaderName_Struct
+{
+/*000*/ uint32 client_id;
+/*004*/ uint32 unknown004;
+/*008*/ char   leader_name[64];
+};
+
+struct ExpeditionCommand_Struct
+{
+/*000*/ uint32 unknown000;
+/*004*/ uint32 unknown004;
+/*008*/ char name[64];
+};
+
+struct ExpeditionCommandSwap_Struct
+{
+/*000*/ uint32 unknown000;
+/*004*/ uint32 unknown004;
+/*008*/ char add_player_name[64]; // swap to (player must confirm)
+/*072*/ char rem_player_name[64]; // swap from
 };
 
 struct ExpeditionExpireWarning
@@ -4819,48 +4934,67 @@ struct ExpeditionExpireWarning
 /*008*/ uint32 minutes_remaining;
 };
 
-struct ExpeditionCompassEntry_Struct
+struct DynamicZoneCompassEntry_Struct
 {
-/*000*/ uint32 enabled; //guess
-/*004*/ float y;
-/*008*/ float x;
-/*012*/ float z;
+/*000*/ uint16 dz_zone_id;      // target dz id pair
+/*002*/ uint16 dz_instance_id;
+/*004*/ uint32 dz_type;         // 1: Expedition, 2: Tutorial (purple), 3: Task, 4: Mission, 5: Quest (green)
+/*008*/ uint32 unknown008;
+/*012*/ float y;
+/*016*/ float x;
+/*020*/ float z;
 };
 
-struct ExpeditionCompass_Struct
+struct DynamicZoneCompass_Struct
 {
+/*000*/ uint32 client_id;
 /*000*/ uint32 count;
-/*004*/ ExpeditionCompassEntry_Struct entries[0];
+/*004*/ DynamicZoneCompassEntry_Struct entries[0];
 };
 
-struct ExpeditionMemberEntry_Struct
+struct DynamicZoneChooseZoneEntry_Struct
 {
-	char name[64];
-	char status;
+/*000*/ uint16 dz_zone_id;       // dz_id pair
+/*002*/ uint16 dz_instance_id;
+/*004*/ uint32 unknown_id1;      // seen 28 00 00 00 (40), sent back in reply
+/*008*/ uint32 dz_type;          // 1: Expedition, 2: Tutorial, 3: Task, 4: Mission, 5: Quest -- sent back in reply
+/*012*/ uint32 unknown_id2;      // possibly an id based on dz type, for expeditions this was same as dz_id (zone|instance) but task dz was different
+/*016*/ char   description[128]; // variable length, null terminated
+/*144*/ char   leader_name[64];  // variable length, null terminated
 };
 
-struct ExpeditionMemberList_Struct
+struct DynamicZoneChooseZone_Struct
 {
-/*000*/ uint32 count;
-/*004*/ ExpeditionMemberEntry_Struct entries[0];
+/*000*/ uint32 client_id;
+/*004*/ uint32 count;
+/*008*/ DynamicZoneChooseZoneEntry_Struct choices[0];
 };
 
-struct ExpeditionLockoutEntry_Struct
+struct DynamicZoneChooseZoneReply_Struct
 {
-/*000*/ uint32 time_left;
-/*004*/ char expedition[128];
-/*132*/ char expedition_event[128];
+/*000*/ uint32 unknown000;     // ff ff ff ff
+/*004*/ uint32 unknown004;     // seen 69 00 00 00
+/*008*/ uint32 unknown008;     // ff ff ff ff
+/*012*/ uint32 unknown_id1;    // from choose zone entry message
+/*016*/ uint16 dz_zone_id;     // dz_id pair
+/*018*/ uint16 dz_instance_id;
+/*020*/ uint32 dz_type;        // 1: Expedition, 2: Tutorial, 3: Task, 4: Mission, 5: Quest
+/*024*/ uint32 unknown_id2;    // from choose zone entry message
+/*028*/ uint32 unknown028;     // 00 00 00 00
+/*032*/ uint32 unknown032;     // always same as unknown044
+/*036*/ uint32 unknown036;
+/*040*/ uint32 unknown040;
+/*044*/ uint32 unknown044;     // always same as unknown032
+/*048*/ uint32 unknown048;     // seen 01 00 00 00 and 02 00 00 00
 };
 
-struct ExpeditionLockoutList_Struct
+struct KickPlayers_Struct
 {
-/*000*/ uint32 count;
-/*004*/ ExpeditionLockoutEntry_Struct entries[0];
-};
-
-struct ExpeditionLeaderSet_Struct
-{
-/*000*/ char leader_name[64];
+/*000*/ char   char_name[64];
+/*064*/ uint32 unknown064;      // always 0
+/*068*/ uint8  kick_expedition; // true if /kickplayers exp
+/*069*/ uint8  kick_task;       // true if /kickplayers task
+/*070*/ uint8  padding[2];
 };
 
 struct CorpseDrag_Struct
@@ -5310,18 +5444,20 @@ struct MercenaryMerchantResponse_Struct {
 
 struct ServerLootItem_Struct {
 	uint32	item_id;	  // uint32	item_id;
-	int16	equip_slot;	  // int16	equip_slot;
-	uint16	charges;	  // uint8	charges; 
-	uint16	lootslot;	  // uint16	lootslot;
-	uint32	aug_1;		  // uint32	aug_1;
-	uint32	aug_2;		  // uint32	aug_2;
-	uint32	aug_3;		  // uint32	aug_3;
-	uint32	aug_4;		  // uint32	aug_4;
-	uint32	aug_5;		  // uint32	aug_5;
-	uint32	aug_6;		  // uint32	aug_5;
-	uint8	attuned;
-	uint8	min_level;
-	uint8	max_level;
+	int16  equip_slot;	  // int16	equip_slot;
+	uint16 charges;	  // uint8	charges;
+	uint16 lootslot;	  // uint16	lootslot;
+	uint32 aug_1;		  // uint32	aug_1;
+	uint32 aug_2;		  // uint32	aug_2;
+	uint32 aug_3;		  // uint32	aug_3;
+	uint32 aug_4;		  // uint32	aug_4;
+	uint32 aug_5;		  // uint32	aug_5;
+	uint32 aug_6;		  // uint32	aug_5;
+	uint8  attuned;
+	uint16 trivial_min_level;
+	uint16 trivial_max_level;
+	uint16 npc_min_level;
+	uint16 npc_max_level;
 };
 
 //Found in client near a ref to the string:
@@ -5339,7 +5475,7 @@ struct ClientMarqueeMessage_Struct {
 	uint32 fade_out_time; //The fade out time, in ms
 	uint32 duration; //in ms
 	char msg[1]; //message plus null terminator
-	
+
 };
 
 typedef std::list<ServerLootItem_Struct*> ItemList;

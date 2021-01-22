@@ -113,7 +113,7 @@ bool Lua_Mob::Attack(Lua_Mob other, int hand, bool from_riposte, bool is_striket
 		if(luabind::type(cur) != LUA_TNIL) {
 			try {
 				options.armor_pen_flat = luabind::object_cast<int>(cur);
-			} catch(luabind::cast_failed) {
+			} catch(luabind::cast_failed &) {
 			}
 		}
 
@@ -121,7 +121,7 @@ bool Lua_Mob::Attack(Lua_Mob other, int hand, bool from_riposte, bool is_striket
 		if(luabind::type(cur) != LUA_TNIL) {
 			try {
 				options.crit_flat = luabind::object_cast<float>(cur);
-			} catch(luabind::cast_failed) {
+			} catch(luabind::cast_failed &) {
 			}
 		}
 
@@ -129,7 +129,7 @@ bool Lua_Mob::Attack(Lua_Mob other, int hand, bool from_riposte, bool is_striket
 		if(luabind::type(cur) != LUA_TNIL) {
 			try {
 				options.damage_flat = luabind::object_cast<int>(cur);
-			} catch(luabind::cast_failed) {
+			} catch(luabind::cast_failed &) {
 			}
 		}
 
@@ -137,7 +137,7 @@ bool Lua_Mob::Attack(Lua_Mob other, int hand, bool from_riposte, bool is_striket
 		if(luabind::type(cur) != LUA_TNIL) {
 			try {
 				options.hate_flat = luabind::object_cast<int>(cur);
-			} catch(luabind::cast_failed) {
+			} catch(luabind::cast_failed &) {
 			}
 		}
 
@@ -145,7 +145,7 @@ bool Lua_Mob::Attack(Lua_Mob other, int hand, bool from_riposte, bool is_striket
 		if(luabind::type(cur) != LUA_TNIL) {
 			try {
 				options.armor_pen_percent = luabind::object_cast<float>(cur);
-			} catch(luabind::cast_failed) {
+			} catch(luabind::cast_failed &) {
 			}
 		}
 
@@ -153,7 +153,7 @@ bool Lua_Mob::Attack(Lua_Mob other, int hand, bool from_riposte, bool is_striket
 		if(luabind::type(cur) != LUA_TNIL) {
 			try {
 				options.crit_percent = luabind::object_cast<float>(cur);
-			} catch(luabind::cast_failed) {
+			} catch(luabind::cast_failed &) {
 			}
 		}
 
@@ -161,7 +161,7 @@ bool Lua_Mob::Attack(Lua_Mob other, int hand, bool from_riposte, bool is_striket
 		if(luabind::type(cur) != LUA_TNIL) {
 			try {
 				options.damage_percent = luabind::object_cast<float>(cur);
-			} catch(luabind::cast_failed) {
+			} catch(luabind::cast_failed &) {
 			}
 		}
 
@@ -169,7 +169,7 @@ bool Lua_Mob::Attack(Lua_Mob other, int hand, bool from_riposte, bool is_striket
 		if(luabind::type(cur) != LUA_TNIL) {
 			try {
 				options.hate_percent = luabind::object_cast<float>(cur);
-			} catch(luabind::cast_failed) {
+			} catch(luabind::cast_failed &) {
 			}
 		}
 	}
@@ -179,22 +179,22 @@ bool Lua_Mob::Attack(Lua_Mob other, int hand, bool from_riposte, bool is_striket
 
 void Lua_Mob::Damage(Lua_Mob from, int damage, int spell_id, int attack_skill) {
 	Lua_Safe_Call_Void();
-	return self->Damage(from, damage, spell_id, static_cast<EQEmu::skills::SkillType>(attack_skill));
+	return self->Damage(from, damage, spell_id, static_cast<EQ::skills::SkillType>(attack_skill));
 }
 
 void Lua_Mob::Damage(Lua_Mob from, int damage, int spell_id, int attack_skill, bool avoidable) {
 	Lua_Safe_Call_Void();
-	return self->Damage(from, damage, spell_id, static_cast<EQEmu::skills::SkillType>(attack_skill), avoidable);
+	return self->Damage(from, damage, spell_id, static_cast<EQ::skills::SkillType>(attack_skill), avoidable);
 }
 
 void Lua_Mob::Damage(Lua_Mob from, int damage, int spell_id, int attack_skill, bool avoidable, int buffslot) {
 	Lua_Safe_Call_Void();
-	return self->Damage(from, damage, spell_id, static_cast<EQEmu::skills::SkillType>(attack_skill), avoidable, buffslot);
+	return self->Damage(from, damage, spell_id, static_cast<EQ::skills::SkillType>(attack_skill), avoidable, buffslot);
 }
 
 void Lua_Mob::Damage(Lua_Mob from, int damage, int spell_id, int attack_skill, bool avoidable, int buffslot, bool buff_tic) {
 	Lua_Safe_Call_Void();
-	return self->Damage(from, damage, spell_id, static_cast<EQEmu::skills::SkillType>(attack_skill), avoidable, buffslot, buff_tic);
+	return self->Damage(from, damage, spell_id, static_cast<EQ::skills::SkillType>(attack_skill), avoidable, buffslot, buff_tic);
 }
 
 void Lua_Mob::RangedAttack(Lua_Mob other) {
@@ -267,6 +267,11 @@ void Lua_Mob::ChangeSize(double in_size, bool no_restriction) {
 	self->ChangeSize(static_cast<float>(in_size), no_restriction);
 }
 
+void Lua_Mob::RandomizeFeatures(bool send_illusion, bool save_variables) {
+       Lua_Safe_Call_Void();
+       self->RandomizeFeatures(send_illusion, save_variables);
+}
+
 void Lua_Mob::GMMove(double x, double y, double z) {
 	Lua_Safe_Call_Void();
 	self->GMMove(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
@@ -317,6 +322,16 @@ bool Lua_Mob::FindBuff(int spell_id) {
 	return self->FindBuff(spell_id);
 }
 
+uint16 Lua_Mob::FindBuffBySlot(int slot) {
+	Lua_Safe_Call_Int();
+	return self->FindBuffBySlot(slot);
+}
+
+uint32 Lua_Mob::BuffCount() {
+	Lua_Safe_Call_Int();
+	return self->BuffCount();
+}
+
 bool Lua_Mob::FindType(int type) {
 	Lua_Safe_Call_Bool();
 	return self->FindType(type);
@@ -355,6 +370,11 @@ int Lua_Mob::GetDeity() {
 int Lua_Mob::GetRace() {
 	Lua_Safe_Call_Int();
 	return self->GetRace();
+}
+
+const char *Lua_Mob::GetRaceName() {
+	Lua_Safe_Call_String();
+	return GetRaceIDName(self->GetRace());
 }
 
 int Lua_Mob::GetGender() {
@@ -425,6 +445,11 @@ int Lua_Mob::GetDrakkinDetails() {
 int Lua_Mob::GetClass() {
 	Lua_Safe_Call_Int();
 	return self->GetClass();
+}
+
+const char *Lua_Mob::GetClassName() {
+	Lua_Safe_Call_String();
+	return GetClassIDName(self->GetClass());
 }
 
 int Lua_Mob::GetLevel() {
@@ -515,6 +540,11 @@ double Lua_Mob::GetManaRatio() {
 int Lua_Mob::GetAC() {
 	Lua_Safe_Call_Int();
 	return self->GetAC();
+}
+
+int Lua_Mob::GetDisplayAC() {
+	Lua_Safe_Call_Int();
+	return self->GetDisplayAC();
 }
 
 int Lua_Mob::GetATK() {
@@ -728,9 +758,9 @@ void Lua_Mob::Message(int type, const char *message) {
 	self->Message(type, message);
 }
 
-void Lua_Mob::Message_StringID(int type, int string_id, uint32 distance) {
+void Lua_Mob::MessageString(int type, int string_id, uint32 distance) {
 	Lua_Safe_Call_Void();
-	self->Message_StringID(type, string_id, distance);
+	self->MessageString(type, string_id, distance);
 }
 
 void Lua_Mob::Say(const char *message) {
@@ -738,14 +768,82 @@ void Lua_Mob::Say(const char *message) {
 	self->Say(message);
 }
 
+void Lua_Mob::Say(const char* message, int language) {
+	Lua_Safe_Call_Void();
+	entity_list.ChannelMessage(self, ChatChannel_Say, language, message); // these run through the client channels and probably shouldn't for NPCs, but oh well
+}
+
 void Lua_Mob::QuestSay(Lua_Client client, const char *message) {
 	Lua_Safe_Call_Void();
-	self->QuestJournalledSay(client, message);
+	Journal::Options journal_opts;
+	journal_opts.speak_mode = Journal::SpeakMode::Say;
+	journal_opts.journal_mode = RuleB(NPC, EnableNPCQuestJournal) ? Journal::Mode::Log2 : Journal::Mode::None;
+	journal_opts.language = 0;
+	journal_opts.message_type = Chat::NPCQuestSay;
+	journal_opts.target_spawn_id = 0;
+	self->QuestJournalledSay(client, message, journal_opts);
+}
+
+void Lua_Mob::QuestSay(Lua_Client client, const char *message, luabind::adl::object opts) {
+	Lua_Safe_Call_Void();
+
+	Journal::Options journal_opts;
+	// defaults
+	journal_opts.speak_mode = Journal::SpeakMode::Say;
+	journal_opts.journal_mode = Journal::Mode::Log2;
+	journal_opts.language = 0;
+	journal_opts.message_type = Chat::NPCQuestSay;
+	journal_opts.target_spawn_id = 0;
+
+	if (luabind::type(opts) == LUA_TTABLE) {
+		auto cur = opts["speak_mode"];
+		if (luabind::type(cur) != LUA_TNIL) {
+			try {
+				journal_opts.speak_mode = static_cast<Journal::SpeakMode>(luabind::object_cast<int>(cur));
+			} catch (luabind::cast_failed &) {
+			}
+		}
+
+		cur = opts["journal_mode"];
+		if (luabind::type(cur) != LUA_TNIL) {
+			try {
+				journal_opts.journal_mode = static_cast<Journal::Mode>(luabind::object_cast<int>(cur));
+			} catch (luabind::cast_failed &) {
+			}
+		}
+
+		cur = opts["language"];
+		if (luabind::type(cur) != LUA_TNIL) {
+			try {
+				journal_opts.language = luabind::object_cast<int>(cur);
+			} catch (luabind::cast_failed &) {
+			}
+		}
+
+		cur = opts["message_type"];
+		if (luabind::type(cur) != LUA_TNIL) {
+			try {
+				journal_opts.message_type = luabind::object_cast<int>(cur);
+			} catch (luabind::cast_failed &) {
+			}
+		}
+	}
+
+	// if rule disables it, we override provided
+	if (!RuleB(NPC, EnableNPCQuestJournal))
+		journal_opts.journal_mode = Journal::Mode::None;
+
+	self->QuestJournalledSay(client, message, journal_opts);
 }
 
 void Lua_Mob::Shout(const char *message) {
 	Lua_Safe_Call_Void();
 	self->Shout(message);
+}
+
+void Lua_Mob::Shout(const char* message, int language) {
+	Lua_Safe_Call_Void();
+	entity_list.ChannelMessage(self, ChatChannel_Shout, language, message);
 }
 
 void Lua_Mob::Emote(const char *message) {
@@ -770,28 +868,28 @@ bool Lua_Mob::CastSpell(int spell_id, int target_id) {
 
 bool Lua_Mob::CastSpell(int spell_id, int target_id, int slot) {
 	Lua_Safe_Call_Bool();
-	return self->CastSpell(spell_id, target_id, static_cast<EQEmu::CastingSlot>(slot));
+	return self->CastSpell(spell_id, target_id, static_cast<EQ::spells::CastingSlot>(slot));
 }
 
 bool Lua_Mob::CastSpell(int spell_id, int target_id, int slot, int cast_time) {
 	Lua_Safe_Call_Bool();
-	return self->CastSpell(spell_id, target_id, static_cast<EQEmu::CastingSlot>(slot), cast_time);
+	return self->CastSpell(spell_id, target_id, static_cast<EQ::spells::CastingSlot>(slot), cast_time);
 }
 
 bool Lua_Mob::CastSpell(int spell_id, int target_id, int slot, int cast_time, int mana_cost) {
 	Lua_Safe_Call_Bool();
-	return self->CastSpell(spell_id, target_id, static_cast<EQEmu::CastingSlot>(slot), cast_time, mana_cost);
+	return self->CastSpell(spell_id, target_id, static_cast<EQ::spells::CastingSlot>(slot), cast_time, mana_cost);
 }
 
 bool Lua_Mob::CastSpell(int spell_id, int target_id, int slot, int cast_time, int mana_cost, int item_slot) {
 	Lua_Safe_Call_Bool();
-	return self->CastSpell(spell_id, target_id, static_cast<EQEmu::CastingSlot>(slot), cast_time, mana_cost, nullptr, static_cast<uint32>(item_slot));
+	return self->CastSpell(spell_id, target_id, static_cast<EQ::spells::CastingSlot>(slot), cast_time, mana_cost, nullptr, static_cast<uint32>(item_slot));
 }
 
 bool Lua_Mob::CastSpell(int spell_id, int target_id, int slot, int cast_time, int mana_cost, int item_slot, int timer,
 	int timer_duration) {
 	Lua_Safe_Call_Bool();
-	return self->CastSpell(spell_id, target_id, static_cast<EQEmu::CastingSlot>(slot), cast_time, mana_cost, nullptr, static_cast<uint32>(item_slot),
+	return self->CastSpell(spell_id, target_id, static_cast<EQ::spells::CastingSlot>(slot), cast_time, mana_cost, nullptr, static_cast<uint32>(item_slot),
 		static_cast<uint32>(timer), static_cast<uint32>(timer_duration));
 }
 
@@ -800,7 +898,7 @@ bool Lua_Mob::CastSpell(int spell_id, int target_id, int slot, int cast_time, in
 	Lua_Safe_Call_Bool();
 	int16 res = resist_adjust;
 
-	return self->CastSpell(spell_id, target_id, static_cast<EQEmu::CastingSlot>(slot), cast_time, mana_cost, nullptr, static_cast<uint32>(item_slot),
+	return self->CastSpell(spell_id, target_id, static_cast<EQ::spells::CastingSlot>(slot), cast_time, mana_cost, nullptr, static_cast<uint32>(item_slot),
 		static_cast<uint32>(timer), static_cast<uint32>(timer_duration), &res);
 }
 
@@ -811,27 +909,27 @@ bool Lua_Mob::SpellFinished(int spell_id, Lua_Mob target) {
 
 bool Lua_Mob::SpellFinished(int spell_id, Lua_Mob target, int slot) {
 	Lua_Safe_Call_Bool();
-	return self->SpellFinished(spell_id, target, static_cast<EQEmu::CastingSlot>(slot));
+	return self->SpellFinished(spell_id, target, static_cast<EQ::spells::CastingSlot>(slot));
 }
 
 bool Lua_Mob::SpellFinished(int spell_id, Lua_Mob target, int slot, int mana_used) {
 	Lua_Safe_Call_Bool();
-	return self->SpellFinished(spell_id, target, static_cast<EQEmu::CastingSlot>(slot), mana_used);
+	return self->SpellFinished(spell_id, target, static_cast<EQ::spells::CastingSlot>(slot), mana_used);
 }
 
 bool Lua_Mob::SpellFinished(int spell_id, Lua_Mob target, int slot, int mana_used, uint32 inventory_slot) {
 	Lua_Safe_Call_Bool();
-	return self->SpellFinished(spell_id, target, static_cast<EQEmu::CastingSlot>(slot), mana_used, inventory_slot);
+	return self->SpellFinished(spell_id, target, static_cast<EQ::spells::CastingSlot>(slot), mana_used, inventory_slot);
 }
 
 bool Lua_Mob::SpellFinished(int spell_id, Lua_Mob target, int slot, int mana_used, uint32 inventory_slot, int resist_adjust) {
 	Lua_Safe_Call_Bool();
-	return self->SpellFinished(spell_id, target, static_cast<EQEmu::CastingSlot>(slot), mana_used, inventory_slot, resist_adjust);
+	return self->SpellFinished(spell_id, target, static_cast<EQ::spells::CastingSlot>(slot), mana_used, inventory_slot, resist_adjust);
 }
 
 bool Lua_Mob::SpellFinished(int spell_id, Lua_Mob target, int slot, int mana_used, uint32 inventory_slot, int resist_adjust, bool proc) {
 	Lua_Safe_Call_Bool();
-	return self->SpellFinished(spell_id, target, static_cast<EQEmu::CastingSlot>(slot), mana_used, inventory_slot, resist_adjust, proc);
+	return self->SpellFinished(spell_id, target, static_cast<EQ::spells::CastingSlot>(slot), mana_used, inventory_slot, resist_adjust, proc);
 }
 
 void Lua_Mob::SendBeginCast(int spell_id, int cast_time) {
@@ -1124,15 +1222,24 @@ double Lua_Mob::CalculateHeadingToTarget(double in_x, double in_y) {
 	return self->CalculateHeadingToTarget(static_cast<float>(in_x), static_cast<float>(in_y));
 }
 
-bool Lua_Mob::CalculateNewPosition(double x, double y, double z, double speed) {
-	Lua_Safe_Call_Bool();
-	return self->CalculateNewPosition(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z), static_cast<float>(speed));
+void Lua_Mob::RunTo(double x, double y, double z) {
+	Lua_Safe_Call_Void();
+	self->RunTo(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
 }
 
-bool Lua_Mob::CalculateNewPosition(double x, double y, double z, double speed, bool check_z) {
-	Lua_Safe_Call_Bool();
-	return self->CalculateNewPosition(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z), static_cast<float>(speed),
-		check_z);
+void Lua_Mob::WalkTo(double x, double y, double z) {
+	Lua_Safe_Call_Void();
+	self->WalkTo(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
+}
+
+void Lua_Mob::NavigateTo(double x, double y, double z) {
+	Lua_Safe_Call_Void();
+	self->NavigateTo(static_cast<float>(x), static_cast<float>(y), static_cast<float>(z));
+}
+
+void Lua_Mob::StopNavigation() {
+	Lua_Safe_Call_Void();
+	self->StopNavigation();
 }
 
 float Lua_Mob::CalculateDistance(double x, double y, double z) {
@@ -1257,22 +1364,22 @@ bool Lua_Mob::CombatRange(Lua_Mob other) {
 
 void Lua_Mob::DoSpecialAttackDamage(Lua_Mob other, int skill, int max_damage) {
 	Lua_Safe_Call_Void();
-	self->DoSpecialAttackDamage(other, static_cast<EQEmu::skills::SkillType>(skill), max_damage);
+	self->DoSpecialAttackDamage(other, static_cast<EQ::skills::SkillType>(skill), max_damage);
 }
 
 void Lua_Mob::DoSpecialAttackDamage(Lua_Mob other, int skill, int max_damage, int min_damage) {
 	Lua_Safe_Call_Void();
-	self->DoSpecialAttackDamage(other, static_cast<EQEmu::skills::SkillType>(skill), max_damage, min_damage);
+	self->DoSpecialAttackDamage(other, static_cast<EQ::skills::SkillType>(skill), max_damage, min_damage);
 }
 
 void Lua_Mob::DoSpecialAttackDamage(Lua_Mob other, int skill, int max_damage, int min_damage, int hate_override) {
 	Lua_Safe_Call_Void();
-	self->DoSpecialAttackDamage(other, static_cast<EQEmu::skills::SkillType>(skill), max_damage, min_damage, hate_override);
+	self->DoSpecialAttackDamage(other, static_cast<EQ::skills::SkillType>(skill), max_damage, min_damage, hate_override);
 }
 
 void Lua_Mob::DoSpecialAttackDamage(Lua_Mob other, int skill, int max_damage, int min_damage, int hate_override, int reuse_time) {
 	Lua_Safe_Call_Void();
-	self->DoSpecialAttackDamage(other, static_cast<EQEmu::skills::SkillType>(skill), max_damage, min_damage, hate_override, reuse_time);
+	self->DoSpecialAttackDamage(other, static_cast<EQ::skills::SkillType>(skill), max_damage, min_damage, hate_override, reuse_time);
 }
 
 void Lua_Mob::DoThrowingAttackDmg(Lua_Mob other) {
@@ -1308,22 +1415,22 @@ void Lua_Mob::DoThrowingAttackDmg(Lua_Mob other, Lua_ItemInst range_weapon, Lua_
 
 void Lua_Mob::DoMeleeSkillAttackDmg(Lua_Mob other, int weapon_damage, int skill) {
 	Lua_Safe_Call_Void();
-	self->DoMeleeSkillAttackDmg(other, weapon_damage, static_cast<EQEmu::skills::SkillType>(skill));
+	self->DoMeleeSkillAttackDmg(other, weapon_damage, static_cast<EQ::skills::SkillType>(skill));
 }
 
 void Lua_Mob::DoMeleeSkillAttackDmg(Lua_Mob other, int weapon_damage, int skill, int chance_mod) {
 	Lua_Safe_Call_Void();
-	self->DoMeleeSkillAttackDmg(other, weapon_damage, static_cast<EQEmu::skills::SkillType>(skill), chance_mod);
+	self->DoMeleeSkillAttackDmg(other, weapon_damage, static_cast<EQ::skills::SkillType>(skill), chance_mod);
 }
 
 void Lua_Mob::DoMeleeSkillAttackDmg(Lua_Mob other, int weapon_damage, int skill, int chance_mod, int focus) {
 	Lua_Safe_Call_Void();
-	self->DoMeleeSkillAttackDmg(other, weapon_damage, static_cast<EQEmu::skills::SkillType>(skill), chance_mod, focus);
+	self->DoMeleeSkillAttackDmg(other, weapon_damage, static_cast<EQ::skills::SkillType>(skill), chance_mod, focus);
 }
 
 void Lua_Mob::DoMeleeSkillAttackDmg(Lua_Mob other, int weapon_damage, int skill, int chance_mod, int focus, bool can_riposte) {
 	Lua_Safe_Call_Void();
-	self->DoMeleeSkillAttackDmg(other, weapon_damage, static_cast<EQEmu::skills::SkillType>(skill), chance_mod, focus, can_riposte);
+	self->DoMeleeSkillAttackDmg(other, weapon_damage, static_cast<EQ::skills::SkillType>(skill), chance_mod, focus, can_riposte);
 }
 
 void Lua_Mob::DoArcheryAttackDmg(Lua_Mob other) {
@@ -1430,7 +1537,7 @@ void Lua_Mob::SendAppearanceEffect(uint32 parm1, uint32 parm2, uint32 parm3, uin
 
 void Lua_Mob::SetFlyMode(int in) {
 	Lua_Safe_Call_Void();
-	self->SetFlyMode(in);
+	self->SetFlyMode(static_cast<GravityBehavior>(in));
 }
 
 void Lua_Mob::SetTexture(int in) {
@@ -1476,7 +1583,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			race = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1484,7 +1591,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			gender = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1492,7 +1599,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			texture = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1500,7 +1607,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			helmtexture = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1508,7 +1615,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			haircolor = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1516,7 +1623,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			beardcolor = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1524,7 +1631,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			eyecolor1 = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1532,7 +1639,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			eyecolor2 = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1540,7 +1647,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			hairstyle = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1548,7 +1655,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			luclinface = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1556,7 +1663,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			beard = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1564,7 +1671,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			aa_title = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1572,7 +1679,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			drakkin_heritage = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1580,7 +1687,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			drakkin_tattoo = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1588,7 +1695,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			drakkin_details = luabind::object_cast<int>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1596,7 +1703,7 @@ void Lua_Mob::SendIllusionPacket(luabind::adl::object illusion) {
 	if(luabind::type(cur) != LUA_TNIL) {
 		try {
 			size = luabind::object_cast<float>(cur);
-		} catch(luabind::cast_failed) {
+		} catch(luabind::cast_failed &) {
 		}
 	}
 
@@ -1787,17 +1894,17 @@ void Lua_Mob::SetTargetable(bool on) {
 
 void Lua_Mob::ModSkillDmgTaken(int skill, int value) {
 	Lua_Safe_Call_Void();
-	self->ModSkillDmgTaken(static_cast<EQEmu::skills::SkillType>(skill), value);
+	self->ModSkillDmgTaken(static_cast<EQ::skills::SkillType>(skill), value);
 }
 
 int Lua_Mob::GetModSkillDmgTaken(int skill) {
 	Lua_Safe_Call_Int();
-	return self->GetModSkillDmgTaken(static_cast<EQEmu::skills::SkillType>(skill));
+	return self->GetModSkillDmgTaken(static_cast<EQ::skills::SkillType>(skill));
 }
 
 int Lua_Mob::GetSkillDmgTaken(int skill) {
 	Lua_Safe_Call_Int();
-	return self->GetSkillDmgTaken(static_cast<EQEmu::skills::SkillType>(skill));
+	return self->GetSkillDmgTaken(static_cast<EQ::skills::SkillType>(skill));
 }
 
 int Lua_Mob::GetFcDamageAmtIncoming(Lua_Mob caster, uint32 spell_id, bool use_skill, uint16 skill)
@@ -1859,7 +1966,7 @@ int Lua_Mob::GetFlurryChance() {
 
 int Lua_Mob::GetSkill(int skill) {
 	Lua_Safe_Call_Int();
-	return self->GetSkill(static_cast<EQEmu::skills::SkillType>(skill));
+	return self->GetSkill(static_cast<EQ::skills::SkillType>(skill));
 }
 
 int Lua_Mob::GetSpecialAbility(int ability) {
@@ -2077,6 +2184,11 @@ int Lua_Mob::GetWeaponDamageBonus(Lua_Item weapon, bool offhand) {
 	return self->GetWeaponDamageBonus(weapon, offhand);
 }
 
+int Lua_Mob::GetItemStat(uint32 itemid, const char* identifier) {
+	Lua_Safe_Call_Int();
+	return self->GetItemStat(itemid, identifier);
+}
+
 Lua_StatBonuses Lua_Mob::GetItemBonuses()
 {
 	Lua_Safe_Call_Class(Lua_StatBonuses);
@@ -2193,6 +2305,7 @@ luabind::scope lua_register_mob() {
 		.def("DoAnim", (void(Lua_Mob::*)(int,int,bool,int))&Lua_Mob::DoAnim)
 		.def("ChangeSize", (void(Lua_Mob::*)(double))&Lua_Mob::ChangeSize)
 		.def("ChangeSize", (void(Lua_Mob::*)(double,bool))&Lua_Mob::ChangeSize)
+		.def("RandomizeFeatures", (void(Lua_Mob::*)(bool,bool))&Lua_Mob::RandomizeFeatures)
 		.def("GMMove", (void(Lua_Mob::*)(double,double,double))&Lua_Mob::GMMove)
 		.def("GMMove", (void(Lua_Mob::*)(double,double,double,double))&Lua_Mob::GMMove)
 		.def("GMMove", (void(Lua_Mob::*)(double,double,double,double,bool))&Lua_Mob::GMMove)
@@ -2203,6 +2316,8 @@ luabind::scope lua_register_mob() {
 		.def("IsInvisible", (bool(Lua_Mob::*)(Lua_Mob))&Lua_Mob::IsInvisible)
 		.def("SetInvisible", &Lua_Mob::SetInvisible)
 		.def("FindBuff", &Lua_Mob::FindBuff)
+		.def("FindBuffBySlot", (uint16(Lua_Mob::*)(int))&Lua_Mob::FindBuffBySlot)
+		.def("BuffCount", &Lua_Mob::BuffCount)
 		.def("FindType", (bool(Lua_Mob::*)(int))&Lua_Mob::FindType)
 		.def("FindType", (bool(Lua_Mob::*)(int,bool))&Lua_Mob::FindType)
 		.def("FindType", (bool(Lua_Mob::*)(int,bool,int))&Lua_Mob::FindType)
@@ -2211,6 +2326,7 @@ luabind::scope lua_register_mob() {
 		.def("GetBaseGender", &Lua_Mob::GetBaseGender)
 		.def("GetDeity", &Lua_Mob::GetDeity)
 		.def("GetRace", &Lua_Mob::GetRace)
+		.def("GetRaceName", &Lua_Mob::GetRaceName)
 		.def("GetGender", &Lua_Mob::GetGender)
 		.def("GetTexture", &Lua_Mob::GetTexture)
 		.def("GetHelmTexture", &Lua_Mob::GetHelmTexture)
@@ -2225,6 +2341,7 @@ luabind::scope lua_register_mob() {
 		.def("GetDrakkinTattoo", &Lua_Mob::GetDrakkinTattoo)
 		.def("GetDrakkinDetails", &Lua_Mob::GetDrakkinDetails)
 		.def("GetClass", &Lua_Mob::GetClass)
+		.def("GetClassName", &Lua_Mob::GetClassName)
 		.def("GetLevel", &Lua_Mob::GetLevel)
 		.def("GetCleanName", &Lua_Mob::GetCleanName)
 		.def("GetTarget", &Lua_Mob::GetTarget)
@@ -2233,6 +2350,7 @@ luabind::scope lua_register_mob() {
 		.def("IsWarriorClass", &Lua_Mob::IsWarriorClass)
 		.def("GetHP", &Lua_Mob::GetHP)
 		.def("GetMaxHP", &Lua_Mob::GetMaxHP)
+		.def("GetItemStat", (int(Lua_Mob::*)(uint32,const char*))&Lua_Mob::GetItemStat)
 		.def("GetItemHPBonuses", &Lua_Mob::GetItemHPBonuses)
 		.def("GetSpellHPBonuses", &Lua_Mob::GetSpellHPBonuses)
 		.def("GetWalkspeed", &Lua_Mob::GetWalkspeed)
@@ -2243,6 +2361,7 @@ luabind::scope lua_register_mob() {
 		.def("SetMana", &Lua_Mob::SetMana)
 		.def("GetManaRatio", &Lua_Mob::GetManaRatio)
 		.def("GetAC", &Lua_Mob::GetAC)
+		.def("GetDisplayAC", &Lua_Mob::GetDisplayAC)
 		.def("GetATK", &Lua_Mob::GetATK)
 		.def("GetSTR", &Lua_Mob::GetSTR)
 		.def("GetSTA", &Lua_Mob::GetSTA)
@@ -2285,10 +2404,14 @@ luabind::scope lua_register_mob() {
 		.def("SetCurrentWP", &Lua_Mob::SetCurrentWP)
 		.def("GetSize", &Lua_Mob::GetSize)
 		.def("Message", &Lua_Mob::Message)
-		.def("Message_StringID", &Lua_Mob::Message_StringID)
-		.def("Say", &Lua_Mob::Say)
-		.def("QuestSay", &Lua_Mob::QuestSay)
-		.def("Shout", &Lua_Mob::Shout)
+		.def("MessageString", &Lua_Mob::MessageString)
+		.def("Message_StringID", &Lua_Mob::MessageString)
+		.def("Say", (void(Lua_Mob::*)(const char*))& Lua_Mob::Say)
+		.def("Say", (void(Lua_Mob::*)(const char*, int))& Lua_Mob::Say)
+		.def("QuestSay", (void(Lua_Mob::*)(Lua_Client,const char *))&Lua_Mob::QuestSay)
+		.def("QuestSay", (void(Lua_Mob::*)(Lua_Client,const char *,luabind::adl::object))&Lua_Mob::QuestSay)
+		.def("Shout", (void(Lua_Mob::*)(const char*))& Lua_Mob::Shout)
+		.def("Shout", (void(Lua_Mob::*)(const char*, int))& Lua_Mob::Shout)
 		.def("Emote", &Lua_Mob::Emote)
 		.def("InterruptSpell", (void(Lua_Mob::*)(void))&Lua_Mob::InterruptSpell)
 		.def("InterruptSpell", (void(Lua_Mob::*)(int))&Lua_Mob::InterruptSpell)
@@ -2361,8 +2484,10 @@ luabind::scope lua_register_mob() {
 		.def("FaceTarget", (void(Lua_Mob::*)(Lua_Mob))&Lua_Mob::FaceTarget)
 		.def("SetHeading", (void(Lua_Mob::*)(double))&Lua_Mob::SetHeading)
 		.def("CalculateHeadingToTarget", (double(Lua_Mob::*)(double,double))&Lua_Mob::CalculateHeadingToTarget)
-		.def("CalculateNewPosition", (bool(Lua_Mob::*)(double,double,double,double))&Lua_Mob::CalculateNewPosition)
-		.def("CalculateNewPosition", (bool(Lua_Mob::*)(double,double,double,double,bool))&Lua_Mob::CalculateNewPosition)
+		.def("RunTo", (void(Lua_Mob::*)(double, double, double))&Lua_Mob::RunTo)
+		.def("WalkTo", (void(Lua_Mob::*)(double, double, double))&Lua_Mob::WalkTo)
+		.def("NavigateTo", (void(Lua_Mob::*)(double,double,double))&Lua_Mob::NavigateTo)
+		.def("StopNavigation", (void(Lua_Mob::*)(void))&Lua_Mob::StopNavigation)
 		.def("CalculateDistance", (float(Lua_Mob::*)(double,double,double))&Lua_Mob::CalculateDistance)
 		.def("SendTo", (void(Lua_Mob::*)(double,double,double))&Lua_Mob::SendTo)
 		.def("SendToFixZ", (void(Lua_Mob::*)(double,double,double))&Lua_Mob::SendToFixZ)

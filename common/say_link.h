@@ -27,7 +27,7 @@
 
 struct ServerLootItem_Struct;
 
-namespace EQEmu
+namespace EQ
 {
 	struct ItemData;
 	class ItemInstance;
@@ -72,7 +72,7 @@ namespace EQEmu
 		SayLinkEngine();
 
 		void SetLinkType(saylink::SayLinkType link_type) { m_LinkType = link_type; }
-		void SetItemData(const EQEmu::ItemData* item_data) { m_ItemData = item_data; }
+		void SetItemData(const EQ::ItemData* item_data) { m_ItemData = item_data; }
 		void SetLootData(const ServerLootItem_Struct* loot_data) { m_LootData = loot_data; }
 		void SetItemInst(const ItemInstance* item_inst) { m_ItemInst = item_inst; }
 
@@ -101,6 +101,8 @@ namespace EQEmu
 		const std::string& LinkBody() { return m_LinkBody; }	// contains string format: '<LinkBody>'
 		const std::string& LinkText() { return m_LinkText; }	// contains string format: '<LinkText>'
 
+		static std::string GenerateQuestSaylink(std::string saylink_text, bool silent, std::string link_name);
+
 		void Reset();
 
 	private:
@@ -111,7 +113,6 @@ namespace EQEmu
 		const ItemData* m_ItemData;
 		const ServerLootItem_Struct* m_LootData;
 		const ItemInstance* m_ItemInst;
-
 		SayLinkBody_Struct m_LinkBodyStruct;
 		SayLinkProxy_Struct m_LinkProxyStruct;
 		bool m_TaskUse;

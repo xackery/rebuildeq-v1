@@ -189,7 +189,7 @@ namespace Convert {
 		/*002*/	uint32 HP;
 		/*006*/	uint32 Mana;
 		/*010*/	Convert::SpellBuff_Struct Buffs[BUFF_COUNT];
-		/*510*/	uint32 Items[EQEmu::textures::materialCount];
+		/*510*/	uint32 Items[EQ::textures::materialCount];
 		/*546*/	char Name[64];
 		/*610*/
 	};
@@ -217,7 +217,7 @@ namespace Convert {
 		/*0245*/	uint8							guildbanker;
 		/*0246*/	uint8							unknown0246[6];		//
 		/*0252*/	uint32							intoxication;
-		/*0256*/	uint32							spellSlotRefresh[MAX_PP_REF_MEMSPELL];	//in ms
+		/*0256*/	uint32							spellSlotRefresh[9];	//in ms
 		/*0292*/	uint32							abilitySlotRefresh;
 		/*0296*/	uint8							haircolor;			// Player hair color
 		/*0297*/	uint8							beardcolor;			// Player beard color
@@ -230,9 +230,9 @@ namespace Convert {
 		/*0304*/	uint8							ability_time_minutes;
 		/*0305*/	uint8							ability_time_hours;	//place holder
 		/*0306*/	uint8							unknown0306[6];		// @bp Spacer/Flag?
-		/*0312*/	uint32							item_material[EQEmu::textures::materialCount];	// Item texture/material of worn/held items
+		/*0312*/	uint32							item_material[EQ::textures::materialCount];	// Item texture/material of worn/held items
 		/*0348*/	uint8							unknown0348[44];
-		/*0392*/	Convert::Color_Struct			item_tint[EQEmu::textures::materialCount];
+		/*0392*/	Convert::Color_Struct			item_tint[EQ::textures::materialCount];
 		/*0428*/	Convert::AA_Array				aa_array[MAX_PP_AA_ARRAY];
 		/*2348*/	float							unknown2384;		//seen ~128, ~47
 		/*2352*/	char							servername[32];		// length probably not right
@@ -256,9 +256,9 @@ namespace Convert {
 		/*2505*/	uint8							unknown2541[47];	// ?
 		/*2552*/	uint8							languages[MAX_PP_LANGUAGE];
 		/*2580*/	uint8							unknown2616[4];
-		/*2584*/	uint32							spell_book[MAX_PP_REF_SPELLBOOK];
+		/*2584*/	uint32							spell_book[480];
 		/*4504*/	uint8							unknown4540[128];	// Was [428] all 0xff
-		/*4632*/	uint32							mem_spells[MAX_PP_REF_MEMSPELL];
+		/*4632*/	uint32							mem_spells[9];
 		/*4668*/	uint8							unknown4704[32];	//
 		/*4700*/	float							y;					// Player y position
 		/*4704*/	float							x;					// Player x position
@@ -475,18 +475,8 @@ bool Database::CheckDatabaseConversions() {
 	CheckDatabaseConvertPPDeblob();
 	CheckDatabaseConvertCorpseDeblob();
 
-	/* Fetch EQEmu Server script */
-	if (!std::ifstream("eqemu_server.pl")){
-		std::cout << "Pulling down automatic database upgrade script..." << std::endl;
-#ifdef _WIN32
-		system("perl -MLWP::UserAgent -e \"require LWP::UserAgent;  my $ua = LWP::UserAgent->new; $ua->timeout(10); $ua->env_proxy; my $response = $ua->get('https://raw.githubusercontent.com/EQEmu/Server/master/utils/scripts/eqemu_server.pl'); if ($response->is_success){ open(FILE, '> eqemu_server.pl'); print FILE $response->decoded_content; close(FILE); }\"");
-#else
-		system("wget --no-check-certificate -O eqemu_server.pl https://raw.githubusercontent.com/EQEmu/Server/master/utils/scripts/eqemu_server.pl");
-#endif
-	}
-
 	/* Run EQEmu Server script (Checks for database updates) */
-	system("perl eqemu_server.pl ran_from_world");
+	if(system("perl eqemu_server.pl ran_from_world"));
 
 	return true;
 }
@@ -1370,7 +1360,7 @@ bool Database::CheckDatabaseConvertPPDeblob(){
 				if (rquery != ""){ results = QueryDatabase(rquery); }
 				/* Run Spell Convert */
 				first_entry = 0; rquery = "";
-				for (i = 0; i < MAX_PP_REF_SPELLBOOK; i++){
+				for (i = 0; i < 480; i++){
 					if (pp->spell_book[i] > 0 && pp->spell_book[i] != 4294967295 && pp->spell_book[i] < 40000 && pp->spell_book[i] != 1){
 						if (first_entry != 1){
 							rquery = StringFormat("REPLACE INTO `character_spells` (id, slot_id, spell_id) VALUES (%u, %u, %u)", character_id, i, pp->spell_book[i]);
@@ -1382,7 +1372,7 @@ bool Database::CheckDatabaseConvertPPDeblob(){
 				if (rquery != ""){ results = QueryDatabase(rquery); }
 				/* Run Max Memmed Spell Convert */
 				first_entry = 0; rquery = "";
-				for (i = 0; i < MAX_PP_REF_MEMSPELL; i++){
+				for (i = 0; i < 9; i++){
 					if (pp->mem_spells[i] > 0 && pp->mem_spells[i] != 65535 && pp->mem_spells[i] != 4294967295){
 						if (first_entry != 1){
 							rquery = StringFormat("REPLACE INTO `character_memmed_spells` (id, slot_id, spell_id) VALUES (%u, %u, %u)", character_id, i, pp->mem_spells[i]);
@@ -1406,7 +1396,7 @@ bool Database::CheckDatabaseConvertPPDeblob(){
 				if (rquery != ""){ results = QueryDatabase(rquery); }
 				/* Run Material Color Convert */
 				first_entry = 0; rquery = "";
-				for (i = EQEmu::textures::textureBegin; i < EQEmu::textures::materialCount; i++){
+				for (i = EQ::textures::textureBegin; i < EQ::textures::materialCount; i++){
 					if (pp->item_tint[i].color > 0){
 						if (first_entry != 1){
 							rquery = StringFormat("REPLACE INTO `character_material` (id, slot, blue, green, red, use_tint, color) VALUES (%u, %u, %u, %u, %u, %u, %u)", character_id, i, pp->item_tint[i].rgb.blue, pp->item_tint[i].rgb.green, pp->item_tint[i].rgb.red, pp->item_tint[i].rgb.use_tint, pp->item_tint[i].color);

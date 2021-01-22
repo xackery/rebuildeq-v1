@@ -71,6 +71,7 @@ public:
 	void DoAnim(int anim_num, int type, bool ackreq, int filter);
 	void ChangeSize(double in_size);
 	void ChangeSize(double in_size, bool no_restriction);
+	void RandomizeFeatures(bool send_illusion, bool save_variables);
 	void GMMove(double x, double y, double z);
 	void GMMove(double x, double y, double z, double heading);
 	void GMMove(double x, double y, double z, double heading, bool send_update);
@@ -81,6 +82,8 @@ public:
 	bool IsInvisible(Lua_Mob other);
     void SetInvisible(int state);
 	bool FindBuff(int spell_id);
+	uint16 FindBuffBySlot(int slot);
+	uint32 BuffCount();
     bool FindType(int type);
 	bool FindType(int type, bool offensive);
 	bool FindType(int type, bool offensive, int threshold);
@@ -89,6 +92,8 @@ public:
 	int GetBaseGender();
 	int GetDeity();
 	int GetRace();
+	const char *GetClassName();
+	const char *GetRaceName();
 	int GetGender();
 	int GetTexture();
 	int GetHelmTexture();
@@ -121,6 +126,7 @@ public:
 	int SetMana(int mana);
 	double GetManaRatio();
 	int GetAC();
+	int GetDisplayAC();
 	int GetATK();
 	int GetSTR();
 	int GetSTA();
@@ -163,10 +169,13 @@ public:
 	void SetCurrentWP(int wp);
 	double GetSize();
 	void Message(int type, const char *message);
-	void Message_StringID(int type, int string_id, uint32 distance);
+	void MessageString(int type, int string_id, uint32 distance);
 	void Say(const char *message);
+	void Say(const char* message, int language);
 	void QuestSay(Lua_Client client, const char *message);
+	void QuestSay(Lua_Client client, const char *message, luabind::adl::object opts);
 	void Shout(const char *message);
+	void Shout(const char* message, int language);
 	void Emote(const char *message);
 	void InterruptSpell();
 	void InterruptSpell(int spell_id);
@@ -240,10 +249,10 @@ public:
 	void FaceTarget(Lua_Mob target);
 	void SetHeading(double in);
 	double CalculateHeadingToTarget(double in_x, double in_y);
-	bool CalculateNewPosition(double x, double y, double z, double speed);
-	bool CalculateNewPosition(double x, double y, double z, double speed, bool check_z);
-	bool CalculateNewPosition2(double x, double y, double z, double speed);
-	bool CalculateNewPosition2(double x, double y, double z, double speed, bool check_z);
+	void RunTo(double x, double y, double z);
+	void WalkTo(double x, double y, double z);
+	void NavigateTo(double x, double y, double z);
+	void StopNavigation();
 	float CalculateDistance(double x, double y, double z);
 	void SendTo(double x, double y, double z);
 	void SendToFixZ(double x, double y, double z);
@@ -401,6 +410,7 @@ public:
 	bool IsAmnesiad();
 	int32 GetMeleeMitigation();
 	int GetWeaponDamageBonus(Lua_Item weapon, bool offhand);
+	int GetItemStat(uint32 itemid, const char* identifier);
 	Lua_StatBonuses GetItemBonuses();
 	Lua_StatBonuses GetSpellBonuses();
 	Lua_StatBonuses GetAABonuses();

@@ -38,7 +38,7 @@ class EvolveInfo;			// Stores information about an evolving item family
 #include <map>
 
 
-// Specifies usage type for item inside EQEmu::ItemInstance
+// Specifies usage type for item inside EQ::ItemInstance
 enum ItemInstTypes
 {
 	ItemInstNormal = 0,
@@ -54,14 +54,14 @@ typedef enum {
 class SharedDatabase;
 
 // ########################################
-// Class: EQEmu::ItemInstance
+// Class: EQ::ItemInstance
 //	Base class for an instance of an item
 //	An item instance encapsulates item data + data specific
 //	to an item instance (includes dye, augments, charges, etc)
-namespace EQEmu
+namespace EQ
 {
 	class InventoryProfile;
-	
+
 	class ItemInstance {
 	public:
 		/////////////////////////
@@ -203,6 +203,8 @@ namespace EQEmu
 		void SetOrnamentIcon(uint32 ornament_icon)					{ m_ornamenticon = ornament_icon; }
 		uint32 GetOrnamentationIDFile() const						{ return m_ornamentidfile; }
 		void SetOrnamentationIDFile(uint32 ornament_idfile)			{ m_ornamentidfile = ornament_idfile; }
+		uint32 GetNewIDFile() const						            { return m_new_id_file; }
+		void SetNewIDFile(uint32 new_id_file)			            { m_new_id_file = new_id_file; }
 		uint32 GetOrnamentHeroModel(int32 material_slot = -1) const;
 		void SetOrnamentHeroModel(uint32 ornament_hero_model)		{ m_ornament_hero_model = ornament_hero_model; }
 		uint32 GetRecastTimestamp() const							{ return m_recast_timestamp; }
@@ -220,7 +222,7 @@ namespace EQEmu
 		inline int32 GetSerialNumber() const { return m_SerialNumber; }
 		inline void SetSerialNumber(int32 id) { m_SerialNumber = id; }
 
-		std::map<std::string, Timer>& GetTimers() { return m_timers; }
+		std::map<std::string, ::Timer>& GetTimers() { return m_timers; }
 		void SetTimer(std::string name, uint32 time);
 		void StopTimer(std::string name);
 		void ClearTimers();
@@ -310,6 +312,7 @@ namespace EQEmu
 		bool				m_scaling;
 		uint32				m_ornamenticon;
 		uint32				m_ornamentidfile;
+		uint32				m_new_id_file;
 		uint32				m_ornament_hero_model;
 		uint32				m_recast_timestamp;
 
@@ -317,13 +320,13 @@ namespace EQEmu
 		// Items inside of this item (augs or contents);
 		std::map<uint8, ItemInstance*>		m_contents; // Zero-based index: min=0, max=9
 		std::map<std::string, std::string>	m_custom_data;
-		std::map<std::string, Timer>		m_timers;
+		std::map<std::string, ::Timer>		m_timers;
 	};
 }
 
 class EvolveInfo {
 public:
-	friend class EQEmu::ItemInstance;
+	friend class EQ::ItemInstance;
 	//temporary
 	uint16				LvlKills[9];
 	uint32				FirstItem;

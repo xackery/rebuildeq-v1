@@ -6,28 +6,43 @@
 #include "../common/misc_functions.h"
 #include "../common/md5.h"
 #include "../common/packet_dump.h"
+#include "../common/event/timer.h"
 
 UCSConnection::UCSConnection()
 {
-	Stream = 0;
+	connection = 0;
 }
 
 void UCSConnection::SetConnection(std::shared_ptr<EQ::Net::ServertalkServerConnection> inStream)
 {
-	if (Stream && Stream->Handle())
-	{
-		Log(Logs::Detail, Logs::UCS_Server, "Incoming UCS Connection while we were already connected to a UCS.");
-		Stream->Handle()->Disconnect();
+	if (inStream && connection && connection->Handle()) {
+		LogInfo("Incoming UCS Connection while we were already connected to a UCS");
+		connection->Handle()->Disconnect();
 	}
 
-	Stream = inStream;
-	if (Stream) {
-		Stream->OnMessage(std::bind(&UCSConnection::ProcessPacket, this, std::placeholders::_1, std::placeholders::_2));
+	connection = inStream;
+	if (connection) {
+		connection->OnMessage(
+			std::bind(
+				&UCSConnection::ProcessPacket,
+				this,
+				std::placeholders::_1,
+				std::placeholders::_2
+			)
+		);
 	}
+
+	m_keepalive.reset(new EQ::Timer(1000, true, std::bind(&UCSConnection::OnKeepAlive, this, std::placeholders::_1)));
 }
 
-void UCSConnection::ProcessPacket(uint16 opcode, EQ::Net::Packet &p) {
-	if (!Stream)
+const std::shared_ptr<EQ::Net::ServertalkServerConnection> &UCSConnection::GetConnection() const
+{
+	return connection;
+}
+
+void UCSConnection::ProcessPacket(uint16 opcode, EQ::Net::Packet &p)
+{
+	if (!connection)
 		return;
 
 	ServerPacket tpack(opcode, p);
@@ -41,12 +56,14 @@ void UCSConnection::ProcessPacket(uint16 opcode, EQ::Net::Packet &p) {
 			// ignore this
 			break;
 		}
-		case ServerOP_ZAAuth: {
-			Log(Logs::Detail, Logs::UCS_Server, "Got authentication from UCS when they are already authenticated.");
+		case ServerOP_ZAAuth:
+		{
+			LogInfo("Got authentication from UCS when they are already authenticated");
 			break;
 		}
-		default: {
-			Log(Logs::Detail, Logs::UCS_Server, "Unknown ServerOPcode from UCS 0x%04x, size %d", opcode, pack->size);
+		default:
+		{
+			LogInfo("Unknown ServerOPcode from UCS {:#04x}, size [{}]", opcode, pack->size);
 			DumpPacket(pack->pBuffer, pack->size);
 			break;
 		}
@@ -55,10 +72,10 @@ void UCSConnection::ProcessPacket(uint16 opcode, EQ::Net::Packet &p) {
 
 void UCSConnection::SendPacket(ServerPacket* pack)
 {
-	if (!Stream)
+	if (!connection)
 		return;
 
-	Stream->SendPacket(pack);
+	connection->SendPacket(pack);
 }
 
 void UCSConnection::SendMessage(const char *From, const char *Message)
@@ -72,4 +89,14 @@ void UCSConnection::SendMessage(const char *From, const char *Message)
 
 	SendPacket(pack);
 	safe_delete(pack);
+}
+
+void UCSConnection::OnKeepAlive(EQ::Timer *t)
+{
+	if (!connection) {
+		return;
+	}
+
+	ServerPacket pack(ServerOP_KeepAlive, 0);
+	connection->SendPacket(&pack);
 }

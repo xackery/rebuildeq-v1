@@ -28,14 +28,12 @@ public:
 	virtual void RemoveData();
 	virtual bool CheckState(EQStreamState state);
 	virtual std::string Describe() const;
-	virtual const EQEmu::versions::ClientVersion ClientVersion() const;
+	virtual const EQ::versions::ClientVersion ClientVersion() const;
 	virtual EQStreamState GetState();
 	virtual void SetOpcodeManager(OpcodeManager **opm);
-
-	virtual const uint32 GetBytesSent() const;
-	virtual const uint32 GetBytesRecieved() const;
-	virtual const uint32 GetBytesSentPerSecond() const;
-	virtual const uint32 GetBytesRecvPerSecond() const;
+	virtual Stats GetStats() const;
+	virtual void ResetStats();
+	virtual EQStreamManagerInterface* GetManager() const;
 
 protected:
 	std::shared_ptr<EQStreamInterface> const m_stream;	//we own this stream object.

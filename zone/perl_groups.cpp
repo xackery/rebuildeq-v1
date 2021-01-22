@@ -486,8 +486,7 @@ XS(XS_Group_TeleportGroup); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Group_TeleportGroup) {
 	dXSARGS;
 	if (items != 7)
-		Perl_croak(aTHX_
-		           "Usage: Group::TeleportGroup(THIS, Mob* sender, uint32 zone_id, float x, float y, float z, float heading)");
+		Perl_croak(aTHX_ "Usage: Group::TeleportGroup(THIS, Mob* sender, uint32 zone_id, float x, float y, float z, float heading)");
 	{
 		Group  *THIS;
 		Mob    *sender;
@@ -577,6 +576,31 @@ XS(XS_Group_GetMember) {
 	XSRETURN(1);
 }
 
+XS(XS_Group_DoesAnyMemberHaveExpeditionLockout);
+XS(XS_Group_DoesAnyMemberHaveExpeditionLockout) {
+	dXSARGS;
+	if (items != 3 && items != 4) {
+		Perl_croak(aTHX_ "Usage: Group::DoesAnyMemberHaveExpeditionLockout(THIS, string expedition_name, string event_name, [int max_check_count = 0])");
+	}
+
+	Group* THIS = nullptr;
+	if (sv_derived_from(ST(0), "Group")) {
+		IV tmp = SvIV((SV *) SvRV(ST(0)));
+		THIS = INT2PTR(Group *, tmp);
+	} else
+		Perl_croak(aTHX_ "THIS is not of type Group");
+	if (THIS == nullptr)
+		Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+	std::string expedition_name(SvPV_nolen(ST(1)));
+	std::string event_name(SvPV_nolen(ST(2)));
+	int max_check_count = (items == 4) ? static_cast<int>(SvIV(ST(3))) : 0;
+
+	bool result = THIS->DoesAnyMemberHaveExpeditionLockout(expedition_name, event_name, max_check_count);
+	ST(0) = boolSV(result);
+	XSRETURN(1);
+}
+
 #ifdef __cplusplus
 extern "C"
 #endif
@@ -613,6 +637,7 @@ XS(boot_Group) {
 	newXSproto(strcpy(buf, "TeleportGroup"), XS_Group_TeleportGroup, file, "$$$$$$$");
 	newXSproto(strcpy(buf, "GetID"), XS_Group_GetID, file, "$");
 	newXSproto(strcpy(buf, "GetMember"), XS_Group_GetMember, file, "$$");
+	newXSproto(strcpy(buf, "DoesAnyMemberHaveExpeditionLockout"), XS_Group_DoesAnyMemberHaveExpeditionLockout, file, "$$$;$");
 	XSRETURN_YES;
 }
 

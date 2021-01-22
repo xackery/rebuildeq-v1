@@ -36,7 +36,7 @@ struct NPCType
 {
 	char	name[64];
 	char	lastname[70]; 
-	int32	cur_hp;
+	int32	current_hp;
 	int32	max_hp; 
 	float	size;
 	float	runspeed;
@@ -44,7 +44,7 @@ struct NPCType
 	uint16	race;
 	uint8	class_;
 	uint8	bodytype;	// added for targettype support
-	uint8	deity;		//not loaded from DB
+	uint32	deity;		//not loaded from DB
 	uint8	level;
 	uint32	npc_id;
 	uint8	texture;
@@ -86,7 +86,7 @@ struct NPCType
 	uint32	drakkin_heritage;
 	uint32	drakkin_tattoo;
 	uint32	drakkin_details;
-	EQEmu::TintProfile	armor_tint;
+	EQ::TintProfile	armor_tint;
 	uint32	min_dmg;
 	uint32	max_dmg;
 	uint32	charm_ac;
@@ -143,6 +143,11 @@ struct NPCType
 	bool	untargetable;
 	bool	skip_global_loot;
 	bool	rare_spawn;
+	bool	skip_auto_scale; // just so it doesn't mess up bots or mercs, probably should add to DB too just in case
+	int8	stuck_behavior;
+	uint16	use_model;
+	int8	flymode;
+	bool	always_aggro;
 };
 
 namespace player_lootitem {
@@ -180,7 +185,7 @@ struct PlayerCorpse_Struct {
 	uint32	silver;
 	uint32	gold;
 	uint32	plat;
-	EQEmu::TintProfile item_tint;
+	EQ::TintProfile item_tint;
 	uint8 haircolor;
 	uint8 beardcolor;
 	uint8 eyecolor1;

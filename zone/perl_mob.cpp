@@ -95,6 +95,31 @@ XS(XS_Mob_IsNPC) {
 	XSRETURN(1);
 }
 
+XS(XS_Mob_IsBot); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_IsBot) {
+	dXSARGS;
+	if (items != 1)
+		Perl_croak(aTHX_ "Usage: Mob::IsBot(THIS)");
+	{
+		Mob* THIS;
+		bool RETVAL;
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV*)SvRV(ST(0)));
+			THIS = INT2PTR(Mob*, tmp);
+		}
+		else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+		RETVAL = THIS->IsBot();
+		ST(0) = boolSV(RETVAL);
+		sv_2mortal(ST(0));
+	}
+	XSRETURN(1);
+}
+
 XS(XS_Mob_IsMob); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_IsMob) {
 	dXSARGS;
@@ -581,7 +606,7 @@ XS(XS_Mob_GetSkill) {
 		Mob *THIS;
 		uint32                   RETVAL;
 		dXSTARG;
-		EQEmu::skills::SkillType skill_num = (EQEmu::skills::SkillType) SvUV(ST(1));
+		EQ::skills::SkillType skill_num = (EQ::skills::SkillType) SvUV(ST(1));
 
 		if (sv_derived_from(ST(0), "Mob")) {
 			IV tmp = SvIV((SV *) SvRV(ST(0)));
@@ -639,7 +664,7 @@ XS(XS_Mob_GetEquipment) {
 		if (THIS == nullptr)
 			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
 
-		RETVAL = THIS->GetEquipment(material_slot);
+		RETVAL = THIS->GetEquippedItemFromTextureSlot(material_slot);
 		XSprePUSH;
 		PUSHi((IV) RETVAL);
 	}
@@ -794,8 +819,7 @@ XS(XS_Mob_Attack); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_Attack) {
 	dXSARGS;
 	if (items < 2 || items > 4)
-		Perl_croak(aTHX_
-		           "Usage: Mob::Attack(THIS, Mob* other, [int hand = 13 [prim|sec]], [bool from_riposte = false])");
+		Perl_croak(aTHX_ "Usage: Mob::Attack(THIS, Mob* other, [int hand = 13 [prim|sec]], [bool from_riposte = false])");
 	{
 		Mob *THIS;
 		bool RETVAL;
@@ -842,14 +866,13 @@ XS(XS_Mob_Damage); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_Damage) {
 	dXSARGS;
 	if (items < 5 || items > 8)
-		Perl_croak(aTHX_
-		           "Usage: Mob::Damage(THIS, Mob* from, int32 damage, uint16 spell_id, int attack_skill, [bool avoidable = true], [int8 buffslot = -1], [bool buff_tic = false])");
+		Perl_croak(aTHX_ "Usage: Mob::Damage(THIS, Mob* from, int32 damage, uint16 spell_id, int attack_skill, [bool avoidable = true], [int8 buffslot = -1], [bool buff_tic = false])");
 	{
 		Mob *THIS;
 		Mob *from;
 		int32                    damage       = (int32) SvIV(ST(2));
 		uint16                   spell_id     = (uint16) SvUV(ST(3));
-		EQEmu::skills::SkillType attack_skill = (EQEmu::skills::SkillType) SvUV(ST(4));
+		EQ::skills::SkillType attack_skill = (EQ::skills::SkillType) SvUV(ST(4));
 		bool                     avoidable;
 		int8                     buffslot;
 		bool                     iBuffTic;
@@ -1135,6 +1158,29 @@ XS(XS_Mob_ChangeSize) {
 	XSRETURN_EMPTY;
 }
 
+XS(XS_Mob_RandomizeFeatures); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_RandomizeFeatures) {
+       dXSARGS;
+       if (items < 2 || items > 3)
+               Perl_croak(aTHX_ "Usage: Mob::RandomizeFeatures(THIS, bool send_illusion, set_variables)");
+       {
+               Mob *THIS;
+               bool send_illusion = (bool) SvNV(ST(1));
+               bool set_variables = (bool) SvNV(ST(2));
+
+               if (sv_derived_from(ST(0), "Mob")) {
+                       IV tmp = SvIV((SV *) SvRV(ST(0)));
+                       THIS = INT2PTR(Mob *, tmp);
+               } else
+                       Perl_croak(aTHX_ "THIS is not of type Mob");
+               if (THIS == nullptr)
+                       Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+               THIS->RandomizeFeatures(send_illusion, set_variables);
+       }
+       XSRETURN_EMPTY;
+}
+
 XS(XS_Mob_GMMove); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_GMMove) {
 	dXSARGS;
@@ -1162,55 +1208,6 @@ XS(XS_Mob_GMMove) {
 		}
 
 		THIS->GMMove(x, y, z, heading);
-	}
-	XSRETURN_EMPTY;
-}
-
-XS(XS_Mob_SendPosUpdate); /* prototype to pass -Wmissing-prototypes */
-XS(XS_Mob_SendPosUpdate) {
-	dXSARGS;
-	if (items < 1 || items > 2)
-		Perl_croak(aTHX_ "Usage: Mob::SendPosUpdate(THIS, [uint8 send_to_self = 0])");
-	{
-		Mob *THIS;
-		uint8 iSendToSelf;
-
-		if (sv_derived_from(ST(0), "Mob")) {
-			IV tmp = SvIV((SV *) SvRV(ST(0)));
-			THIS = INT2PTR(Mob *, tmp);
-		} else
-			Perl_croak(aTHX_ "THIS is not of type Mob");
-		if (THIS == nullptr)
-			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
-
-		if (items < 2)
-			iSendToSelf = 0;
-		else {
-			iSendToSelf = (uint8) SvUV(ST(1));
-		}
-
-		THIS->SendPositionUpdate(iSendToSelf);
-	}
-	XSRETURN_EMPTY;
-}
-
-XS(XS_Mob_SendPosition); /* prototype to pass -Wmissing-prototypes */
-XS(XS_Mob_SendPosition) {
-	dXSARGS;
-	if (items != 1)
-		Perl_croak(aTHX_ "Usage: Mob::SendPosition(THIS)");
-	{
-		Mob *THIS;
-
-		if (sv_derived_from(ST(0), "Mob")) {
-			IV tmp = SvIV((SV *) SvRV(ST(0)));
-			THIS = INT2PTR(Mob *, tmp);
-		} else
-			Perl_croak(aTHX_ "THIS is not of type Mob");
-		if (THIS == nullptr)
-			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
-
-		THIS->SendPosition();
 	}
 	XSRETURN_EMPTY;
 }
@@ -1323,6 +1320,57 @@ XS(XS_Mob_FindBuff) {
 	XSRETURN(1);
 }
 
+XS(XS_Mob_FindBuffBySlot); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_FindBuffBySlot) {
+	dXSARGS;
+	if (items != 2)
+		Perl_croak(aTHX_ "Usage: Mob::FindBuffBySlot(THIS, int slot)");
+	{
+		Mob *THIS;
+		uint16 RETVAL;
+		dXSTARG;
+		int slot = SvIV(ST(1));
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV *) SvRV(ST(0)));
+			THIS = INT2PTR(Mob *, tmp);
+		} else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+		RETVAL = THIS->FindBuffBySlot(slot);
+		XSprePUSH;
+		PUSHu((UV) RETVAL);
+	}
+	XSRETURN(1);
+}
+
+XS(XS_Mob_BuffCount); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_BuffCount) {
+	dXSARGS;
+	if (items != 1)
+		Perl_croak(aTHX_ "Usage: Mob::BuffCount(THIS)");
+	{
+		Mob *THIS;
+		uint32  RETVAL;
+		dXSTARG;
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV *) SvRV(ST(0)));
+			THIS = INT2PTR(Mob *, tmp);
+		} else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+		RETVAL = THIS->BuffCount();
+		XSprePUSH;
+		PUSHu((UV) RETVAL);		
+	}
+	XSRETURN(1);
+}
+
 XS(XS_Mob_FindType); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_FindType) {
 	dXSARGS;
@@ -1422,8 +1470,7 @@ XS(XS_Mob_MakeTempPet); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_MakeTempPet) {
 	dXSARGS;
 	if (items < 2 || items > 6)
-		Perl_croak(aTHX_
-		           "Usage: Mob::MakeTempPet(THIS, uint16 spell_id, [string name = nullptr], [uint32 duration = 0], [Mob* target = nullptr], [bool sticktarg = 0])");
+		Perl_croak(aTHX_ "Usage: Mob::MakeTempPet(THIS, uint16 spell_id, [string name = nullptr], [uint32 duration = 0], [Mob* target = nullptr], [bool sticktarg = 0])");
 	{
 		Mob *THIS;
 		uint16 spell_id = (uint16) SvUV(ST(1));
@@ -1473,8 +1520,7 @@ XS(XS_Mob_TypesTempPet); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_TypesTempPet) {
 	dXSARGS;
 	if (items < 2 || items > 7)
-		Perl_croak(aTHX_
-		           "Usage: Mob::TypesTempPet(THIS, uint32 type_id, [string name = nullptr], [uint32 duration = 0], [bool follow = 0], [Mob* target = nullptr], [bool stick_targ = 0])");
+		Perl_croak(aTHX_ "Usage: Mob::TypesTempPet(THIS, uint32 type_id, [string name = nullptr], [uint32 duration = 0], [bool follow = 0], [Mob* target = nullptr], [bool stick_targ = 0])");
 	{
 		Mob *THIS;
 		uint32 typesid = (uint32) SvUV(ST(1));
@@ -2454,6 +2500,31 @@ XS(XS_Mob_GetAC) {
 			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
 
 		RETVAL = THIS->GetAC();
+		XSprePUSH;
+		PUSHu((UV) RETVAL);
+	}
+	XSRETURN(1);
+}
+
+XS(XS_Mob_GetDisplayAC); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_GetDisplayAC) {
+	dXSARGS;
+	if (items != 1)
+		Perl_croak(aTHX_ "Usage: Mob::GetDisplayAC(THIS)");
+	{
+		Mob *THIS;
+		uint32 RETVAL;
+		dXSTARG;
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV *) SvRV(ST(0)));
+			THIS = INT2PTR(Mob *, tmp);
+		} else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+		RETVAL = THIS->GetDisplayAC();
 		XSprePUSH;
 		PUSHu((UV) RETVAL);
 	}
@@ -3655,8 +3726,7 @@ XS(XS_Mob_Message_StringID); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_Message_StringID) {
 	dXSARGS;
 	if (items < 3 || items > 4)
-		Perl_croak(aTHX_
-		           "Usage: Mob::Message_StringID(THIS, uint32 emote_color_type, uint32 string_id, [uint32 distance = 0])");
+		Perl_croak(aTHX_ "Usage: Mob::Message_StringID(THIS, uint32 emote_color_type, uint32 string_id, [uint32 distance = 0])");
 	{
 		Mob *THIS;
 		uint32 type      = (uint32) SvUV(ST(1));
@@ -3677,7 +3747,7 @@ XS(XS_Mob_Message_StringID) {
 			distance = (uint32) SvUV(ST(3));
 		}
 
-		THIS->Message_StringID(type, string_id, distance);
+		THIS->MessageString(type, string_id, distance);
 	}
 	XSRETURN_EMPTY;
 }
@@ -3780,13 +3850,12 @@ XS(XS_Mob_CastSpell); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_CastSpell) {
 	dXSARGS;
 	if (items < 3 || items > 7)
-		Perl_croak(aTHX_
-		           "Usage: Mob::CastSpell(THIS, uint16 spell_id, uint16 target_id, [int slot = 22], [int32 cast_time = -1], [int32 mana_cost = -1], [int16 resist_adjust = 0])");
+		Perl_croak(aTHX_ "Usage: Mob::CastSpell(THIS, uint16 spell_id, uint16 target_id, [int slot = 22], [int32 cast_time = -1], [int32 mana_cost = -1], [int16 resist_adjust = 0])");
 	{
 		Mob *THIS;
 		uint16             spell_id  = (uint16) SvUV(ST(1));
 		uint16             target_id = (uint16) SvUV(ST(2));
-		EQEmu::CastingSlot slot;
+		EQ::spells::CastingSlot slot;
 		int32              casttime;
 		int32              mana_cost;
 		int16              resist_adjust;
@@ -3800,9 +3869,9 @@ XS(XS_Mob_CastSpell) {
 			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
 
 		if (items < 4)
-			slot = EQEmu::CastingSlot::Item;
+			slot = EQ::spells::CastingSlot::Item;
 		else {
-			slot = static_cast<EQEmu::CastingSlot>(SvUV(ST(3)));
+			slot = static_cast<EQ::spells::CastingSlot>(SvUV(ST(3)));
 		}
 
 		if (items < 5)
@@ -3837,8 +3906,7 @@ XS(XS_Mob_SpellFinished); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_SpellFinished) {
 	dXSARGS;
 	if (items < 2 || items > 5)
-		Perl_croak(aTHX_
-		           "Usage: Mob::SpellFinished(uint16 spell_id, [Mob* spell_target = this], [uint16 mana_cost = 0], [uint16 resist_diff = 0])");
+		Perl_croak(aTHX_ "Usage: Mob::SpellFinished(uint16 spell_id, [Mob* spell_target = this], [uint16 mana_cost = 0], [uint16 resist_diff = 0])");
 	{
 		Mob *THIS;
 		uint16 spell_id = (uint16) SvUV(ST(1));
@@ -3876,7 +3944,7 @@ XS(XS_Mob_SpellFinished) {
 			resist_diff = spells[spell_id].ResistDiff;
 		}
 
-		THIS->SpellFinished(spell_id, spell_target, EQEmu::CastingSlot::Item, mana_cost, -1, resist_diff);
+		THIS->SpellFinished(spell_id, spell_target, EQ::spells::CastingSlot::Item, mana_cost, -1, resist_diff);
 	}
 	XSRETURN_EMPTY;
 }
@@ -4020,8 +4088,7 @@ XS(XS_Mob_CanBuffStack); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_CanBuffStack) {
 	dXSARGS;
 	if (items < 3 || items > 4)
-		Perl_croak(aTHX_
-		           "Usage: Mob::CanBuffStack(THIS, uint16 spell_id, uint8 caster_level, [bool fail_if_overwritten = false])");
+		Perl_croak(aTHX_ "Usage: Mob::CanBuffStack(THIS, uint16 spell_id, uint8 caster_level, [bool fail_if_overwritten = false])");
 	{
 		Mob *THIS;
 		int    RETVAL;
@@ -5019,8 +5086,7 @@ XS(XS_Mob_AddToHateList); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_AddToHateList) {
 	dXSARGS;
 	if (items < 2 || items > 7)
-		Perl_croak(aTHX_
-		           "Usage: Mob::AddToHateList(THIS, Mob* other, [int32 hate = 0], [int32 damage = 0], [bool yell_for_help = true], [bool frenzy = false], [bool buff_tic = false])");
+		Perl_croak(aTHX_ "Usage: Mob::AddToHateList(THIS, Mob* other, [int32 hate = 0], [int32 damage = 0], [bool yell_for_help = true], [bool frenzy = false], [bool buff_tic = false])");
 	{
 		Mob *THIS;
 		Mob *other;
@@ -5526,20 +5592,70 @@ XS(XS_Mob_CalculateHeadingToTarget) {
 	XSRETURN(1);
 }
 
-XS(XS_Mob_CalculateNewPosition); /* prototype to pass -Wmissing-prototypes */
-XS(XS_Mob_CalculateNewPosition) {
+XS(XS_Mob_RunTo); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_RunTo) {
 	dXSARGS;
-	if (items < 5 || items > 6)
+	if (items < 4 || items > 5)
 		Perl_croak(aTHX_
-		           "Usage: Mob::CalculateNewPosition(THIS, float x, float y, float z, float speed, [bool check_z = false])");
+			"Usage: Mob::RunTo(THIS, float x, float y, float z)");
 	{
 		Mob *THIS;
-		bool  RETVAL;
+		float x = (float)SvNV(ST(1));
+		float y = (float)SvNV(ST(2));
+		float z = (float)SvNV(ST(3));
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV *)SvRV(ST(0)));
+			THIS = INT2PTR(Mob *, tmp);
+		}
+		else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+
+		THIS->RunTo(x, y, z);
+	}
+	XSRETURN_EMPTY;
+}
+
+XS(XS_Mob_WalkTo); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_WalkTo) {
+	dXSARGS;
+	if (items < 4 || items > 5)
+		Perl_croak(aTHX_
+			"Usage: Mob::WalkTo(THIS, float x, float y, float z)");
+	{
+		Mob *THIS;
+		float x = (float)SvNV(ST(1));
+		float y = (float)SvNV(ST(2));
+		float z = (float)SvNV(ST(3));
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV *)SvRV(ST(0)));
+			THIS = INT2PTR(Mob *, tmp);
+		}
+		else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+
+		THIS->WalkTo(x, y, z);
+	}
+	XSRETURN_EMPTY;
+}
+
+XS(XS_Mob_NavigateTo); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_NavigateTo) {
+	dXSARGS;
+	if (items < 4 || items > 5)
+		Perl_croak(aTHX_ "Usage: Mob::NavigateTo(THIS, float x, float y, float z)");
+	{
+		Mob *THIS;
 		float x     = (float) SvNV(ST(1));
 		float y     = (float) SvNV(ST(2));
 		float z     = (float) SvNV(ST(3));
-		float speed = (float) SvNV(ST(4));
-		bool  checkZ;
 
 		if (sv_derived_from(ST(0), "Mob")) {
 			IV tmp = SvIV((SV *) SvRV(ST(0)));
@@ -5549,54 +5665,34 @@ XS(XS_Mob_CalculateNewPosition) {
 		if (THIS == nullptr)
 			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
 
-		if (items < 6)
-			checkZ = false;
-		else {
-			checkZ = (bool) SvTRUE(ST(5));
-		}
 
-		RETVAL = THIS->CalculateNewPosition(x, y, z, speed, checkZ);
-		ST(0)       = boolSV(RETVAL);
-		sv_2mortal(ST(0));
+		THIS->NavigateTo(x, y, z);
 	}
-	XSRETURN(1);
+	XSRETURN_EMPTY;
 }
 
-XS(XS_Mob_CalculateNewPosition2); /* prototype to pass -Wmissing-prototypes */
-XS(XS_Mob_CalculateNewPosition2)
-{
+XS(XS_Mob_StopNavigation); /* prototype to pass -Wmissing-prototypes */
+XS(XS_Mob_StopNavigation) {
 	dXSARGS;
 	if (items < 5 || items > 6)
-		Perl_croak(aTHX_ "Usage: Mob::CalculateNewPosition(THIS, x, y, z, speed, checkZ= false)");
+		Perl_croak(aTHX_
+			"Usage: Mob::StopNavigation(THIS)");
 	{
-		Mob *		THIS;
-		bool		RETVAL;
-		float		x = (float)SvNV(ST(1));
-		float		y = (float)SvNV(ST(2));
-		float		z = (float)SvNV(ST(3));
-		float		speed = (float)SvNV(ST(4));
-		bool		checkZ;
+		Mob *THIS;
 
 		if (sv_derived_from(ST(0), "Mob")) {
-			IV tmp = SvIV((SV*)SvRV(ST(0)));
-			THIS = INT2PTR(Mob *,tmp);
+			IV tmp = SvIV((SV *)SvRV(ST(0)));
+			THIS = INT2PTR(Mob *, tmp);
 		}
 		else
 			Perl_croak(aTHX_ "THIS is not of type Mob");
-		if(THIS == nullptr)
+		if (THIS == nullptr)
 			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
 
-		if (items < 6)
-			checkZ = false;
-		else {
-			checkZ = (bool)SvTRUE(ST(5));
-		}
 
-		RETVAL = THIS->CalculateNewPosition(x, y, z, speed, checkZ);
-		ST(0) = boolSV(RETVAL);
-		sv_2mortal(ST(0));
+		THIS->StopNavigation();
 	}
-	XSRETURN(1);
+	XSRETURN_EMPTY;
 }
 
 XS(XS_Mob_CalculateDistance); /* prototype to pass -Wmissing-prototypes */
@@ -5679,8 +5775,7 @@ XS(XS_Mob_NPCSpecialAttacks); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_NPCSpecialAttacks) {
 	dXSARGS;
 	if (items < 3 || items > 5)
-		Perl_croak(aTHX_
-		           "Usage: Mob::NPCSpecialAttacks(THIS, string abilities_string, int perm_tag, [bool reset = true], [bool remove = true])");
+		Perl_croak(aTHX_ "Usage: Mob::NPCSpecialAttacks(THIS, string abilities_string, int perm_tag, [bool reset = true], [bool remove = true])");
 	{
 		Mob  *THIS;
 		char *parse = (char *) SvPV_nolen(ST(1));
@@ -6420,12 +6515,11 @@ XS(XS_Mob_DoSpecialAttackDamage); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_DoSpecialAttackDamage) {
 	dXSARGS;
 	if (items < 4 || items > 6)
-		Perl_croak(aTHX_
-		           "Usage: Mob::DoSpecialAttackDamage(THIS, Mob* target, int skill, int32 max_damage, [int32 min_damage = 1], [int32 hate_override = -11])");
+		Perl_croak(aTHX_ "Usage: Mob::DoSpecialAttackDamage(THIS, Mob* target, int skill, int32 max_damage, [int32 min_damage = 1], [int32 hate_override = -11])");
 	{
 		Mob *THIS;
 		Mob *target;
-		EQEmu::skills::SkillType attack_skill  = (EQEmu::skills::SkillType) SvUV(ST(2));
+		EQ::skills::SkillType attack_skill  = (EQ::skills::SkillType) SvUV(ST(2));
 		int32                    max_damage    = (int32) SvIV(ST(3));
 		int32                    min_damage    = 1;
 		int32                    hate_override = -11;
@@ -6564,8 +6658,7 @@ XS(XS_Mob_ProjectileAnim); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_ProjectileAnim) {
 	dXSARGS;
 	if (items < 3 || items > 9)
-		Perl_croak(aTHX_
-		           "Usage: Mob::ProjectileAnim(THIS, Mob* mob, int item_id, [bool is_arrow = false], [float speed = 0], [float angle = 0], [float tilt = 0], [float arc = 0])");
+		Perl_croak(aTHX_ "Usage: Mob::ProjectileAnim(THIS, Mob* mob, int item_id, [bool is_arrow = false], [float speed = 0], [float angle = 0], [float tilt = 0], [float arc = 0])");
 
 	{
 		Mob *THIS;
@@ -6647,8 +6740,7 @@ XS(XS_Mob_SendAppearanceEffect); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_SendAppearanceEffect) {
 	dXSARGS;
 	if (items < 2 || items > 7)
-		Perl_croak(aTHX_
-		           "Usage: Mob::SendAppearanceEffect(THIS, int32 param_1, [int32 param_2 = 0], [int32 param_3 = 0], [int32 param_4 = 0], [int32 param_5 = 0], [Client* single_client_to_send_to = null])");
+		Perl_croak(aTHX_ "Usage: Mob::SendAppearanceEffect(THIS, int32 param_1, [int32 param_2 = 0], [int32 param_3 = 0], [int32 param_4 = 0], [int32 param_5 = 0], [Client* single_client_to_send_to = null])");
 	{
 		Mob *THIS;
 		int32 parm1 = (int32) SvIV(ST(1));
@@ -6689,10 +6781,10 @@ XS(XS_Mob_SetFlyMode); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_SetFlyMode) {
 	dXSARGS;
 	if (items != 2)
-		Perl_croak(aTHX_ "Usage: Mob::SetFlyMode(THIS, uint8 flymode[0|1|2|3])");
+		Perl_croak(aTHX_ "Usage: Mob::SetFlyMode(THIS, uint8 flymode[0|1|2|3|4|5])");
 	{
 		Mob *THIS;
-		uint8 flymode = (uint8) SvIV(ST(1));
+		GravityBehavior flymode = (GravityBehavior) SvIV(ST(1));
 
 		if (sv_derived_from(ST(0), "Mob")) {
 			IV tmp = SvIV((SV *) SvRV(ST(0)));
@@ -6777,8 +6869,7 @@ XS(XS_Mob_SendIllusion); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_SendIllusion) {
 	dXSARGS;
 	if (items < 2 || items > 14)
-		Perl_croak(aTHX_
-		           "Usage: Mob::SendIllusion(THIS, uint16 race, [uint8 gender = 0xFF], [uint8 texture = 0xFF], [unit8 helmtexture = 0xFF], [unit8 face = 0xFF], [unit8 hairstyle = 0xFF], [uint8 hair_color = 0xFF], [uint8 beard = 0xFF], [uint8 beard_color = 0xFF], [uint32 drakkin_heritage = 0xFFFFFFFF], [uint32 drakkin_tattoo = 0xFFFFFFFF], [uint32 drakkin_details = 0xFFFFFFFF], [float size = -1])");
+		Perl_croak(aTHX_ "Usage: Mob::SendIllusion(THIS, uint16 race, [uint8 gender = 0xFF], [uint8 texture  face = 0xFF], [uint8 hairstyle = 0xFF], [uint8 hair_color = 0xFF], [uint8 beard = 0xFF], [uint8 beard_color =FF], [uint32 drakkin_tattoo = 0xFFFFFFFF], [uint32 drakkin_details = 0xFFFFFFFF], [float size = -1])");
 	{
 		Mob *THIS;
 		uint16 race             = (uint16) SvIV(ST(1));
@@ -6826,8 +6917,7 @@ XS(XS_Mob_CameraEffect); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_CameraEffect) {
 	dXSARGS;
 	if (items < 2 || items > 5)
-		Perl_croak(aTHX_
-		           "Usage: Mob::CameraEffect(THIS, uint32 duration, [uint32 intensity = 0], [Client* single_client = nullptr], [bool is_world_wide = false])");
+		Perl_croak(aTHX_ "Usage: Mob::CameraEffect(THIS, uint32 duration, [uint32 intensity = 0], [Client* single_client = nullptr], [bool is_world_wide = false])");
 	{
 		Mob *THIS;
 		uint32 duration  = (uint32) SvUV(ST(1));
@@ -6869,8 +6959,7 @@ XS(XS_Mob_SpellEffect); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_SpellEffect) {
 	dXSARGS;
 	if (items < 2 || items > 8)
-		Perl_croak(aTHX_
-		           "Usage: Mob::SpellEffect(THIS, uint32 effect, [uint32 duration = 5000], [uint32 finish_delay = 0], [bool zone_wide = false], [uint32 unk20 = 3000], [bool perm_effect = false], [Client* single_client])");
+		Perl_croak(aTHX_ "Usage: Mob::SpellEffect(THIS, uint32 effect, [uint32 duration = 5000], [uint32 finish_delay = 0], [bool zone_wide = false], [uint32 unk20 = 3000], [bool perm_effect = false], [Client* single_client])");
 	{
 		Mob *THIS;
 		uint32 effect       = (uint32) SvUV(ST(1));
@@ -6998,8 +7087,7 @@ XS(XS_Mob_SetGlobal);
 XS(XS_Mob_SetGlobal) {
 	dXSARGS;
 	if (items < 5 || items > 6)
-		Perl_croak(aTHX_
-		           "Usage: SetGlobal(THIS, string var_name, string new_value, int options, string duration, [Mob* other = nullptr])");
+		Perl_croak(aTHX_ "Usage: SetGlobal(THIS, string var_name, string new_value, int options, string duration, [Mob* other = nullptr])");
 	{
 		Mob  *THIS;
 		char *varname  = (char *) SvPV_nolen(ST(1));
@@ -7035,8 +7123,7 @@ XS(XS_Mob_TarGlobal);
 XS(XS_Mob_TarGlobal) {
 	dXSARGS;
 	if (items != 7)
-		Perl_croak(aTHX_
-		           "Usage: TarGlobal(THIS, string var_name, string value, string duration, int npc_id, int character_id, int zone_id)");
+		Perl_croak(aTHX_ "Usage: TarGlobal(THIS, string var_name, string value, string duration, int npc_id, int character_id, int zone_id)");
 	{
 		Mob  *THIS;
 		char *varname  = (char *) SvPV_nolen(ST(1));
@@ -7085,8 +7172,7 @@ XS(XS_Mob_SetSlotTint); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_SetSlotTint) {
 	dXSARGS;
 	if (items != 5)
-		Perl_croak(aTHX_
-		           "Usage: Mob::SetSlotTint(THIS, uint8 material_slot, uint8 red_tint, uint8 green_tint, uint8 blue_tint)");
+		Perl_croak(aTHX_ "Usage: Mob::SetSlotTint(THIS, uint8 material_slot, uint8 red_tint, uint8 green_tint, uint8 blue_tint)");
 	{
 		Mob *THIS;
 		uint8 material_slot = (uint8) SvIV(ST(1));
@@ -7111,8 +7197,7 @@ XS(XS_Mob_WearChange); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_WearChange) {
 	dXSARGS;
 	if (items < 3 || items > 4)
-		Perl_croak(aTHX_
-		           "Usage: Mob::WearChange(THIS, uint8 material_slot, uint16 texture, [uint32 color = 0, uint32 hero_forge_model = 0])");
+		Perl_croak(aTHX_ "Usage: Mob::WearChange(THIS, uint8 material_slot, uint16 texture, [uint32 color = 0, uint32 hero_forge_model = 0])");
 	{
 		Mob *THIS;
 		uint8  material_slot    = (uint8) SvIV(ST(1));
@@ -7312,28 +7397,6 @@ XS(XS_Mob_SetLD) {
 	XSRETURN_EMPTY;
 }
 
-XS(XS_Mob_SetTargetDestSteps); /* prototype to pass -Wmissing-prototypes */
-XS(XS_Mob_SetTargetDestSteps) {
-	dXSARGS;
-	if (items != 2)
-		Perl_croak(aTHX_ "Usage: Mob::SetTargetDestSteps(THIS, uint8 target_steps)");
-	{
-		Mob *THIS;
-		uint8 target_steps = (uint8) SvIV(ST(1));
-
-		if (sv_derived_from(ST(0), "Mob")) {
-			IV tmp = SvIV((SV *) SvRV(ST(0)));
-			THIS = INT2PTR(Mob *, tmp);
-		} else
-			Perl_croak(aTHX_ "THIS is not of type Mob");
-		if (THIS == nullptr)
-			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
-
-		THIS->SetTargetDestSteps(target_steps);
-	}
-	XSRETURN_EMPTY;
-}
-
 XS(XS_Mob_SetTargetable); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_SetTargetable) {
 	dXSARGS;
@@ -7363,7 +7426,7 @@ XS(XS_Mob_ModSkillDmgTaken) {
 		Perl_croak(aTHX_ "Usage: Mob::ModSkillDmgTaken(THIS, int skill, int16 value)");
 	{
 		Mob *THIS;
-		EQEmu::skills::SkillType skill_num = (EQEmu::skills::SkillType) SvUV(ST(1));
+		EQ::skills::SkillType skill_num = (EQ::skills::SkillType) SvUV(ST(1));
 		int16                    value     = (int16) SvIV(ST(2));
 
 		if (sv_derived_from(ST(0), "Mob")) {
@@ -7388,7 +7451,7 @@ XS(XS_Mob_GetModSkillDmgTaken) {
 		Mob *THIS;
 		int16                    RETVAL;
 		dXSTARG;
-		EQEmu::skills::SkillType skill_num = (EQEmu::skills::SkillType) SvUV(ST(1));
+		EQ::skills::SkillType skill_num = (EQ::skills::SkillType) SvUV(ST(1));
 
 		if (sv_derived_from(ST(0), "Mob")) {
 			IV tmp = SvIV((SV *) SvRV(ST(0)));
@@ -7414,7 +7477,7 @@ XS(XS_Mob_GetSkillDmgTaken) {
 		Mob *THIS;
 		int32                    RETVAL;
 		dXSTARG;
-		EQEmu::skills::SkillType skill_num = (EQEmu::skills::SkillType) SvUV(ST(1));
+		EQ::skills::SkillType skill_num = (EQ::skills::SkillType) SvUV(ST(1));
 
 		if (sv_derived_from(ST(0), "Mob")) {
 			IV tmp = SvIV((SV *) SvRV(ST(0)));
@@ -7564,13 +7627,12 @@ XS(XS_Mob_DoMeleeSkillAttackDmg); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_DoMeleeSkillAttackDmg) {
 	dXSARGS;
 	if (items != 7)
-		Perl_croak(aTHX_
-		           "Usage: Mob::DoMeleeSkillAttackDmg(THIS, Mob* target, uint16 weapon_damage, int skill, int16 chance_mod, int16 focus, uint8 can_riposte)");
+		Perl_croak(aTHX_ "Usage: Mob::DoMeleeSkillAttackDmg(THIS, Mob* target, uint16 weapon_damage, int skill, int16 chance_mod, int16 focus, uint8 can_riposte)");
 	{
 		Mob *THIS;
 		Mob *target;
 		uint16                   weapon_damage = (uint16) SvIV(ST(2));
-		EQEmu::skills::SkillType skill         = (EQEmu::skills::SkillType) SvUV(ST(3));
+		EQ::skills::SkillType skill         = (EQ::skills::SkillType) SvUV(ST(3));
 		int16                    chance_mod    = (int16) SvIV(ST(4));
 		int16                    focus         = (int16) SvIV(ST(5));
 		uint8                    CanRiposte    = (uint8) SvIV(ST(6));
@@ -7600,13 +7662,12 @@ XS(XS_Mob_DoArcheryAttackDmg); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_DoArcheryAttackDmg) {
 	dXSARGS;
 	if (items != 7)
-		Perl_croak(aTHX_
-		           "Usage: Mob::DoArcheryAttackDmg(THIS, Mob* target, [range_weapon_item_instance = nullptr], [ammo_item_instance = nullptr], uint16 weapon_damage, int16 chance_mod, int16 focus)");
+		Perl_croak(aTHX_ "Usage: Mob::DoArcheryAttackDmg(THIS, Mob* target, [range_weapon_item_instance = nullptr], [ammo_item_instance = nullptr], uint16 weapon_damage, int16 chance_mod, int16 focus)");
 	{
 		Mob                 *THIS;
 		Mob                 *target;
-		EQEmu::ItemInstance *RangeWeapon = nullptr;
-		EQEmu::ItemInstance *Ammo        = nullptr;
+		EQ::ItemInstance *RangeWeapon = nullptr;
+		EQ::ItemInstance *Ammo        = nullptr;
 		uint16 weapon_damage = (uint16) SvIV(ST(4));
 		int16  chance_mod    = (int16) SvIV(ST(5));
 		int16  focus         = (int16) SvIV(ST(6));
@@ -7636,13 +7697,12 @@ XS(XS_Mob_DoThrowingAttackDmg); /* prototype to pass -Wmissing-prototypes */
 XS(XS_Mob_DoThrowingAttackDmg) {
 	dXSARGS;
 	if (items != 7)
-		Perl_croak(aTHX_
-		           "Usage: Mob::DoThrowingAttackDmg(THIS, Mob* target, [range_weapon_item_instance = nullptr], [ammo_item_instance = nullptr], uint16 weapon_damage, int16 chance_mod, int16 focus)");
+		Perl_croak(aTHX_ "Usage: Mob::DoThrowingAttackDmg(THIS, Mob* target, [range_weapon_item_instance = nullptr], [ammo_item_instance = nullptr], uint16 weapon_damage, int16 chance_mod, int16 focus)");
 	{
 		Mob                 *THIS;
 		Mob                 *target;
-		EQEmu::ItemInstance *RangeWeapon = nullptr;
-		EQEmu::ItemData     *item        = nullptr;
+		EQ::ItemInstance *RangeWeapon = nullptr;
+		EQ::ItemData     *item        = nullptr;
 		uint16 weapon_damage = (uint16) SvIV(ST(4));
 		int16  chance_mod    = (int16) SvIV(ST(5));
 		int16  focus         = (int16) SvIV(ST(6));
@@ -8525,6 +8585,88 @@ XS(XS_Mob_TryMoveAlong) {
 
 		if (THIS == nullptr)
 			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+		if (items == 4)
+			send = (bool) SvTRUE(ST(3));
+
+		THIS->TryMoveAlong(distance, angle, send);
+	}
+	XSRETURN_EMPTY;
+}
+
+XS(XS_Mob_GetClassName);
+XS(XS_Mob_GetClassName) {
+	dXSARGS;
+	if (items != 1)
+		Perl_croak(aTHX_ "Usage: Mob::GetClassName(THIS)");
+	{
+		Mob* THIS;
+		Const_char *class_name;
+		dXSTARG;
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV*)SvRV(ST(0)));
+			THIS = INT2PTR(Mob*, tmp);
+		} else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+		class_name = GetClassIDName(THIS->GetClass());
+		sv_setpv(TARG, class_name);
+		XSprePUSH;
+		PUSHTARG;
+	}
+	XSRETURN(1);	
+}
+
+XS(XS_Mob_GetRaceName);
+XS(XS_Mob_GetRaceName) {
+	dXSARGS;
+	if (items != 1)
+		Perl_croak(aTHX_ "Usage: Mob::GetRaceName(THIS)");
+	{
+		Mob* THIS;
+		Const_char *race_name;
+		dXSTARG;
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV*)SvRV(ST(0)));
+			THIS = INT2PTR(Mob*, tmp);
+		} else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
+
+		race_name = GetRaceIDName(THIS->GetRace());
+		sv_setpv(TARG, race_name);
+		XSprePUSH;
+		PUSHTARG;
+	}
+	XSRETURN(1);
+}
+
+XS(XS_Mob_TryMoveAlong);
+XS(XS_Mob_TryMoveAlong) {
+	dXSARGS;
+	if (items < 3 || items > 4)
+		Perl_croak(aTHX_ "Usage: Mob::TryMoveAlong(THIS, float distance, float angle, bool send)");
+	{
+		Mob *THIS;
+		float distance = (float) SvNV(ST(1));
+		float angle    = (float) SvNV(ST(2));
+		bool  send     = true;
+
+		if (sv_derived_from(ST(0), "Mob")) {
+			IV tmp = SvIV((SV *) SvRV(ST(0)));
+			THIS = INT2PTR(Mob *, tmp);
+		} else
+			Perl_croak(aTHX_ "THIS is not of type Mob");
+
+		if (THIS == nullptr)
+			Perl_croak(aTHX_ "THIS is nullptr, avoiding crash.");
 		if (items == 4)
 			send = (bool) SvTRUE(ST(3));
 
@@ -8553,6 +8695,7 @@ XS(boot_Mob) {
 
 	newXSproto(strcpy(buf, "IsClient"), XS_Mob_IsClient, file, "$");
 	newXSproto(strcpy(buf, "IsNPC"), XS_Mob_IsNPC, file, "$");
+	newXSproto(strcpy(buf, "IsBot"), XS_Mob_IsBot, file, "$");
 	newXSproto(strcpy(buf, "IsMob"), XS_Mob_IsMob, file, "$");
 	newXSproto(strcpy(buf, "IsCorpse"), XS_Mob_IsCorpse, file, "$");
 	newXSproto(strcpy(buf, "IsPlayerCorpse"), XS_Mob_IsPlayerCorpse, file, "$");
@@ -8591,13 +8734,14 @@ XS(boot_Mob) {
 	newXSproto(strcpy(buf, "SetHP"), XS_Mob_SetHP, file, "$$");
 	newXSproto(strcpy(buf, "DoAnim"), XS_Mob_DoAnim, file, "$$;$");
 	newXSproto(strcpy(buf, "ChangeSize"), XS_Mob_ChangeSize, file, "$$;$");
+	newXSproto(strcpy(buf, "RandomizeFeatures"), XS_Mob_RandomizeFeatures, file, "$$;$");
 	newXSproto(strcpy(buf, "GMMove"), XS_Mob_GMMove, file, "$$$$;$");
-	newXSproto(strcpy(buf, "SendPosUpdate"), XS_Mob_SendPosUpdate, file, "$;$");
-	newXSproto(strcpy(buf, "SendPosition"), XS_Mob_SendPosition, file, "$");
 	newXSproto(strcpy(buf, "HasProcs"), XS_Mob_HasProcs, file, "$");
 	newXSproto(strcpy(buf, "IsInvisible"), XS_Mob_IsInvisible, file, "$;$");
 	newXSproto(strcpy(buf, "SetInvisible"), XS_Mob_SetInvisible, file, "$$");
 	newXSproto(strcpy(buf, "FindBuff"), XS_Mob_FindBuff, file, "$$");
+	newXSproto(strcpy(buf, "FindBuffBySlot"), XS_Mob_FindBuffBySlot, file, "$$");
+	newXSproto(strcpy(buf, "BuffCount"), XS_Mob_BuffCount, file, "$");
 	newXSproto(strcpy(buf, "FindType"), XS_Mob_FindType, file, "$$;$$");
 	newXSproto(strcpy(buf, "GetBuffSlotFromType"), XS_Mob_GetBuffSlotFromType, file, "$$");
 	newXSproto(strcpy(buf, "MakePet"), XS_Mob_MakePet, file, "$$$;$");
@@ -8605,6 +8749,7 @@ XS(boot_Mob) {
 	newXSproto(strcpy(buf, "GetBaseGender"), XS_Mob_GetBaseGender, file, "$");
 	newXSproto(strcpy(buf, "GetDeity"), XS_Mob_GetDeity, file, "$");
 	newXSproto(strcpy(buf, "GetRace"), XS_Mob_GetRace, file, "$");
+	newXSproto(strcpy(buf, "GetRaceName"), XS_Mob_GetRaceName, file, "$");
 	newXSproto(strcpy(buf, "GetGender"), XS_Mob_GetGender, file, "$");
 	newXSproto(strcpy(buf, "GetTexture"), XS_Mob_GetTexture, file, "$");
 	newXSproto(strcpy(buf, "GetHelmTexture"), XS_Mob_GetHelmTexture, file, "$");
@@ -8619,6 +8764,7 @@ XS(boot_Mob) {
 	newXSproto(strcpy(buf, "GetDrakkinTattoo"), XS_Mob_GetDrakkinTattoo, file, "$");
 	newXSproto(strcpy(buf, "GetDrakkinDetails"), XS_Mob_GetDrakkinDetails, file, "$");
 	newXSproto(strcpy(buf, "GetClass"), XS_Mob_GetClass, file, "$");
+	newXSproto(strcpy(buf, "GetClassName"), XS_Mob_GetClassName, file, "$");
 	newXSproto(strcpy(buf, "GetLevel"), XS_Mob_GetLevel, file, "$");
 	newXSproto(strcpy(buf, "GetCleanName"), XS_Mob_GetCleanName, file, "$");
 	newXSproto(strcpy(buf, "GetTarget"), XS_Mob_GetTarget, file, "$");
@@ -8638,6 +8784,7 @@ XS(boot_Mob) {
 	newXSproto(strcpy(buf, "SetMana"), XS_Mob_SetMana, file, "$$");
 	newXSproto(strcpy(buf, "GetManaRatio"), XS_Mob_GetManaRatio, file, "$");
 	newXSproto(strcpy(buf, "GetAC"), XS_Mob_GetAC, file, "$");
+	newXSproto(strcpy(buf, "GetDisplayAC"), XS_Mob_GetDisplayAC, file, "$");
 	newXSproto(strcpy(buf, "GetATK"), XS_Mob_GetATK, file, "$");
 	newXSproto(strcpy(buf, "GetSTR"), XS_Mob_GetSTR, file, "$");
 	newXSproto(strcpy(buf, "GetSTA"), XS_Mob_GetSTA, file, "$");
@@ -8754,7 +8901,10 @@ XS(boot_Mob) {
 	newXSproto(strcpy(buf, "WipeHateList"), XS_Mob_WipeHateList, file, "$");
 	newXSproto(strcpy(buf, "CheckAggro"), XS_Mob_CheckAggro, file, "$$");
 	newXSproto(strcpy(buf, "CalculateHeadingToTarget"), XS_Mob_CalculateHeadingToTarget, file, "$$$");
-	newXSproto(strcpy(buf, "CalculateNewPosition"), XS_Mob_CalculateNewPosition, file, "$$$$$;$");
+	newXSproto(strcpy(buf, "RunTo"), XS_Mob_RunTo, file, "$$$$");
+	newXSproto(strcpy(buf, "WalkTo"), XS_Mob_WalkTo, file, "$$$$");
+	newXSproto(strcpy(buf, "NavigateTo"), XS_Mob_NavigateTo, file, "$$$$");
+	newXSproto(strcpy(buf, "StopNavigation"), XS_Mob_StopNavigation, file, "$");
 	newXSproto(strcpy(buf, "CalculateDistance"), XS_Mob_CalculateDistance, file, "$$$$");
 	newXSproto(strcpy(buf, "SendTo"), XS_Mob_SendTo, file, "$$$$");
 	newXSproto(strcpy(buf, "SendToFixZ"), XS_Mob_SendToFixZ, file, "$$$$");
@@ -8817,9 +8967,7 @@ XS(boot_Mob) {
 	newXSproto(strcpy(buf, "SetBodyType"), XS_Mob_SetBodyType, file, "$$;$");
 	newXSproto(strcpy(buf, "SetDeltas"), XS_Mob_SetDeltas, file, "$$$$$");
 	newXSproto(strcpy(buf, "SetLD"), XS_Mob_SetLD, file, "$$");
-	newXSproto(strcpy(buf, "SetTargetDestSteps"), XS_Mob_SetTargetDestSteps, file, "$$");
 	newXSproto(strcpy(buf, "SetTargetable"), XS_Mob_SetTargetable, file, "$$");
-	newXSproto(strcpy(buf, "MakeTempPet"), XS_Mob_MakeTempPet, file, "$$;$$$$");
 	newXSproto(strcpy(buf, "ModSkillDmgTaken"), XS_Mob_ModSkillDmgTaken, file, "$$$");
 	newXSproto(strcpy(buf, "GetModSkillDmgTaken"), XS_Mob_GetModSkillDmgTaken, file, "$$");
 	newXSproto(strcpy(buf, "GetSkillDmgTaken"), XS_Mob_GetSkillDmgTaken, file, "$$");

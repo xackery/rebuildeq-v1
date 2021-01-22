@@ -40,7 +40,7 @@
 class MySQLRequestResult;
 class Client;
 
-namespace EQEmu
+namespace EQ
 {
 	class InventoryProfile;
 }
@@ -94,31 +94,50 @@ class PTimerList;
 #	define _ISNAN_(a) std::isnan(a)
 #endif
 
+#define SQL(...) #__VA_ARGS__
+
 class Database : public DBcore {
 public:
 	Database();
 	Database(const char* host, const char* user, const char* passwd, const char* database,uint32 port);
-	bool Connect(const char* host, const char* user, const char* passwd, const char* database, uint32 port);
+	bool Connect(const char* host, const char* user, const char* passwd, const char* database, uint32 port, std::string connection_label = "default");
 	~Database();
 
 	/* Character Creation */
 
-	bool	AddToNameFilter(const char* name);
-	bool	CreateCharacter(uint32 account_id, char* name, uint16 gender, uint16 race, uint16 class_, uint8 str, uint8 sta, uint8 cha, uint8 dex, uint8 int_, uint8 agi, uint8 wis, uint8 face);
-	bool	DeleteCharacter(char* name);
-	bool	MoveCharacterToZone(const char* charname, const char* zonename);
-	bool	MoveCharacterToZone(const char* charname, const char* zonename,uint32 zoneid);
-	bool	MoveCharacterToZone(uint32 iCharID, const char* iZonename);
-	bool	ReserveName(uint32 account_id, char* name);
-	bool	SaveCharacterCreate(uint32 character_id, uint32 account_id, PlayerProfile_Struct* pp);
-	bool	SetHackerFlag(const char* accountname, const char* charactername, const char* hacked);
-	bool	SetMQDetectionFlag(const char* accountname, const char* charactername, const char* hacked, const char* zone);
-	bool	StoreCharacter(uint32 account_id, PlayerProfile_Struct* pp, EQEmu::InventoryProfile* inv);
-	bool	UpdateName(const char* oldname, const char* newname);
+	bool AddToNameFilter(const char *name);
+	bool CreateCharacter(
+		uint32 account_id,
+		char *name,
+		uint16 gender,
+		uint16 race,
+		uint16 class_,
+		uint8 str,
+		uint8 sta,
+		uint8 cha,
+		uint8 dex,
+		uint8 int_,
+		uint8 agi,
+		uint8 wis,
+		uint8 face
+	);
+	bool DeleteCharacter(char *character_name);
+	bool MoveCharacterToZone(const char *charname, uint32 zone_id);
+	bool MoveCharacterToZone(uint32 character_id, uint32 zone_id);
+	bool ReserveName(uint32 account_id, char *name);
+	bool SaveCharacterCreate(uint32 character_id, uint32 account_id, PlayerProfile_Struct *pp);
+	bool SetHackerFlag(const char *accountname, const char *charactername, const char *hacked);
+	bool SetMQDetectionFlag(const char *accountname, const char *charactername, const char *hacked, const char *zone);
+	bool UpdateName(const char *oldname, const char *newname);
+	bool CopyCharacter(
+		std::string source_character_name,
+		std::string destination_character_name,
+		std::string destination_account_name
+	);
 
 	/* General Information Queries */
 
-	bool	AddBannedIP(char* bannedIP, const char* notes); //Add IP address to the Banned_IPs table.
+	bool	AddBannedIP(char* bannedIP, const char* notes); //Add IP address to the banned_ips table.
 	bool	AddGMIP(char* ip_address, char* name);
 	bool	CheckBannedIPs(const char* loginIP); //Check incoming connection against banned IP table.
 	bool	CheckGMIPs(const char* loginIP, uint32 account_id);
@@ -127,13 +146,17 @@ public:
 
 	uint32	GetAccountIDByChar(const char* charname, uint32* oCharID = 0);
 	uint32	GetAccountIDByChar(uint32 char_id);
-	uint32	GetAccountIDByName(const char* accname, int16* status = 0, uint32* lsid = 0);
+	uint32	GetAccountIDByName(const char* accname, const char *loginserver, int16* status = 0, uint32* lsid = 0);
 	uint32	GetCharacterID(const char *name);
 	uint32	GetCharacterInfo(const char* iName, uint32* oAccID = 0, uint32* oZoneID = 0, uint32* oInstanceID = 0, float* oX = 0, float* oY = 0, float* oZ = 0);
 	uint32	GetGuildIDByCharID(uint32 char_id);
+	uint32  GetGroupIDByCharID(uint32 char_id);
+	uint32  GetRaidIDByCharID(uint32 char_id);
 
 	void	GetAccountName(uint32 accountid, char* name, uint32* oLSAccountID = 0);
 	void	GetCharName(uint32 char_id, char* name);
+	const char *GetCharNameByID(uint32 char_id);
+	const char *GetNPCNameByID(uint32 npc_id);
 	void	LoginIP(uint32 AccountID, const char* LoginIP);
 
 	/* Instancing */
@@ -150,7 +173,6 @@ public:
 	bool VerifyInstanceAlive(uint16 instance_id, uint32 char_id);
 	bool VerifyZoneInstance(uint32 zone_id, uint16 instance_id);
 
-	uint16 GetInstanceID(const char* zone, uint32 charid, int16 version);
 	uint16 GetInstanceID(uint32 zone, uint32 charid, int16 version);
 	uint16 GetInstanceVersion(uint16 instance_id);
 	uint32 GetTimeRemainingInstance(uint16 instance_id, bool &is_perma);
@@ -174,35 +196,35 @@ public:
 
 	/* Account Related */
 
-	bool	DeleteAccount(const char* name);
+	bool	DeleteAccount(const char *name, const char* loginserver);
 	bool	GetLiveChar(uint32 account_id, char* cname);
 	bool	SetAccountStatus(const char* name, int16 status);
+	bool	SetAccountStatus(const std::string& account_name, int16 status);
 	bool	SetLocalPassword(uint32 accid, const char* password);
-	bool	UpdateLiveChar(char* charname, uint32 lsaccount_id);
+	bool	UpdateLiveChar(char* charname, uint32 account_id);
 
 	int16	CheckStatus(uint32 account_id);
 
-	uint32	CheckLogin(const char* name, const char* password, int16* oStatus = 0);
-	uint32	CreateAccount(const char* name, const char* password, int16 status, uint32 lsaccount_id = 0);
-	uint32	GetAccountIDFromLSID(uint32 iLSID, char* oAccountName = 0, int16* oStatus = 0);
-	uint32	GetMiniLoginAccount(char* ip);
+	uint32	CheckLogin(const char* name, const char* password, const char *loginserver, int16* oStatus = 0);
+	uint32	CreateAccount(const char* name, const char* password, int16 status, const char* loginserver, uint32 lsaccount_id);
+	uint32	GetAccountIDFromLSID(const std::string& in_loginserver_id, uint32 in_loginserver_account_id, char* in_account_name = 0, int16* in_status = 0);
 	uint8	GetAgreementFlag(uint32 acctid);
 
 	void	GetAccountFromID(uint32 id, char* oAccountName, int16* oStatus);
 	void	SetAgreementFlag(uint32 acctid);
-	
+
 	int		GetIPExemption(std::string account_ip);
 
 	int		GetInstanceID(uint32 char_id, uint32 zone_id);
 
 
 	/* Groups */
-	
+
 	char*	GetGroupLeaderForLogin(const char* name,char* leaderbuf);
 	char*	GetGroupLeadershipInfo(uint32 gid, char* leaderbuf, char* maintank = nullptr, char* assist = nullptr, char* puller = nullptr, char *marknpc = nullptr, char *mentoree = nullptr, int *mentor_percent = nullptr, GroupLeadershipAA_Struct* GLAA = nullptr);
-	
+
 	uint32	GetGroupID(const char* name);
-	
+
 	void	ClearGroup(uint32 gid = 0);
 	void	ClearGroupLeader(uint32 gid = 0);
 	void	SetGroupID(const char* name, uint32 id, uint32 charid, uint32 ismerc = false);
@@ -238,16 +260,11 @@ public:
 	/* General Queries */
 
 	bool	GetSafePoints(const char* short_name, uint32 version, float* safe_x = 0, float* safe_y = 0, float* safe_z = 0, int16* minstatus = 0, uint8* minlevel = 0, char *flag_needed = nullptr);
-	bool	GetSafePoints(uint32 zoneID, uint32 version, float* safe_x = 0, float* safe_y = 0, float* safe_z = 0, int16* minstatus = 0, uint8* minlevel = 0, char *flag_needed = nullptr) { return GetSafePoints(GetZoneName(zoneID), version, safe_x, safe_y, safe_z, minstatus, minlevel, flag_needed); }
 	bool	GetZoneGraveyard(const uint32 graveyard_id, uint32* graveyard_zoneid = 0, float* graveyard_x = 0, float* graveyard_y = 0, float* graveyard_z = 0, float* graveyard_heading = 0);
 	bool	GetZoneLongName(const char* short_name, char** long_name, char* file_name = 0, float* safe_x = 0, float* safe_y = 0, float* safe_z = 0, uint32* graveyard_id = 0, uint32* maxclients = 0);
 	bool	LoadPTimers(uint32 charid, PTimerList &into);
-	bool	LoadZoneNames();
-
-	const char*	GetZoneName(uint32 zoneID, bool ErrorUnknown = false);
 
 	uint32	GetZoneGraveyardID(uint32 zone_id, uint32 version);
-	uint32	GetZoneID(const char* zonename);
 
 	uint8	GetPEQZone(uint32 zoneID, uint32 version);
 	uint8	GetRaceSkill(uint8 skillid, uint8 in_race);
@@ -264,13 +281,13 @@ public:
 	void	SetLFP(uint32 CharID, bool LFP);
 	void	SetLoginFlags(uint32 CharID, bool LFP, bool LFG, uint8 firstlogon);
 
-	void	ClearInvSnapshots(bool use_rule = true);
+	int		CountInvSnapshots();
+	void	ClearInvSnapshots(bool from_now = false);
 
 	/* EQEmuLogSys */
 	void	LoadLogSettings(EQEmuLogSys::LogSettings* log_settings);
 
 private:
-	std::map<uint32,std::string>	zonename_array;
 
 	Mutex Mvarcache;
 	VarCache_Struct varcache;

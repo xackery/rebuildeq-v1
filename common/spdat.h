@@ -22,6 +22,7 @@
 #include "skills.h"
 
 #define SPELL_UNKNOWN 0xFFFF
+#define POISON_PROC 0xFFFE
 #define SPELLBOOK_UNKNOWN 0xFFFFFFFF		//player profile spells are 32 bit
 
 //some spell IDs which will prolly change, but are needed
@@ -68,16 +69,16 @@ enum SpellTypes : uint32
 	SpellType_InCombatBuffSong = (1 << 18), // bard in-combat group/ae buffs
 	SpellType_OutOfCombatBuffSong = (1 << 19), // bard out-of-combat group/ae buffs
 	SpellType_PreCombatBuff = (1 << 20),
-	SpellType_PreCombatBuffSong = (1 << 21),
-
-	SpellTypes_Detrimental = (SpellType_Nuke | SpellType_Root | SpellType_Lifetap | SpellType_Snare | SpellType_DOT | SpellType_Dispel | SpellType_Mez | SpellType_Charm | SpellType_Debuff | SpellType_Slow),
-	SpellTypes_Beneficial = (SpellType_Heal | SpellType_Buff | SpellType_Escape | SpellType_Pet | SpellType_InCombatBuff | SpellType_Cure | SpellType_HateRedux | SpellType_InCombatBuffSong | SpellType_OutOfCombatBuffSong | SpellType_PreCombatBuff | SpellType_PreCombatBuffSong),
-
-	SpellTypes_Innate = (SpellType_Nuke | SpellType_Lifetap | SpellType_DOT | SpellType_Dispel | SpellType_Mez | SpellType_Slow | SpellType_Debuff | SpellType_Charm | SpellType_Root),
-
-	SpellType_Any = 0xFFFFFFFF
+	SpellType_PreCombatBuffSong = (1 << 21)
 };
 
+const uint32 SPELL_TYPE_MIN = (SpellType_Nuke << 1) - 1;
+const uint32 SPELL_TYPE_MAX = (SpellType_PreCombatBuffSong << 1) - 1;
+const uint32 SPELL_TYPE_ANY = 0xFFFFFFFF;
+
+const uint32 SPELL_TYPES_DETRIMENTAL = (SpellType_Nuke | SpellType_Root | SpellType_Lifetap | SpellType_Snare | SpellType_DOT | SpellType_Dispel | SpellType_Mez | SpellType_Charm | SpellType_Debuff | SpellType_Slow);
+const uint32 SPELL_TYPES_BENEFICIAL = (SpellType_Heal | SpellType_Buff | SpellType_Escape | SpellType_Pet | SpellType_InCombatBuff | SpellType_Cure | SpellType_HateRedux | SpellType_InCombatBuffSong | SpellType_OutOfCombatBuffSong | SpellType_PreCombatBuff | SpellType_PreCombatBuffSong);
+const uint32 SPELL_TYPES_INNATE = (SpellType_Nuke | SpellType_Lifetap | SpellType_DOT | SpellType_Dispel | SpellType_Mez | SpellType_Slow | SpellType_Debuff | SpellType_Charm | SpellType_Root);
 
 // These should not be used to determine spell category..
 // They are a graphical affects (effects?) index only
@@ -590,7 +591,7 @@ typedef enum {
 #define SE_CorruptionCounter			369	// implemented
 #define SE_ResistCorruption				370	// implemented
 #define SE_AttackSpeed4					371 // implemented - stackable slow effect 'Inhibit Melee'
-#define SE_ForageSkill					372	// *not implemented[AA] Will increase the skill cap for those that have the Forage skill and grant the skill and raise the cap to those that do not.
+#define SE_ForageSkill					372	// implemented[AA] Will increase the skill cap for those that have the Forage skill and grant the skill and raise the cap to those that do not.
 #define SE_CastOnFadeEffectAlways		373 // implemented - Triggers if fades after natural duration OR from rune/numhits fades.
 #define SE_ApplyEffect					374 // implemented
 #define SE_DotCritDmgIncrease			375	// implemented - Increase damage of DoT critical amount
@@ -606,7 +607,7 @@ typedef enum {
 #define SE_LimitSpellGroup				385	// implemented - Limits to spell group(ie type 3 reuse reduction augs that are class specific and thus all share s SG)
 #define SE_CastOnCurer					386 // implemented - Casts a spell on the person curing
 #define SE_CastOnCure					387 // implemented - Casts a spell on the cured person
-//#define SE_SummonCorpseZone			388 // *not implemented - summons a corpse from any zone(nec AA)
+#define SE_SummonCorpseZone				388 // implemented - summons a corpse from any zone(nec AA)
 #define SE_FcTimerRefresh				389 // implemented - Refresh spell icons
 //#define SE_FcTimerLockout				390 // *not implemented - Sets recast timers to specific value, focus limited.
 #define SE_LimitManaMax					391	// implemented
@@ -633,7 +634,7 @@ typedef enum {
 #define SE_LimitRace					412 // implemented - Limits to spells cast by a certain race (Note: not used in any known live spells)
 #define SE_FcBaseEffects				413 // implemented - Increases the power of bard songs, skill attacks, runes, bard allowed foci, damage/heal
 #define SE_LimitCastingSkill			414 // implemented - Limit a focus to include spells cast using a specific skill.
-//#define SE_FFItemClass				415 // not used
+//#define SE_FFItemClass				415 // not used - base1 matches ItemType, base2 matches SubType, -1 ignored, max is bitmask of valid slots
 #define SE_ACv2							416 // implemented - New AC spell effect
 #define SE_ManaRegen_v2					417 // implemented - New mana regen effect
 #define SE_SkillDamageAmount2			418 // implemented - adds skill damage directly to certain attacks
@@ -747,7 +748,7 @@ struct SPDat_Spell_Struct
 /* 086 */	int effectid[EFFECT_COUNT];	// Spell's effects -- SPELLAFFECT1 ... SPELLAFFECT12
 /* 098 */	SpellTargetType targettype;	// Spell's Target -- TYPENUMBER
 /* 099 */	int basediff; // base difficulty fizzle adjustment -- BASEDIFFICULTY
-/* 100 */	EQEmu::skills::SkillType skill; // -- CASTINGSKILL
+/* 100 */	EQ::skills::SkillType skill; // -- CASTINGSKILL
 /* 101 */	int8 zonetype; // 01=Outdoors, 02=dungeons, ff=Any -- ZONETYPE
 /* 102 */	int8 EnvironmentType; // -- ENVIRONMENTTYPE
 /* 103 */	int8 TimeOfDay; // -- TIMEOFDAY
@@ -968,6 +969,7 @@ uint32 GetPartialMeleeRuneAmount(uint32 spell_id);
 uint32 GetPartialMagicRuneAmount(uint32 spell_id);
 bool NoDetrimentalSpellAggro(uint16 spell_id);
 bool IsStackableDot(uint16 spell_id);
+bool IsBardOnlyStackEffect(int effect);
 bool IsCastWhileInvis(uint16 spell_id);
 bool IsEffectIgnoredInStacking(int spa);
 
@@ -979,6 +981,6 @@ uint32 GetNimbusEffect(uint16 spell_id);
 int32 GetFuriousBash(uint16 spell_id);
 bool IsShortDurationBuff(uint16 spell_id);
 bool IsSpellUsableThisZoneType(uint16 spell_id, uint8 zone_type);
-const char *GetSpellName(int16 spell_id);
+const char *GetSpellName(uint16 spell_id);
 
 #endif

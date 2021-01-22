@@ -28,7 +28,6 @@ public:
 	bool triggered;
 	char *GetDoorName() { return door_name; }
 	const glm::vec4 GetDestination() const { return m_Destination; }
-
 	const glm::vec4 &GetPosition() const { return m_Position; }
 	int GetIncline() { return incline; }
 	int GetInvertState() { return invert_state; }
@@ -50,7 +49,7 @@ public:
 	void ForceClose(Mob *sender, bool alt_mode = false);
 	void ForceOpen(Mob *sender, bool alt_mode = false);
 	void HandleClick(Client *sender, uint8 trigger);
-	void NPCOpen(NPC *sender, bool alt_mode = false);
+	void Open(Mob *sender, bool alt_mode = false);
 	void SetDisableTimer(bool flag);
 	void SetDoorName(const char *name);
 	void SetEntityID(uint32 entity) { entity_id = entity; }
@@ -64,6 +63,10 @@ public:
 	void SetPosition(const glm::vec4 &position);
 	void SetSize(uint16 size);
 	void ToggleState(Mob *sender);
+
+	float GetX();
+	float GetY();
+	float GetZ();
 
 private:
 
@@ -90,7 +93,6 @@ private:
 	char      destination_zone_name[16];
 	int       destination_instance_id;
 	glm::vec4 m_Destination;
-
 	uint8     is_ldon_door;
 	uint32    client_version_mask;
 };
