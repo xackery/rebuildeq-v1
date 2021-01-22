@@ -1130,4 +1130,3 @@ bool Map::SaveMMF(const std::string& map_file_name, bool force_mmf_overwrite)
 }
 
 #endif /*USE_MAP_MMFS*/
-}

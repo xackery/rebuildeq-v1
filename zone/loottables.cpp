@@ -696,3 +696,108 @@ void ZoneDatabase::LoadGlobalLoot()
 	}
 }
 
+
+//Adds Card Drops to NPC
+void NPC::AddCardTable() {
+	if (npctype_id == 0) return;
+	auto loot_list = SpecialLoot(true);
+	for (auto&& i : loot_list) {
+		if (zone->random.Int(1, i.chance) == 1) AddItem(i.item_id, 1, false);
+	}
+	return;
+}
+
+void NPC::AddFeatTable() {
+	if (npctype_id == 0) return;
+	if ((GetRace() == OGRE) && zone->random.Int(1, 700) == 1) AddItem(100041, 1, false); //Doctrine, Ch. 1: Ogre
+	if ((GetBodyType() == BT_Giant || GetBodyType() == BT_RaidGiant || GetBodyType() == BT_Zek) && zone->random.Int(1, 700) == 1) AddItem(100042, 1, false); //Doctrine, Ch. 2: Giant
+	if ((GetRace() == 54) && zone->random.Int(1, 700) == 1) AddItem(100043, 1, false); //Doctrine, Ch. 3: Orc
+	if ((GetRace() == 40 || GetRace() == 433 || GetRace() == 137) && zone->random.Int(1, 700) == 1) AddItem(100044, 1, false) ; //Doctrine, Ch. 4: Goblin	
+}
+
+void NPC::AddTeleportTable() {
+	if (npctype_id == 0) return;
+
+	if (GetZoneID() == 118 && zone->random.Int(1, 100) == 1) AddItem(100008, 1, false); //GreatDivide
+	if (GetZoneID() == 119 && zone->random.Int(1, 100) == 1) AddItem(100009, 1, false); //Wakening
+	if (GetZoneID() == 110 && zone->random.Int(1, 100) == 1) AddItem(100010, 1, false); //Iceclad
+	if (GetZoneID() == 117 && zone->random.Int(1, 100) == 1) AddItem(100011, 1, false); //CobaltScar
+	if (GetZoneID() == 91 && zone->random.Int(1, 100) == 1) AddItem(100012, 1, false); //Skyfire
+	if (GetZoneID() == 94 && zone->random.Int(1, 100) == 1) AddItem(100013, 1, false); //Emerald Jungle
+	if (GetZoneID() == 89 && zone->random.Int(1, 250) == 1) AddItem(100014, 1, false); //Sebilis
+	if (GetZoneID() == 27 && zone->random.Int(1, 100) == 1) AddItem(100015, 1, false); //Lavastorm
+	if (GetZoneID() == 86 && zone->random.Int(1, 100) == 1) AddItem(100016, 1, false); //Dreadlands
+	//if (GetZoneID() == 96 && zone->random.Int(1, 100) == 1) AddItem(100017, 1, false); //Timorous Deep THIS WILL NEVER DROP, QUESTED
+	if (GetZoneID() == 103 && zone->random.Int(1, 250) == 1) AddItem(100018, 1, false); //Chardok
+
+}
+
+void NPC::AddTierTable() {
+	int tier = GetTier();
+	int myid = GetNPCTypeID();
+
+	if (myid == 111154) {
+		if (zone->random.Int(1, 60) == 1) AddItem(101400, 1, false); //veeshan's gem		
+		if (zone->random.Int(1, 40) == 1) AddItem(100006, 1, false); //elunium
+		if (zone->random.Int(1, 10) == 1) AddItem(100048, 1, false); //elu shard
+		return;
+	}
+
+	//tier 0 noteworthy mobs
+	if (myid == 2000051 || //yael
+		myid == 112025 || //velk
+		myid == 112049 || //lord bob
+		myid == 110099 //lodi
+		) {
+		if (zone->random.Int(1, 50) == 1) AddItem(101400, 1, false); //veeshan's gem		
+		if (zone->random.Int(1, 20) == 1) AddItem(100006, 1, false); //elunium
+		AddItem(100048, 1, false); //elu shard
+		return;
+	}
+	if (tier <= 0) return;
+	
+	if (tier == 1) {
+		if (zone->random.Int(1, 5)== 1) AddItem(101400, 1, false); //veeshan's gem		
+		if (zone->random.Int(1, 10) == 1) AddItem(100006, 1, false); //elunium
+		if (zone->random.Int(1, 4) == 1) AddItem(100048, 1, false); //elu shard
+		AddItem(100048, 1, false); //elu shard
+		return;
+	}
+
+	if (tier == 2) {
+		if (zone->random.Int(1, 4) == 1) AddItem(101400, 1, false); //veeshan's gem		
+		if (zone->random.Int(1, 5) == 1) AddItem(100006, 1, false); //elunium
+		if (zone->random.Int(1, 4) == 1) AddItem(100048, 1, false); //elu shard
+		if (zone->random.Int(1, 2) == 1) AddItem(100048, 1, false); //elu shard
+		AddItem(100048, 1, false); //elu shard
+		return;
+	}
+
+	if (tier == 3) {
+		if (zone->random.Int(1, 3) == 1) AddItem(101400, 1, false); //veeshan's gem		
+		if (zone->random.Int(1, 3) == 1) AddItem(100006, 1, false); //elunium
+		if (zone->random.Int(1, 2) == 1) AddItem(100048, 1, false); //elu shard
+		AddItem(100048, 1, false); //elu shard
+		return;
+	}
+
+	if (tier == 4) {
+		if (zone->random.Int(1, 2) == 1) AddItem(101400, 1, false); //veeshan's gem		
+		if (zone->random.Int(1, 2) == 1) AddItem(100006, 1, false); //elunium
+		if (zone->random.Int(1, 2) == 1) AddItem(100048, 1, false); //elu shard
+		AddItem(100048, 1, false); //elu shard
+		AddItem(100048, 1, false); //elu shard
+		return;
+	}
+
+	if (tier >= 5) {
+		if (zone->random.Int(1, 2) == 1) AddItem(101400, 1, false); //veeshan's gem		
+		if (zone->random.Int(1, 2) == 1) AddItem(100006, 1, false); //elunium
+		if (zone->random.Int(1, 2) == 1) AddItem(100048, 1, false); //elu shard
+		AddItem(100048, 1, false); //elu shard
+		AddItem(100048, 1, false); //elu shard
+		AddItem(100048, 1, false); //elu shard
+		AddItem(100048, 1, false); //elu shard
+		return;
+	}
+}

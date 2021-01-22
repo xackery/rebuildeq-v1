@@ -2186,7 +2186,7 @@ XS(XS_Client_GetSkill) {
 		Client *THIS;
 		uint16                   RETVAL;
 		dXSTARG;
-		EQEmu::skills::SkillType skill_id = (EQEmu::skills::SkillType) SvUV(ST(1));
+		EQ::skills::SkillType skill_id = (EQ::skills::SkillType) SvUV(ST(1));
 
 		if (sv_derived_from(ST(0), "Client")) {
 			IV tmp = SvIV((SV *) SvRV(ST(0)));

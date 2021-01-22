@@ -39,14 +39,6 @@ namespace UF
 
 		const bool AllowEmptyBagInBag = false;
 		const bool AllowClickCastFromBag = false;
-
-		const bool ConcatenateInvTypeLimbo = true;
-
-		const bool AllowOverLevelEquipment = true;
-
-		const bool AllowEmptyBagInBag = false;
-		const bool AllowClickCastFromBag = false;
-
 	} /*inventory*/
 
 	namespace invtype {

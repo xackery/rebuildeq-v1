@@ -190,20 +190,20 @@ RULE_INT(Guild, PlayerCreationRequiredTime, 0, "Time needed online on the accoun
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(ItemScore)
-RULE_INT(ItemScore, Class1, 0)
-RULE_INT(ItemScore, Class2, 0)
-RULE_INT(ItemScore, Class3, 0)
-RULE_INT(ItemScore, Class4, 0)
-RULE_INT(ItemScore, Class5, 0)
-RULE_INT(ItemScore, Class6, 0)
-RULE_INT(ItemScore, Class7, 0)
-RULE_INT(ItemScore, Class8, 0)
-RULE_INT(ItemScore, Class9, 0)
-RULE_INT(ItemScore, Class10, 0)
-RULE_INT(ItemScore, Class11, 0)
-RULE_INT(ItemScore, Class12, 0)
-RULE_INT(ItemScore, Class13, 0)
-RULE_INT(ItemScore, Class14, 0)
+RULE_INT(ItemScore, Class1, 0, "ItemScore Class1")
+RULE_INT(ItemScore, Class2, 0, "ItemScore Class2")
+RULE_INT(ItemScore, Class3, 0, "ItemScore Class3")
+RULE_INT(ItemScore, Class4, 0, "ItemScore Class4")
+RULE_INT(ItemScore, Class5, 0, "ItemScore Class5")
+RULE_INT(ItemScore, Class6, 0, "ItemScore Class6")
+RULE_INT(ItemScore, Class7, 0, "ItemScore Class7")
+RULE_INT(ItemScore, Class8, 0, "ItemScore Class8")
+RULE_INT(ItemScore, Class9, 0, "ItemScore Class9")
+RULE_INT(ItemScore, Class10, 0, "ItemScore Class0")
+RULE_INT(ItemScore, Class11, 0, "ItemScore Class1")
+RULE_INT(ItemScore, Class12, 0, "ItemScore Class2")
+RULE_INT(ItemScore, Class13, 0, "ItemScore Class3")
+RULE_INT(ItemScore, Class14, 0, "ItemScore Class4")
 RULE_CATEGORY_END()
 
 RULE_CATEGORY(Skills)
@@ -814,12 +814,6 @@ RULE_CATEGORY_END()
 
 RULE_CATEGORY(DynamicZone)
 RULE_INT(DynamicZone, ClientRemovalDelayMS, 60000, "Delay (ms) until a client is teleported out of dynamic zone after being removed as member")
-RULE_CATEGORY_END()
-
-RULE_CATEGORY(Bugs)
-RULE_BOOL(Bugs, ReportingSystemActive, true) // Activates bug reporting
-RULE_BOOL(Bugs, UseOldReportingMethod, true) // Forces the use of the old bug reporting system
-RULE_BOOL(Bugs, DumpTargetEntity, false) // Dumps the target entity, if one is provided
 RULE_CATEGORY_END()
 
 #undef RULE_CATEGORY

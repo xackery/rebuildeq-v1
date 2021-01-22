@@ -1836,21 +1836,6 @@ struct PlayerPositionUpdateClient_Struct
 /*0000*/ uint32 count;
 /*0004*/ MultiMoveItemSub_Struct moves[0];
 		};
-
-struct MultiMoveItemSub_Struct
-{
-/*0000*/ InventorySlot_Struct	from_slot;
-/*0012*/ InventorySlot_Struct	to_slot;
-/*0024*/ uint32			number_in_stack;
-/*0028*/ uint8			unknown[8];
-};
-
-struct MultiMoveItem_Struct
-{
-/*0000*/ uint32	count;
-/*0004*/ MultiMoveItemSub_Struct moves[0];
-};
-
 //
 // from_slot/to_slot
 // -1 - destroy
@@ -5246,23 +5231,6 @@ struct KickPlayers_Struct
 /*048*/	char Hash[8];
 /*056*/
 		};
-
-struct SayLinkBodyFrame_Struct {
-/*000*/	char ActionID[1];
-/*001*/	char ItemID[5];
-/*006*/	char Augment1[5];
-/*011*/	char Augment2[5];
-/*016*/	char Augment3[5];
-/*021*/	char Augment4[5];
-/*026*/	char Augment5[5];
-/*031*/	char Augment6[5];
-/*036*/	char IsEvolving[1];
-/*037*/	char EvolveGroup[4];
-/*041*/	char EvolveLevel[2];
-/*043*/	char OrnamentIcon[5];
-/*048*/	char Hash[8];
-/*056*/
-};
 
 	}; /*structs*/
 

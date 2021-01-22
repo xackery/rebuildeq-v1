@@ -2148,17 +2148,6 @@ struct ServerDzCharacter_Struct {
 	uint32 character_id;
 };
 
-struct UCSServerStatus_Struct {
-	uint8 available; // non-zero=true, 0=false
-	union {
-		struct {
-			uint16 port;
-			uint16 unused;
-		};
-		uint32 timestamp;
-	};
-};
-
 #pragma pack()
 
 #endif

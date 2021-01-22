@@ -26,7 +26,6 @@
 #endif
 
 #include "../common/rulesys.h"
-#include "../common/say_link.h"
 #include "../common/string_util.h"
 
 #include "queryserv.h"
@@ -39,7 +38,6 @@
 #include "../common/repositories/tradeskill_recipe_repository.h"
 
 extern QueryServ* QServ;
-extern WorldServer worldserver;
 
 static const EQ::skills::SkillType TradeskillUnknown = EQ::skills::Skill1HBlunt; /* an arbitrary non-tradeskill */
 
@@ -1085,15 +1083,6 @@ bool Client::TradeskillExecute(DBTradeskillRecipe_Struct *spec) {
 						this->GetInstanceID()
 					).c_str()
 				);
-			}
-
-			if (spec->recipe_id == 9834){
-				EQEmu::SayLinkEngine linker;
-				linker.SetLinkType(EQEmu::saylink::SayLinkItemData);
-				linker.SetItemData(item);
-				std::string item_link;
-				item_link = linker.GenerateLink();
-				worldserver.SendEmoteMessage(0, 0, MT_Broadcasts, StringFormat("%s has received the epic, %s", GetCleanName(), item_link.c_str()).c_str());
 			}
 
 			/* QS: Player_Log_Trade_Skill_Events */

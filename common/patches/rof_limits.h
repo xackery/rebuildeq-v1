@@ -40,13 +40,6 @@ namespace RoF
 		const bool AllowEmptyBagInBag = true;
 		const bool AllowClickCastFromBag = true;
 
-		const bool ConcatenateInvTypeLimbo = false;
-
-		const bool AllowOverLevelEquipment = true;
-
-		const bool AllowEmptyBagInBag = true;
-		const bool AllowClickCastFromBag = true;
-
 	} /*inventory*/
 
 	namespace invtype {

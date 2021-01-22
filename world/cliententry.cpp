@@ -81,8 +81,6 @@ ClientListEntry::ClientListEntry(
 	plocal      = (local == 1);
 
 	memset(pLFGComments, 0, 64);
-
-	RefreshIdentity();
 }
 
 ClientListEntry::ClientListEntry(uint32 in_id, ZoneServer *iZS, ServerClientList_Struct *scl, CLE_Status iOnline)
@@ -111,8 +109,7 @@ ClientListEntry::ClientListEntry(uint32 in_id, ZoneServer *iZS, ServerClientList
 	}
 	else {
 		SetOnline(iOnline);
-
-	RefreshIdentity();
+	}
 }
 
 ClientListEntry::~ClientListEntry()
@@ -274,7 +271,6 @@ void ClientListEntry::ClearVars(bool iAll)
 		paccountid = 0;
 		memset(paccountname, 0, sizeof(paccountname));
 		padmin = 0;
-		memset(identity, 0, sizeof(identity));
 	}
 	pzoneserver = 0;
 	pzone       = 0;
@@ -294,15 +290,9 @@ void ClientListEntry::ClearVars(bool iAll)
 	tell_queue.clear();
 }
 
-void ClientListEntry::RefreshIdentity() {
-	if (!paccountid) return;
-	auto identityStr = database.GetIdentity(paccountid);
-	memset(identity, 0, sizeof(identityStr));
-	strcpy(identity, identityStr);
-}
-
-void ClientListEntry::Camp(ZoneServer* iZS) {
-	if (iZS != 0 && iZS != pzoneserver)
+void ClientListEntry::Camp(ZoneServer *iZS)
+{
+	if (iZS != 0 && iZS != pzoneserver) {
 		return;
 	}
 	if (pzoneserver) {
@@ -401,4 +391,3 @@ void ClientListEntry::ProcessTellQueue()
 	}
 	return;
 }
-

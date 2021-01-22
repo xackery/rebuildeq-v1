@@ -233,7 +233,7 @@ Mob* QuestManager::encounterspawn(int npc_type, int level, const glm::vec4& posi
 	}
 
 	
-	NPC* npc = new NPC(enpc, nullptr, position, FlyMode3);
+	NPC* npc = new NPC(enpc, nullptr, position, GravityBehavior::Flying);
 	if (npc_type == 22046 || npc_type == 34013) { //zombie encounter
 		//npc->SetAppearance(eaSitting);
 		//npc->Stun(1000);
@@ -241,7 +241,7 @@ Mob* QuestManager::encounterspawn(int npc_type, int level, const glm::vec4& posi
 	npc->AddLootTable();
 	
 	entity_list.AddNPC(npc, true, true);
-	npc->SendPositionUpdate();
+	//npc->SendPositionUpdate();
 	return npc;	
 }
 

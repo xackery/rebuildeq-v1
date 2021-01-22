@@ -822,7 +822,7 @@ void HateList::OnDeathTrigger()
 				uint32 counters = mobHated->CastToClient()->GetCoreCounter();
 				mobHated->CastToClient()->AddCoreCounter(1);
 				if (counters < mobHated->CastToClient()->GetCoreCounter()) {
-					mobHated->Message(MT_FocusEffect, "Rotten Core %u increased to %u counters.", rank, mobHated->CastToClient()->GetCoreCounter());
+					mobHated->Message(Chat::FocusEffect, "Rotten Core %u increased to %u counters.", rank, mobHated->CastToClient()->GetCoreCounter());
 				}
 			}
 			rank = mobHated->CastToClient()->GetBuildRank(ROGUE, RB_ROG_KILLINGSPREE);
@@ -830,7 +830,7 @@ void HateList::OnDeathTrigger()
 				uint32 counters = mobHated->CastToClient()->GetCoreCounter();
 				mobHated->CastToClient()->AddCoreCounter(1);
 				if (counters < mobHated->CastToClient()->GetCoreCounter()) {
-					mobHated->Message(MT_FocusEffect, "Killing Spree %u increased to %u counters.", rank, mobHated->CastToClient()->GetCoreCounter());
+					mobHated->Message(Chat::FocusEffect, "Killing Spree %u increased to %u counters.", rank, mobHated->CastToClient()->GetCoreCounter());
 				}
 			}
 		}
@@ -882,7 +882,7 @@ int HateList::DamageNearby(Mob *caster, int32 damage, float range, Mob* ae_cente
 		Mob *cur = entity_list.GetMobID((*iter));
 		if (cur && cur->IsNPC())
 		{
-			cur->Damage(caster, damage, 0, EQEmu::skills::SkillEvocation);
+			cur->Damage(caster, damage, 0, EQ::skills::SkillEvocation);
 			targetCount++;
 		}
 		iter++;

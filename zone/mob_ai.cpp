@@ -437,6 +437,7 @@ void Mob::AI_Start(uint32 iMoveDelay) {
 	pAIControlled  = true;
 	AI_think_timer = std::unique_ptr<Timer>(new Timer(AIthink_duration));
 	AI_think_timer->Trigger();
+
 	AI_walking_timer        = std::unique_ptr<Timer>(new Timer(0));
 	AI_movement_timer       = std::unique_ptr<Timer>(new Timer(AImovement_duration));
 	AI_target_check_timer   = std::unique_ptr<Timer>(new Timer(AItarget_check_duration));
@@ -959,91 +960,10 @@ void Mob::ProcessForcedMovement()
 	}
 }
 
-void Mob::ProcessForcedMovement()
-{
-
-	// we are being pushed, we will hijack this movement timer
-	// this also needs to be done before casting to have a chance to interrupt
-	// this flag won't be set if the mob can't be pushed (rooted etc)
-	if (AI_movement_timer->Check()) {
-		bool bPassed = true;
-		glm::vec3 normal;
-
-		// no zone map = fucked
-		if (zone->HasMap()) {
-			// in front
-			m_CollisionBox[0].x = m_Position.x + 3.0f * g_Math.FastSin(0.0f);
-			m_CollisionBox[0].y = m_Position.y + 3.0f * g_Math.FastCos(0.0f);
-			m_CollisionBox[0].z = m_Position.z;
-
-			// 45 right front
-			m_CollisionBox[1].x = m_Position.x + 3.0f * g_Math.FastSin(64.0f);
-			m_CollisionBox[1].y = m_Position.y + 3.0f * g_Math.FastCos(64.0f);
-			m_CollisionBox[1].z = m_Position.z;
-
-			// to right
-			m_CollisionBox[2].x = m_Position.x + 3.0f * g_Math.FastSin(128.0f);
-			m_CollisionBox[2].y = m_Position.y + 3.0f * g_Math.FastCos(128.0f);
-			m_CollisionBox[2].z = m_Position.z;
-			// 45 right back
-			m_CollisionBox[3].x = m_Position.x + 3.0f * g_Math.FastSin(192.0f);
-			m_CollisionBox[3].y = m_Position.y + 3.0f * g_Math.FastCos(192.0f);
-			m_CollisionBox[3].z = m_Position.z;
-
-			// behind
-			m_CollisionBox[4].x = m_Position.x + 3.0f * g_Math.FastSin(256.0f);
-			m_CollisionBox[4].y = m_Position.y + 3.0f * g_Math.FastCos(256.0f);
-			m_CollisionBox[4].z = m_Position.z;
-			// 45 left back
-			m_CollisionBox[5].x = m_Position.x + 3.0f * g_Math.FastSin(320.0f);
-			m_CollisionBox[5].y = m_Position.y + 3.0f * g_Math.FastCos(320.0f);
-			m_CollisionBox[5].z = m_Position.z;
-
-			// to left
-			m_CollisionBox[6].x = m_Position.x + 3.0f * g_Math.FastSin(384.0f);
-			m_CollisionBox[6].y = m_Position.y + 3.0f * g_Math.FastCos(384.0f);
-			m_CollisionBox[6].z = m_Position.z;
-			// 45 left front
-			m_CollisionBox[7].x = m_Position.x + 3.0f * g_Math.FastSin(448.0f);
-			m_CollisionBox[7].y = m_Position.y + 3.0f * g_Math.FastCos(448.0f);
-			m_CollisionBox[7].z = m_Position.z;
-
-			// collision happened, need to move along the wall
-			float distance = 0.0f, shortest = std::numeric_limits<float>::infinity();
-			glm::vec3 tmp_nrm;
-			for (auto &vec : m_CollisionBox) {
-				if (zone->zonemap->DoCollisionCheck(vec, vec + m_Delta, tmp_nrm, distance)) {
-					bPassed = false; // lets try with new projection next pass
-					if (distance < shortest) {
-						normal = tmp_nrm;
-						shortest = distance;
-					}
-				}
-			}
-		}
-
-		if (bPassed) {
-			ForcedMovement = 0;
-			Teleport(m_Position + m_Delta);
-			m_Delta = glm::vec4();
-			SendPositionUpdate();
-			pLastChange = Timer::GetCurrentTime();
-			FixZ(); // so we teleport to the ground locally, we want the client to interpolate falling etc
-		} else if (--ForcedMovement) {
-			if (normal.z < -0.15f) // prevent too much wall climbing. ex. OMM's room in anguish
-				normal.z = 0.0f;
-			auto proj = glm::proj(static_cast<glm::vec3>(m_Delta), normal);
-			m_Delta.x -= proj.x;
-			m_Delta.y -= proj.y;
-			m_Delta.z -= proj.z;
-		} else {
-			m_Delta = glm::vec4(); // well, we failed to find a spot to be forced to, lets give up
-		}
-	}
-}
 void Mob::AI_Process() {
 	if (!IsAIControlled())
 		return;
+
 	if (!(AI_think_timer->Check() || attack_timer.Check(false)))
 		return;
 
@@ -1895,7 +1815,6 @@ void NPC::AI_DoMovement() {
 	}
 }
 
-
 void NPC::AI_SetupNextWaypoint() {
 	int32 spawn_id = this->GetSpawnPointID();
 	LinkedListIterator<Spawn2*> iterator(zone->spawn2_list);
@@ -2047,7 +1966,7 @@ void NPC::AI_Event_SpellCastFinished(bool iCastSucceeded, uint16 slot) {
 					recovery_time += spells[AIspells[casting_spell_AIindex].spellid].recovery_time;
 					if (AIspells[casting_spell_AIindex].recast_delay >= 0)
 					{
-                        if (AIspells[casting_spell_AIindex].recast_delay < 10000)
+						if (AIspells[casting_spell_AIindex].recast_delay < 10000)
 							AIspells[casting_spell_AIindex].time_cancast = Timer::GetCurrentTime() + (AIspells[casting_spell_AIindex].recast_delay*1000);
 					}
 					else
@@ -3105,4 +3024,3 @@ uint32 ZoneDatabase::GetMaxNPCSpellsEffectsID() {
 
     return atoi(row[0]);
 }
-

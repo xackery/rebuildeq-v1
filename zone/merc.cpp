@@ -1283,17 +1283,11 @@ bool Merc::Process()
 
 		CalcRestState();
 
-		if (GetHP() < GetMaxHP()) {
-			int finalRegen = CalcHPRegen() + RestRegenHP;
-			finalRegen = AdjustTierPenalty(this, finalRegen);
-			entity_list.LogHPEvent(this, this, finalRegen);
-			SetHP(GetHP() + finalRegen);
-		}
+		if(GetHP() < GetMaxHP())
+			SetHP(GetHP() + CalcHPRegen() + RestRegenHP);
 
-		entity_list.LogManaEvent(this, this, CalcManaRegen() + RestRegenMana);
-		if (GetMana() < GetMaxMana()) {
+		if(GetMana() < GetMaxMana())
 			SetMana(GetMana() + CalcManaRegen() + RestRegenMana);
-		}
 
 		if(GetEndurance() < GetMaxEndurance())
 			SetEndurance(GetEndurance() + CalcEnduranceRegen() + RestRegenEndurance);

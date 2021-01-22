@@ -183,36 +183,6 @@ void Mob::MakePet(uint16 spell_id, const char* pettype, const char *petname) {
 	MakePoweredPet(spell_id, pettype, -1, petname);
 }
 
-//This is a new, unqiue secondary pet system.
-void Mob::MakePet2(uint16 npc_type, uint8 level) {
-	if (!IsClient()) return;
-	if (!HasPet()) {
-		Message(13, "You cannot summon this type of pet until another pet has been summoned.");
-		return;
-	}
-	//Message(0, "Making Pet %u level %u", npc_type, level);
-	//lookup our pets table record for this type
-	const NPCType* npctype = 0;
-	npctype = database.LoadNPCTypesData(npc_type);
-	if (!npctype) return;
-	
-	//we copy the npc_type data because we need to edit it a bit
-	NPCType *enpc = new NPCType;
-	memcpy(enpc, npctype, sizeof(NPCType));
-	strcpy(enpc->name, "");
-	enpc->level = level;
-	enpc = AdjustNPC(enpc, false, false);
-	enpc->bodytype = BT_NoTarget; //NoTarget
-	enpc->npc_faction_id = 0; // No faction		
-	strcpy(enpc->special_abilities, "19,1^20,1^24,1");
-	
-	NPC* npc = new NPC(enpc, nullptr, GetPet()->GetPosition(), FlyMode3);
-	entity_list.AddNPC(npc, true, true);
-	npc->SendPositionUpdate();
-	SetPet2ID(npc->GetID());
-	//Message(0, "Spawned, entity # %u", npc->GetID());
-}
-
 // Split from the basic MakePet to allow backward compatiblity with existing code while also
 // making it possible for petpower to be retained without the focus item having to
 // stay equipped when the character zones. petpower of -1 means that the currently equipped petfocus
@@ -552,19 +522,19 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 				npc_type->size = 1;
 			}
 
-			npc_type->texture = GetEquipmentMaterial(EQEmu::textures::armorChest);
-			npc_type->armtexture = GetEquipmentMaterial(EQEmu::textures::armorArms);
-			npc_type->legtexture = GetEquipmentMaterial(EQEmu::textures::armorLegs);
-			npc_type->feettexture = GetEquipmentMaterial(EQEmu::textures::armorFeet);
-			npc_type->bracertexture = GetEquipmentMaterial(EQEmu::textures::armorWrist);
-			npc_type->handtexture = GetEquipmentMaterial(EQEmu::textures::armorHands);
+			npc_type->texture = GetEquipmentMaterial(EQ::textures::armorChest);
+			npc_type->armtexture = GetEquipmentMaterial(EQ::textures::armorArms);
+			npc_type->legtexture = GetEquipmentMaterial(EQ::textures::armorLegs);
+			npc_type->feettexture = GetEquipmentMaterial(EQ::textures::armorFeet);
+			npc_type->bracertexture = GetEquipmentMaterial(EQ::textures::armorWrist);
+			npc_type->handtexture = GetEquipmentMaterial(EQ::textures::armorHands);
 			//npc_type->helmtexture = GetEquipmentMaterial(MaterialHead);
 			
-			npc_type->armor_tint.Slot[EQEmu::textures::armorArms].Color = GetEquipmentColor(EQEmu::textures::armorArms);
-			npc_type->armor_tint.Slot[EQEmu::textures::armorLegs].Color = GetEquipmentColor(EQEmu::textures::armorLegs);
-			npc_type->armor_tint.Slot[EQEmu::textures::armorFeet].Color = GetEquipmentColor(EQEmu::textures::armorFeet);
-			npc_type->armor_tint.Slot[EQEmu::textures::armorWrist].Color = GetEquipmentColor(EQEmu::textures::armorWrist);
-			npc_type->armor_tint.Slot[EQEmu::textures::armorHands].Color = GetEquipmentColor(EQEmu::textures::armorHands);
+			npc_type->armor_tint.Slot[EQ::textures::armorArms].Color = GetEquipmentColor(EQ::textures::armorArms);
+			npc_type->armor_tint.Slot[EQ::textures::armorLegs].Color = GetEquipmentColor(EQ::textures::armorLegs);
+			npc_type->armor_tint.Slot[EQ::textures::armorFeet].Color = GetEquipmentColor(EQ::textures::armorFeet);
+			npc_type->armor_tint.Slot[EQ::textures::armorWrist].Color = GetEquipmentColor(EQ::textures::armorWrist);
+			npc_type->armor_tint.Slot[EQ::textures::armorHands].Color = GetEquipmentColor(EQ::textures::armorHands);
 
 			//Log(Logs::General, Logs::Zone_Server, "Setting Chest Armor Tint npc_type to %u with Steadfast", npc_type->armor_tint[MaterialChest]);
 
@@ -581,12 +551,12 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 			npc_type->drakkin_details = GetDrakkinDetails();
 			
 			
-			npc_type->d_melee_texture1 = GetEquipmentMaterial(EQEmu::textures::weaponPrimary);
-			npc_type->d_melee_texture2 = GetEquipmentMaterial(EQEmu::textures::weaponSecondary);
+			npc_type->d_melee_texture1 = GetEquipmentMaterial(EQ::textures::weaponPrimary);
+			npc_type->d_melee_texture2 = GetEquipmentMaterial(EQ::textures::weaponSecondary);
 			
-			if (this->CastToClient()->GetInv().GetItem(EQEmu::invslot::slotPrimary)) { //If a weapon is equipped
+			if (this->CastToClient()->GetInv().GetItem(EQ::invslot::slotPrimary)) { //If a weapon is equipped
 				
-				npc_type->prim_melee_type = this->CastToClient()->GetInv().GetItem(EQEmu::invslot::slotPrimary)->GetItem()->ItemType;
+				npc_type->prim_melee_type = this->CastToClient()->GetInv().GetItem(EQ::invslot::slotPrimary)->GetItem()->ItemType;
 			}
 			
 		}
@@ -609,11 +579,11 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 		npc_type->max_dmg = floor(npc_type->max_dmg * 0.05f * rank); //25% dmg at max
 		//npc_type->texture = 3; // GetEquipmentMaterial(MaterialChest);
 		
-		npc_type->armtexture = GetEquipmentMaterial(EQEmu::textures::armorArms);
-		npc_type->legtexture = GetEquipmentMaterial(EQEmu::textures::armorLegs);
-		npc_type->feettexture = GetEquipmentMaterial(EQEmu::textures::armorFeet);
-		npc_type->bracertexture = GetEquipmentMaterial(EQEmu::textures::armorWrist);
-		npc_type->handtexture = GetEquipmentMaterial(EQEmu::textures::armorHands);
+		npc_type->armtexture = GetEquipmentMaterial(EQ::textures::armorArms);
+		npc_type->legtexture = GetEquipmentMaterial(EQ::textures::armorLegs);
+		npc_type->feettexture = GetEquipmentMaterial(EQ::textures::armorFeet);
+		npc_type->bracertexture = GetEquipmentMaterial(EQ::textures::armorWrist);
+		npc_type->handtexture = GetEquipmentMaterial(EQ::textures::armorHands);
 		//npc_type->helmtexture = GetEquipmentMaterial(MaterialHead);
 		npc_type->haircolor = GetHairColor();
 		npc_type->beardcolor = GetBeardColor();
@@ -628,10 +598,10 @@ void Mob::MakePoweredPet(uint16 spell_id, const char* pettype, int16 petpower,
 		npc_type->drakkin_heritage = GetDrakkinHeritage();
 		npc_type->drakkin_tattoo = GetDrakkinTattoo();
 		npc_type->drakkin_details = GetDrakkinDetails();
-		npc_type->d_melee_texture1 = GetEquipmentMaterial(EQEmu::textures::weaponPrimary);
-		npc_type->d_melee_texture2 = GetEquipmentMaterial(EQEmu::textures::weaponSecondary);
-		if (this->CastToClient()->GetInv().GetItem(EQEmu::invslot::slotPrimary)) { //If a weapon is equipped
-			npc_type->prim_melee_type = this->CastToClient()->GetInv().GetItem(EQEmu::invslot::slotPrimary)->GetItem()->ItemType;
+		npc_type->d_melee_texture1 = GetEquipmentMaterial(EQ::textures::weaponPrimary);
+		npc_type->d_melee_texture2 = GetEquipmentMaterial(EQ::textures::weaponSecondary);
+		if (this->CastToClient()->GetInv().GetItem(EQ::invslot::slotPrimary)) { //If a weapon is equipped
+			npc_type->prim_melee_type = this->CastToClient()->GetInv().GetItem(EQ::invslot::slotPrimary)->GetItem()->ItemType;
 		}
 	}
 

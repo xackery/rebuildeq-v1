@@ -1,5 +1,5 @@
-/*	EQEMu: Everquest Server Emulator
-	Copyright (C) 2001-2002 EQEMu Development Team (http://eqemu.org)
+/*	EQ: Everquest Server Emulator
+	Copyright (C) 2001-2002 EQ Development Team (http://eq.org)
 
 	This program is free software; you can redistribute it and/or modify
 	it under the terms of the GNU General Public License as published by
@@ -221,24 +221,6 @@ NPC::NPC(const NPCType *npc_type_data, Spawn2 *in_respawn, const glm::vec4 &posi
 	charm_accuracy_rating  = npc_type_data->charm_accuracy_rating;
 	charm_avoidance_rating = npc_type_data->charm_avoidance_rating;
 	charm_atk              = npc_type_data->charm_atk;
-
-	// used for when switch back to charm
-	default_ac = d->AC;
-	default_min_dmg = min_dmg;
-	default_max_dmg = max_dmg;
-	default_attack_delay = d->attack_delay;
-	default_accuracy_rating = d->accuracy_rating;
-	default_avoidance_rating = d->avoidance_rating;
-	default_atk = d->ATK;
-
-	// used for when getting charmed, if 0, doesn't swap
-	charm_ac = d->charm_ac;
-	charm_min_dmg = d->charm_min_dmg;
-	charm_max_dmg = d->charm_max_dmg;
-	charm_attack_delay = d->charm_attack_delay;
-	charm_accuracy_rating = d->charm_accuracy_rating;
-	charm_avoidance_rating = d->charm_avoidance_rating;
-	charm_atk = d->charm_atk;
 
 	CalcMaxMana();
 	SetMana(GetMaxMana());
@@ -825,7 +807,6 @@ bool NPC::Process()
 			SetHP(GetHP() + npc_hp_regen + npc_sitting_regen_bonus);
 		}
 
-		entity_list.LogManaEvent(this, this, mana_regen + sitting_bonus);
 		if (GetMana() < GetMaxMana()) {
 			if (RuleB(NPC, UseMeditateBasedManaRegen)) {
 				int32 npc_idle_mana_regen_bonus = 2;
@@ -1730,7 +1711,7 @@ void NPC::PickPocket(Client* thief)
 {
 	thief->CheckIncreaseSkill(EQ::skills::SkillPickPockets, nullptr, 5);
 
-	thief->CheckIncreaseSkill(EQEmu::skills::SkillPickPockets, nullptr, 5);
+	thief->CheckIncreaseSkill(EQ::skills::SkillPickPockets, nullptr, 5);
 	//make sure were allowed to target them:
 	int over_level = GetLevel();
 	if(over_level > (thief->GetLevel() + THIEF_PICKPOCKET_OVER)) {
@@ -1797,7 +1778,7 @@ void NPC::PickPocket(Client* thief)
 			else if (GetLevel() > 20) maxAmount = 2 * rank;
 			else if (GetLevel() > 10) maxAmount = rank;
 			amount = zone->random.Int(amount, maxAmount);
-			thief->Message(MT_Skills, "You have found a hidden stash of %i platinum.", amount);
+			thief->Message(Chat::Skills, "You have found a hidden stash of %i platinum.", amount);
 			DailyGain(thief->AccountID(), thief->CharacterID(), thief->Identity(), 0, 0, amount);
 			thief->AddMoneyToPP(0, 0, 0, amount, false);
 			return;
@@ -3218,6 +3199,8 @@ std::vector<SpecialLoot_Struct> NPC::SpecialLoot(bool card_only) {
 	}
 	
 	return loot_list;
+}
+
 uint16 NPC::GetMeleeTexture1() const
 {
 	return d_melee_texture1;

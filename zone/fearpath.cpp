@@ -207,7 +207,3 @@ void Mob::CalculateNewFearpoint()
 		LogPathing("No path found to selected node during CalculateNewFearpoint.");
 	}
 }
-
-	if (currently_fleeing)
-		m_FearWalkTarget = glm::vec3(ranx, rany, ranz);
-}

@@ -1682,64 +1682,64 @@ int EQ::ItemInstance::GetItemHaste(bool augments) const
 	return total;
 }
 
-std::string EQEmu::ItemInstance::GetSlotName(int slotNumber) const {
-	if (slotNumber == EQEmu::invslot::slotCharm) return "Charm";
-	if (slotNumber == EQEmu::invslot::slotEar1) return "Left Ear";
-	if (slotNumber == EQEmu::invslot::slotHead) return "Head";
-	if (slotNumber == EQEmu::invslot::slotFace) return "Face";
-	if (slotNumber == EQEmu::invslot::slotEar2) return "Right Ear";
-	if (slotNumber == EQEmu::invslot::slotNeck) return "Neck";
-	if (slotNumber == EQEmu::invslot::slotShoulders) return "Shoulder";
-	if (slotNumber == EQEmu::invslot::slotArms) return "Arms";
-	if (slotNumber == EQEmu::invslot::slotBack) return "Back";
-	if (slotNumber == EQEmu::invslot::slotWrist1) return "Left Bracer";
-	if (slotNumber == EQEmu::invslot::slotWrist2) return "Right Bracer";
-	if (slotNumber == EQEmu::invslot::slotRange) return "Range";
-	if (slotNumber == EQEmu::invslot::slotHands) return "Hands";
-	if (slotNumber == EQEmu::invslot::slotPrimary) return "Primary";
-	if (slotNumber == EQEmu::invslot::slotSecondary) return "Secondary";
-	if (slotNumber == EQEmu::invslot::slotFinger1) return "Left Ring";
-	if (slotNumber == EQEmu::invslot::slotFinger2) return "Right Ring";
-	if (slotNumber == EQEmu::invslot::slotChest) return "Chest";
-	if (slotNumber == EQEmu::invslot::slotLegs) return "Legs";
-	if (slotNumber == EQEmu::invslot::slotFeet) return "Feet";
-	if (slotNumber == EQEmu::invslot::slotWaist) return "Waist";
-	if (slotNumber == EQEmu::invslot::slotAmmo) return "Ammo";
+std::string EQ::ItemInstance::GetSlotName(int slotNumber) const {
+	if (slotNumber == EQ::invslot::slotCharm) return "Charm";
+	if (slotNumber == EQ::invslot::slotEar1) return "Left Ear";
+	if (slotNumber == EQ::invslot::slotHead) return "Head";
+	if (slotNumber == EQ::invslot::slotFace) return "Face";
+	if (slotNumber == EQ::invslot::slotEar2) return "Right Ear";
+	if (slotNumber == EQ::invslot::slotNeck) return "Neck";
+	if (slotNumber == EQ::invslot::slotShoulders) return "Shoulder";
+	if (slotNumber == EQ::invslot::slotArms) return "Arms";
+	if (slotNumber == EQ::invslot::slotBack) return "Back";
+	if (slotNumber == EQ::invslot::slotWrist1) return "Left Bracer";
+	if (slotNumber == EQ::invslot::slotWrist2) return "Right Bracer";
+	if (slotNumber == EQ::invslot::slotRange) return "Range";
+	if (slotNumber == EQ::invslot::slotHands) return "Hands";
+	if (slotNumber == EQ::invslot::slotPrimary) return "Primary";
+	if (slotNumber == EQ::invslot::slotSecondary) return "Secondary";
+	if (slotNumber == EQ::invslot::slotFinger1) return "Left Ring";
+	if (slotNumber == EQ::invslot::slotFinger2) return "Right Ring";
+	if (slotNumber == EQ::invslot::slotChest) return "Chest";
+	if (slotNumber == EQ::invslot::slotLegs) return "Legs";
+	if (slotNumber == EQ::invslot::slotFeet) return "Feet";
+	if (slotNumber == EQ::invslot::slotWaist) return "Waist";
+	if (slotNumber == EQ::invslot::slotAmmo) return "Ammo";
 	return "";
 }
 
-std::string EQEmu::ItemInstance::GetSlotNames() const {
+std::string EQ::ItemInstance::GetSlotNames() const {
 	if (this == nullptr) return "";
 	std::string slotsString = "";
 	auto slots = GetItem()->Slots;
 
-	if (slots & EQEmu::invslot::slotCharm == EQEmu::invslot::slotCharm) slotsString.append("Charm");
-	if (slots & EQEmu::invslot::slotEar1 == EQEmu::invslot::slotEar1) slotsString.append("Left Ear");
-	if (slots & EQEmu::invslot::slotHead == EQEmu::invslot::slotHead) slotsString.append("Head");
-	if (slots & EQEmu::invslot::slotFace == EQEmu::invslot::slotFace) slotsString.append("Face");
-	if (slots & EQEmu::invslot::slotEar2 == EQEmu::invslot::slotEar2) slotsString.append("Right Ear");
-	if (slots & EQEmu::invslot::slotNeck == EQEmu::invslot::slotNeck) slotsString.append("Neck");
-	if (slots & EQEmu::invslot::slotShoulders == EQEmu::invslot::slotShoulders) slotsString.append("Shoulder");
-	if (slots & EQEmu::invslot::slotArms == EQEmu::invslot::slotArms) slotsString.append("Arms");
-	if (slots & EQEmu::invslot::slotBack == EQEmu::invslot::slotBack) slotsString.append("Back");
-	if (slots & EQEmu::invslot::slotWrist1 == EQEmu::invslot::slotWrist1) slotsString.append("Left Bracer");
-	if (slots & EQEmu::invslot::slotWrist2 == EQEmu::invslot::slotWrist2) slotsString.append("Right Bracer");
-	if (slots & EQEmu::invslot::slotRange == EQEmu::invslot::slotRange) slotsString.append("Range");
-	if (slots & EQEmu::invslot::slotHands == EQEmu::invslot::slotHands) slotsString.append("Hands");
-	if (slots & EQEmu::invslot::slotPrimary == EQEmu::invslot::slotPrimary) slotsString.append("Primary");
-	if (slots & EQEmu::invslot::slotSecondary == EQEmu::invslot::slotSecondary) slotsString.append("Secondary");
-	if (slots & EQEmu::invslot::slotFinger1 == EQEmu::invslot::slotFinger1) slotsString.append("Left Ring");
-	if (slots & EQEmu::invslot::slotFinger2 == EQEmu::invslot::slotFinger2) slotsString.append("Right Ring");
-	if (slots & EQEmu::invslot::slotChest == EQEmu::invslot::slotChest) slotsString.append("Chest");
-	if (slots & EQEmu::invslot::slotLegs == EQEmu::invslot::slotLegs) slotsString.append("Legs");
-	if (slots & EQEmu::invslot::slotFeet == EQEmu::invslot::slotFeet) slotsString.append("Feet");
-	if (slots & EQEmu::invslot::slotWaist == EQEmu::invslot::slotWaist) slotsString.append("Waist");
-	if (slots & EQEmu::invslot::slotAmmo == EQEmu::invslot::slotAmmo) slotsString.append("Ammo");
+	if (slots & EQ::invslot::slotCharm == EQ::invslot::slotCharm) slotsString.append("Charm");
+	if (slots & EQ::invslot::slotEar1 == EQ::invslot::slotEar1) slotsString.append("Left Ear");
+	if (slots & EQ::invslot::slotHead == EQ::invslot::slotHead) slotsString.append("Head");
+	if (slots & EQ::invslot::slotFace == EQ::invslot::slotFace) slotsString.append("Face");
+	if (slots & EQ::invslot::slotEar2 == EQ::invslot::slotEar2) slotsString.append("Right Ear");
+	if (slots & EQ::invslot::slotNeck == EQ::invslot::slotNeck) slotsString.append("Neck");
+	if (slots & EQ::invslot::slotShoulders == EQ::invslot::slotShoulders) slotsString.append("Shoulder");
+	if (slots & EQ::invslot::slotArms == EQ::invslot::slotArms) slotsString.append("Arms");
+	if (slots & EQ::invslot::slotBack == EQ::invslot::slotBack) slotsString.append("Back");
+	if (slots & EQ::invslot::slotWrist1 == EQ::invslot::slotWrist1) slotsString.append("Left Bracer");
+	if (slots & EQ::invslot::slotWrist2 == EQ::invslot::slotWrist2) slotsString.append("Right Bracer");
+	if (slots & EQ::invslot::slotRange == EQ::invslot::slotRange) slotsString.append("Range");
+	if (slots & EQ::invslot::slotHands == EQ::invslot::slotHands) slotsString.append("Hands");
+	if (slots & EQ::invslot::slotPrimary == EQ::invslot::slotPrimary) slotsString.append("Primary");
+	if (slots & EQ::invslot::slotSecondary == EQ::invslot::slotSecondary) slotsString.append("Secondary");
+	if (slots & EQ::invslot::slotFinger1 == EQ::invslot::slotFinger1) slotsString.append("Left Ring");
+	if (slots & EQ::invslot::slotFinger2 == EQ::invslot::slotFinger2) slotsString.append("Right Ring");
+	if (slots & EQ::invslot::slotChest == EQ::invslot::slotChest) slotsString.append("Chest");
+	if (slots & EQ::invslot::slotLegs == EQ::invslot::slotLegs) slotsString.append("Legs");
+	if (slots & EQ::invslot::slotFeet == EQ::invslot::slotFeet) slotsString.append("Feet");
+	if (slots & EQ::invslot::slotWaist == EQ::invslot::slotWaist) slotsString.append("Waist");
+	if (slots & EQ::invslot::slotAmmo == EQ::invslot::slotAmmo) slotsString.append("Ammo");
 	return slotsString;
 }
 
 //Obtain an item score for specified item.
-int EQEmu::ItemInstance::GetItemScore() const {
+int EQ::ItemInstance::GetItemScore() const {
 	const auto item = this->GetItem();
 	if (!item) {
 		Log(Logs::General, Logs::Inventory, "GetItemScore processed an item with no data pointer");
@@ -1748,7 +1748,7 @@ int EQEmu::ItemInstance::GetItemScore() const {
 	int itemScore = 0;
 	itemScore += item->GetItemScore();
 
-	EQEmu::ItemInstance * inst = nullptr;
+	EQ::ItemInstance * inst = nullptr;
 	for (int i = invaug::SOCKET_BEGIN; i < invaug::SOCKET_END; i++)
 	{
 		inst = GetAugment(i);

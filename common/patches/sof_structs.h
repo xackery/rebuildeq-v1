@@ -51,26 +51,7 @@ namespace SoF
 //New For SoF
 		struct WorldObjectsSent_Struct {
 		};
-
-// yep, even SoF had a version of the new inventory system, used by OP_MoveMultipleItems
-		struct InventorySlot_Struct
-		{
-/*000*/    int32 Type;        // Worn and Normal inventory = 0, Bank = 1, Shared Bank = 2, Trade = 3, World = 4, Limbo = 5
-/*004*/    int32 Slot;
-/*008*/    int32 SubIndex;
-/*012*/    int32 AugIndex;
-/*016*/    int32 Unknown01;
-		};
-
-// unsure if they have a version of this, completeness though
-		struct TypelessInventorySlot_Struct
-		{
-/*000*/    int32 Slot;
-/*004*/    int32 SubIndex;
-/*008*/    int32 AugIndex;
-/*012*/    int32 Unknown01;
-		};
-
+		
 // yep, even SoF had a version of the new inventory system, used by OP_MoveMultipleItems
 struct InventorySlot_Struct
 {
@@ -1607,19 +1588,6 @@ struct PlayerPositionUpdateClient_Struct
 /*0000*/ uint32 count;
 /*0004*/ MultiMoveItemSub_Struct moves[0];
 		};
-
-struct MultiMoveItemSub_Struct
-{
-/*0000*/ InventorySlot_Struct	from_slot;
-/*0020*/ uint32 number_in_stack; // so the amount we are moving from the source
-/*0024*/ InventorySlot_Struct	to_slot;
-};
-
-struct MultiMoveItem_Struct
-{
-/*0000*/ uint32	count;
-/*0004*/ MultiMoveItemSub_Struct moves[0];
-};
 
 //
 // from_slot/to_slot
@@ -4306,21 +4274,6 @@ struct DynamicZoneChooseZoneReply_Struct
 /*050*/
 		};
 
-struct SayLinkBodyFrame_Struct {
-/*000*/	char ActionID[1];
-/*001*/	char ItemID[5];
-/*006*/	char Augment1[5];
-/*011*/	char Augment2[5];
-/*016*/	char Augment3[5];
-/*021*/	char Augment4[5];
-/*026*/	char Augment5[5];
-/*031*/	char IsEvolving[1];
-/*032*/	char EvolveGroup[4];
-/*036*/	char EvolveLevel[1];
-/*037*/	char OrnamentIcon[5];
-/*042*/	char Hash[8];
-/*050*/
-};
 
 	}; /*structs*/
 

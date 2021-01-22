@@ -98,8 +98,6 @@ namespace EQ
 
 		const inventory::LookupEntry* GetLookup() const { return m_lookup; }
 
-		const inventory::LookupEntry* GetLookup() const { return m_lookup; }
-
 		static void CleanDirty();
 		static void MarkDirty(ItemInstance *inst);
 

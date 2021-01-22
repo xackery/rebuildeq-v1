@@ -250,8 +250,8 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						if (rank > 0 && spell_id == 8193 && IsClient()) { //This only works on player characters.
 							int32 mana_amount = floor(casterClient->GetMaxMana() * (0.03f * rank));
 							if (mana_amount < 1) mana_amount = 1;
-							if (casterClient != this) casterClient->Message(MT_FocusEffect, "Nature's Guardian %u gifted %i mana to %s.", rank, mana_amount, GetCleanName());
-							Message(MT_FocusEffect, "%s's Nature's Guardian %u gifted %i mana.", casterClient->GetCleanName(), rank, mana_amount);
+							if (casterClient != this) casterClient->Message(Chat::FocusEffect, "Nature's Guardian %u gifted %i mana to %s.", rank, mana_amount, GetCleanName());
+							Message(Chat::FocusEffect, "%s's Nature's Guardian %u gifted %i mana.", casterClient->GetCleanName(), rank, mana_amount);
 
 							entity_list.LogManaEvent(casterClient,this, mana_amount);
 							SetMana(GetMana() + mana_amount);
@@ -306,7 +306,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 
 							rank = casterClient->GetBuildRank(ROGUE, RB_ROG_MOSSSTONE);
 							if (rank > 0 && spell_id == 5225 && GetHPRatio() <= 20 && zone->random.Roll(20 * rank) && !HasSpellEffect(SE_MovementSpeed)) {
-								casterClient->Message(MT_NonMelee, "Moss Stone %u snares the target.", rank);
+								casterClient->Message(Chat::NonMelee, "Moss Stone %u snares the target.", rank);
 								this->AddBuff(caster, 242, 2);
 							}
 
@@ -371,7 +371,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 										(caster && (!caster->IsNPC() ||
 											(caster->IsNPC() && !RuleB(Spells, NPCIgnoreBaseImmunity))))))
 									{
-										caster->Message_StringID(MT_SpellFailure, IMMUNE_STUN);
+										caster->MessageString(Chat::SpellFailure, IMMUNE_STUN);
 									}
 									else {
 										if (caster->IsClient() && IsNPC()) {
@@ -628,8 +628,8 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 
 											healCount++;
 											amount = GetActSpellHealing(spell_id, amount, this);
-											if (this->GetID() == healTarget->GetID()) healTarget->Message(MT_Spells, "Rodcet's Gift %i healed you for %i hitpoints.", rank, amount);
-											else healTarget->Message(MT_Spells, "%s's Rodcet Gift %i healed you for %i hitpoints.", caster->GetCleanName(), rank, amount);
+											if (this->GetID() == healTarget->GetID()) healTarget->Message(Chat::Spells, "Rodcet's Gift %i healed you for %i hitpoints.", rank, amount);
+											else healTarget->Message(Chat::Spells, "%s's Rodcet Gift %i healed you for %i hitpoints.", caster->GetCleanName(), rank, amount);
 											healTarget->HealDamage(amount, caster);
 											healTotal += amount;
 										}
@@ -652,8 +652,8 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 
 												healCount++;
 												amount = GetActSpellHealing(spell_id, amount, this);
-												if (this->GetID() == healTarget->GetID()) healTarget->Message(MT_Spells, "Rodcet's Gift %i healed you for %i hitpoints.", rank, amount);
-												else healTarget->Message(MT_Spells, "%s's Rodcet Gift %i healed you for %i hitpoints.", caster->GetCleanName(), rank, amount);
+												if (this->GetID() == healTarget->GetID()) healTarget->Message(Chat::Spells, "Rodcet's Gift %i healed you for %i hitpoints.", rank, amount);
+												else healTarget->Message(Chat::Spells, "%s's Rodcet Gift %i healed you for %i hitpoints.", caster->GetCleanName(), rank, amount);
 												healTarget->HealDamage(amount, caster);
 												healTotal += amount;
 											}											
@@ -724,7 +724,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						}
 						caster->BuildEcho(StringFormat("Shocking Bolt %u added %i %s bonus damage.", rank, bonus_damage, (is_quad) ? "QUAD" : ""));
 						dmg += bonus_damage;
-						Damage(caster, dmg, spell_id, EQEmu::skills::SkillConjuration);
+						Damage(caster, dmg, spell_id, EQ::skills::SkillConjuration);
 						break;
 					}
 				}
@@ -832,7 +832,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					if (GetMana() < damage_amount) damage_amount = GetMana();
 					if (damage_amount > 0) {
 						caster->BuildEcho(StringFormat("Energy Burn %i dealt %i damage to %s.", rank, damage_amount, GetCleanName()));
-						Damage(caster, damage_amount, spell_id, EQEmu::skills::SkillAbjuration, true);
+						Damage(caster, damage_amount, spell_id, EQ::skills::SkillAbjuration, true);
 					}
 				}
 
@@ -1081,10 +1081,10 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					if (caster->CastToClient()->GetAggroCount() > 0) {
 						if (zone->random.Roll((int)(5 * CastToClient()->GetBuildRank(SHADOWKNIGHT, RB_SHD_CLOAKOFSHADOWS)))) {
 							caster->CastToClient()->Escape();
-							caster->Message(MT_FocusEffect, "You successfuly evaded your enemies by stepping into the shadows.");
+							caster->Message(Chat::FocusEffect, "You successfuly evaded your enemies by stepping into the shadows.");
 						}
 						else {
-							caster->Message(MT_FocusEffect, "You failed to evade your enemies by stepping into the shadows.");
+							caster->Message(Chat::FocusEffect, "You failed to evade your enemies by stepping into the shadows.");
 						}
 					}					
 				}
@@ -1229,7 +1229,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					rank = caster->GetBuildRank(SHADOWKNIGHT, RB_SHD_MENTALRESISTANCE);
 					if (rank > 0 && zone->random.Roll(2 * rank)) {
 						caster->BuildEcho(StringFormat("Mental Resistance %i resisted stun effect.", rank));
-						Message_StringID(MT_Stun, SHAKE_OFF_STUN);
+						MessageString(Chat::Stun, SHAKE_OFF_STUN);
 					}
 
 					if (stun_resist <= 0 || zone->random.Int(0,99) >= stun_resist) {
@@ -1262,7 +1262,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							caster->CastToClient()->GetBuildRank(PALADIN, RB_PAL_FRAIL) > 0 && //Has frail							
 							IsNPC() //target is an NPC							
 							) {
-							caster->Message(MT_Spells, "%s looks frail.", this->GetCleanName());
+							caster->Message(Chat::Spells, "%s looks frail.", this->GetCleanName());
 							caster->SpellFinished(1592, this);
 						}
 
@@ -1464,7 +1464,6 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					if (rank > 0) {
 						int stunDuration = zone->random.Int(0, rank);
 						if (stunDuration > 0) {
-							entity_list.MessageClose(this, true, 300, MT_Emote, "%s freezes in fear as nightmares of %s overwhelms them.", GetCleanName(), caster->GetCleanName());
 							BuildEcho(StringFormat("Nightmare %i stun %s for %i seconds.", rank, GetCleanName(), stunDuration));
 							Stun(1000 * stunDuration);
 						}
@@ -1698,8 +1697,8 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							}
 						}
 					}
-					if (cureCount > 0) Message(MT_Spells, "Purify Body %i cured %i negative effects.", rank, cureCount);
-					else Message(MT_Spells, "Purify Body %i failed to cure any negative effects.", rank);
+					if (cureCount > 0) Message(Chat::Spells, "Purify Body %i cured %i negative effects.", rank, cureCount);
+					else Message(Chat::Spells, "Purify Body %i failed to cure any negative effects.", rank);
 					break;
 				}
 				
@@ -1773,8 +1772,8 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 							}
 						}
 					}
-					if (cureCount > 0) Message(MT_Spells, "Purification %i cured %i negative effects.", rank, cureCount);
-					else Message(MT_Spells, "Purification %i failed to cure any negative effects.", rank);
+					if (cureCount > 0) Message(Chat::Spells, "Purification %i cured %i negative effects.", rank, cureCount);
+					else Message(Chat::Spells, "Purification %i failed to cure any negative effects.", rank);
 					break;
 				}
 				break;
@@ -2051,7 +2050,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 				if(rank > 0 && (spell_id == 4088 || spell_id == 4089 || spell_id == 4090)) {
 					int runeAmount = spells[spell_id].max[i] * (rank / 5.0f);
 					buffs[buffslot].melee_rune = spells[spell_id].max[i] + runeAmount;
-					caster->CastToClient()->Message(MT_Spells, "Ward of Vie %u has increased the ward by %i points of damage.", rank, runeAmount);
+					caster->CastToClient()->Message(Chat::Spells, "Ward of Vie %u has increased the ward by %i points of damage.", rank, runeAmount);
 				} else if(spell_id == 5914 && CastToClient()->GetBuildRank(MAGICIAN, RB_MAG_HEARTOFSTONE) > 0) {
 					buffs[buffslot].melee_rune = spells[spell_id].max[i] * (CastToClient()->GetBuildRank(MAGICIAN, RB_MAG_HEARTOFSTONE) / 5.0f);
 				} else if(spell_id == 21843 && CastToClient()->GetBuildRank(MAGICIAN, RB_MAG_HOSTINTHESHELL) > 0) {
@@ -2389,7 +2388,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 
 					if (zone->random.Int(0, 99) > spells[spell_id].base[i]) {
 						CastToClient()->SetFeigned(false);
-						entity_list.MessageClose_StringID(this, false, 200, 10, STRING_FEIGNFAILED, GetName());
+						entity_list.MessageCloseString(this, false, 200, 10, STRING_FEIGNFAILED, GetName());
 						} else {
 						CastToClient()->SetFeigned(true);
 						rank = GetBuildRank(MONK, RB_MNK_SLOWHEARTRATE);
@@ -2591,7 +2590,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 						} else if (caster) {
 							char level[4];
 							ConvertArray(effect_value, level);
-							caster->Message_StringID(MT_SpellFailure,
+							caster->MessageString(Chat::SpellFailure,
 													 SPELL_LEVEL_REQ, level);
 						}
 						else if (caster) {
@@ -2791,8 +2790,8 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 									if (healAmount < 0 || healAmount > 50000) {
 										healAmount = 1;
 									}
-									caster->Message(MT_Spells, "Purify Soul %u healed your target for %i.", rank, healAmount);
-									Message(MT_Spells, "Purify Soul has healed you for %i.", healAmount);
+									caster->Message(Chat::Spells, "Purify Soul %u healed your target for %i.", rank, healAmount);
+									Message(Chat::Spells, "Purify Soul has healed you for %i.", healAmount);
 									HealDamage(healAmount, caster);
 								}
 							}
@@ -2835,8 +2834,8 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 									if (healAmount < 0 || healAmount > 50000) {
 										healAmount = 1;
 									}
-									caster->Message(MT_Spells, "Purify Soul %u healed your target for %i.", rank, healAmount);
-									Message(MT_Spells, "Purify Soul has healed you for %i.", healAmount);
+									caster->Message(Chat::Spells, "Purify Soul %u healed your target for %i.", rank, healAmount);
+									Message(Chat::Spells, "Purify Soul has healed you for %i.", healAmount);
 									HealDamage(healAmount, caster);
 								}
 							}
@@ -2881,8 +2880,8 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 									if (healAmount < 0 || healAmount > 50000) {
 										healAmount = 1;
 									}
-									caster->Message(MT_Spells, "Purify Soul %u healed your target for %i.", rank, healAmount);
-									Message(MT_Spells, "Purify Soul has healed you for %i.", healAmount);
+									caster->Message(Chat::Spells, "Purify Soul %u healed your target for %i.", rank, healAmount);
+									Message(Chat::Spells, "Purify Soul has healed you for %i.", healAmount);
 									HealDamage(healAmount, caster);
 								}
 							}
@@ -2926,8 +2925,8 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 									if (healAmount < 0 || healAmount > 50000) {
 										healAmount = 1;
 									}
-									caster->Message(MT_Spells, "Purify Soul %u healed your target for %i.", rank, healAmount);
-									Message(MT_Spells, "Purify Soul has healed you for %i.", healAmount);
+									caster->Message(Chat::Spells, "Purify Soul %u healed your target for %i.", rank, healAmount);
+									Message(Chat::Spells, "Purify Soul has healed you for %i.", healAmount);
 									HealDamage(healAmount, caster);
 								}
 							}
@@ -3928,7 +3927,7 @@ bool Mob::SpellEffect(Mob* caster, uint16 spell_id, float partial, int level_ove
 					if (rank > 0 && maxInfect > 0) {		
 						int infect_count = caster->hate_list.InfectNearby(caster, spell_id, (5 * rank), this, maxInfect);
 						if (infect_count > 0) {
-							caster->Message(MT_FocusEffect, "Blessing of Ro %u spread to %i nearby enemies.", rank, infect_count);
+							caster->Message(Chat::FocusEffect, "Blessing of Ro %u spread to %i nearby enemies.", rank, infect_count);
 						}
 					}					
 					break;
@@ -4450,7 +4449,7 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 					if (rank > 0 && buff.spellid == 8048) {
 						bonus_damage = -effect_value;
 						bonus_damage *= floor(rank * 5);
-						caster_client->Message(MT_DoTDamage, "Focused Swarm %u caused %i bonus damage to %s.", rank, bonus_damage, GetCleanName());
+						caster_client->Message(Chat::DotDamage, "Focused Swarm %u caused %i bonus damage to %s.", rank, bonus_damage, GetCleanName());
 						effect_value -= bonus_damage;
 					}
 
@@ -4613,8 +4612,8 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 					}
 
 					if (amount_healed > 0) { //if any healing was done, display
-						if (caster != this) caster->Message(MT_NonMelee, "Convergence of Spirits %u healed for %i points of damage.", rank, amount_healed);
-						Message(MT_FocusEffect, "Convergence of Spirits %u healed for %i points of damage.", rank, amount_healed);
+						if (caster != this) caster->Message(Chat::NonMelee, "Convergence of Spirits %u healed for %i points of damage.", rank, amount_healed);
+						Message(Chat::FocusEffect, "Convergence of Spirits %u healed for %i points of damage.", rank, amount_healed);
 						HealDamage(amount_healed, caster);
 
 						rank = caster->CastToClient()->GetBuildRank(DRUID, RB_DRU_NATURESWHISPER);
@@ -4626,7 +4625,7 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 								entity_list.LogManaEvent(caster, caster, mana_amount);
 								caster->SetMana(caster->GetMana() + mana_amount);
 							}
-							Message(MT_FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
+							Message(Chat::FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
 							entity_list.LogManaEvent(caster, this, mana_amount);
 							SetMana(GetMana() + mana_amount);
 							
@@ -4651,7 +4650,7 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 					}
 
 					if (amount_healed > 0) { //if any healing was done, display
-						if (caster != this) caster->Message(MT_NonMelee, "Nature's Boon %u healed for %i points of damage.", rank, amount_healed);
+						if (caster != this) caster->Message(Chat::NonMelee, "Nature's Boon %u healed for %i points of damage.", rank, amount_healed);
 						BuildEcho(StringFormat("Nature's Boon %u healed for %i points of damage.", rank, amount_healed));
 						HealDamage(amount_healed, caster);
 
@@ -4660,11 +4659,11 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 							int32 mana_amount = floor(amount_healed * (0.01f * rank));
 							if (mana_amount < 1) mana_amount = 1;
 							if (caster != this) {
-								caster->Message(MT_FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
+								caster->Message(Chat::FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
 								entity_list.LogManaEvent(caster, caster, mana_amount);
 								caster->SetMana(caster->GetMana() + mana_amount);
 							}
-							Message(MT_FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
+							Message(Chat::FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
 							entity_list.LogManaEvent(caster, this, mana_amount);
 							SetMana(GetMana() + mana_amount);							
 						}
@@ -4680,7 +4679,7 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 						if (!IsValidSpell(buffs[j].spellid))
 							continue;
 						if (CalculatePoisonCounters(buffs[j].spellid) > 0) {
-							caster->Message(MT_Spells, "You have cured your target of %s!", spells[buffs[j].spellid].name);
+							caster->Message(Chat::Spells, "You have cured your target of %s!", spells[buffs[j].spellid].name);
 							caster->CastOnCurer(buffs[j].spellid);
 							CastOnCure(buffs[j].spellid);
 							buffs[j].counters = 0;
@@ -4688,7 +4687,7 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 							break;
 						}
 						if (CalculateCorruptionCounters(buffs[j].spellid) > 0) {
-							caster->Message(MT_Spells, "You have cured your target of %s!", spells[buffs[j].spellid].name);
+							caster->Message(Chat::Spells, "You have cured your target of %s!", spells[buffs[j].spellid].name);
 							caster->CastOnCurer(buffs[j].spellid);
 							CastOnCure(buffs[j].spellid);
 							buffs[j].counters = 0;
@@ -4696,7 +4695,7 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 							break;
 						}
 						if (CalculateDiseaseCounters(buffs[j].spellid) > 0) {
-							caster->Message(MT_Spells, "You have cured your target of %s!", spells[buffs[j].spellid].name);
+							caster->Message(Chat::Spells, "You have cured your target of %s!", spells[buffs[j].spellid].name);
 							caster->CastOnCurer(buffs[j].spellid);
 							CastOnCure(buffs[j].spellid);
 							buffs[j].counters = 0;
@@ -4704,7 +4703,7 @@ void Mob::DoBuffTic(const Buffs_Struct &buff, int slot, Mob *caster)
 							break;
 						}
 						if (CalculateCurseCounters(buffs[j].spellid) > 0) {
-							caster->Message(MT_Spells, "You have cured your target of %s!", spells[buffs[j].spellid].name);
+							caster->Message(Chat::Spells, "You have cured your target of %s!", spells[buffs[j].spellid].name);
 							caster->CastOnCurer(buffs[j].spellid);
 							CastOnCure(buffs[j].spellid);
 							buffs[j].counters = 0;
@@ -5303,8 +5302,8 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 			}
 
 			if (amount_healed > 0) { //if any healing was done, display
-				if (p != this) p->Message(MT_FocusEffect, "Convergence of Spirits %u healed for %i points of damage.", rank, amount_healed);
-				Message(MT_FocusEffect, "Convergence of Spirits %u healed for %i points of damage.", rank, amount_healed);
+				if (p != this) p->Message(Chat::FocusEffect, "Convergence of Spirits %u healed for %i points of damage.", rank, amount_healed);
+				Message(Chat::FocusEffect, "Convergence of Spirits %u healed for %i points of damage.", rank, amount_healed);
 				HealDamage(amount_healed, p);
 
 				rank = p->CastToClient()->GetBuildRank(DRUID, RB_DRU_NATURESWHISPER);
@@ -5312,11 +5311,11 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 
 					int32 mana_amount = floor(amount_healed * (0.01f * rank));
 					if (mana_amount < 1) mana_amount = 1;
-					Message(MT_FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
+					Message(Chat::FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
 					entity_list.LogManaEvent(this, this, mana_amount);
 					SetMana(GetMana() + mana_amount);
 					if (p != this) {
-						p->Message(MT_FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
+						p->Message(Chat::FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
 						entity_list.LogManaEvent(this, this, mana_amount);
 						p->SetMana(p->GetMana() + mana_amount);
 					}
@@ -5344,14 +5343,14 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 		if (buffs[slot].ticsremaining > 0) {
 			int elapsed = max_duration - buffs[slot].ticsremaining;
 			reducer = (float)elapsed / (float)max_duration;
-			Message(MT_WornOff, "Nature's Boon %u faded before running it's course, healing only for %.3f%% percent of it's potential.", p->CastToClient()->GetBuildRank(DRUID, RB_DRU_NATURESBOON), reducer);
+			Message(Chat::SpellWornOff, "Nature's Boon %u faded before running it's course, healing only for %.3f%% percent of it's potential.", p->CastToClient()->GetBuildRank(DRUID, RB_DRU_NATURESBOON), reducer);
 		}
 
 		amount_healed *= reducer;
 
 		if (amount_healed > 0) { //if any healing was done, display
-			if (p != this) p->Message(MT_FocusEffect, "Nature's Boon %u healed for %i points of damage.", rank, amount_healed);
-			Message(MT_FocusEffect, "Nature's Boon %u healed for %i points of damage.", rank, amount_healed);
+			if (p != this) p->Message(Chat::FocusEffect, "Nature's Boon %u healed for %i points of damage.", rank, amount_healed);
+			Message(Chat::FocusEffect, "Nature's Boon %u healed for %i points of damage.", rank, amount_healed);
 			HealDamage(amount_healed, p);
 
 			rank = p->CastToClient()->GetBuildRank(DRUID, RB_DRU_NATURESWHISPER);
@@ -5359,11 +5358,11 @@ void Mob::BuffFadeBySlot(int slot, bool iRecalcBonuses)
 
 				int32 mana_amount = floor(amount_healed * 0.01f * rank);
 				if (mana_amount < 1) mana_amount = 1;
-				Message(MT_FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
+				Message(Chat::FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
 				entity_list.LogManaEvent(this, this, mana_amount);
 				SetMana(GetMana() + mana_amount);
 				if (p != this) {
-					p->Message(MT_FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
+					p->Message(Chat::FocusEffect, "Nature's Whisper %u gifted %i mana.", rank, mana_amount);
 					entity_list.LogManaEvent(p, p, mana_amount);
 					p->SetMana(p->GetMana() + mana_amount);
 				}
@@ -7207,7 +7206,7 @@ bool Mob::TryDeathSave() {
 						entity_list.LogHPEvent(buff_client, this, HealAmt);
 						SetHP((GetHP() + HealAmt));
 						Message(263, "The gods have healed you for %i points of damage.", HealAmt);
-						entity_list.MessageClose_StringID(this, false, 200, MT_CritMelee, DIVINE_INTERVENTION, GetCleanName());
+						entity_list.MessageCloseString(this, false, 200, Chat::MeleeCrit, DIVINE_INTERVENTION, GetCleanName());
 						SendHPUpdate();
 						BuffFadeBySpellID(8192);
 						BuffFadeBySpellID(16794);

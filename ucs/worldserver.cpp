@@ -56,7 +56,8 @@ WorldServer::~WorldServer()
 {
 }
 
-void WorldServer::ProcessMessage(uint16 opcode, EQ::Net::Packet &p) {
+void WorldServer::ProcessMessage(uint16 opcode, EQ::Net::Packet &p)
+{
 	ServerPacket tpack(opcode, p);
 	ServerPacket *pack = &tpack;
 
@@ -87,22 +88,14 @@ void WorldServer::ProcessMessage(uint16 opcode, EQ::Net::Packet &p) {
 
 		safe_delete_array(From);
 
+		if (Message.length() < 2)
 			break;
-		}
 
 		if (!c)
 		{
 			LogInfo("Client not found");
 			break;
 		}
-	}
-}
-
-void Client45ToServerSayLink(std::string& serverSayLink, const std::string& clientSayLink) {
-	if (clientSayLink.find('\x12') == std::string::npos) {
-		serverSayLink = clientSayLink;
-		return;
-	}
 
 		if (Message[0] == ';')
 		{
@@ -127,44 +120,24 @@ void Client45ToServerSayLink(std::string& serverSayLink, const std::string& clie
 
 			c->SendChannelMessageByNumber(new_message);
 		}
-		else {
-			serverSayLink.append(segments[segment_iter]);
+		else if (Message[0] == '[')
+		{
+			g_Clientlist->ProcessOPMailCommand(c, Message.substr(1, std::string::npos));
 		}
-	}
-}
 
-void Client50ToServerSayLink(std::string& serverSayLink, const std::string& clientSayLink) {
-	if (clientSayLink.find('\x12') == std::string::npos) {
-		serverSayLink = clientSayLink;
-		return;
+		break;
 	}
 
-	auto segments = SplitString(clientSayLink, '\x12');
-
-	for (size_t segment_iter = 0; segment_iter < segments.size(); ++segment_iter) {
-		if (segment_iter & 1) {
-			if (segments[segment_iter].length() <= 50) {
-				serverSayLink.append(segments[segment_iter]);
-				// TODO: log size mismatch error
-				continue;
-			}
-
-			// Idx:  0 1     6     11    16    21    26          31 32    36 37    42       (Source)
-			// SoF:  X XXXXX XXXXX XXXXX XXXXX XXXXX XXXXX       X  XXXX  X  XXXXX XXXXXXXX (50)
-			// RoF2: X XXXXX XXXXX XXXXX XXXXX XXXXX XXXXX XXXXX X  XXXX XX  XXXXX XXXXXXXX (56)
-			// Diff:                                       ^^^^^         ^
-
-			serverSayLink.push_back('\x12');
-			serverSayLink.append(segments[segment_iter].substr(0, 31));
-			serverSayLink.append("00000");
-			serverSayLink.append(segments[segment_iter].substr(31, 5));
-			serverSayLink.push_back('0');
-			serverSayLink.append(segments[segment_iter].substr(36));
-			serverSayLink.push_back('\x12');
-		}
-		else {
-			serverSayLink.append(segments[segment_iter]);
-		}
+	case ServerOP_UCSMailMessage:
+	{
+		ServerMailMessageHeader_Struct *mail = (ServerMailMessageHeader_Struct*)pack->pBuffer;
+		database.SendMail(std::string("SOE.EQ.") + Config->ShortName + std::string(".") + std::string(mail->to),
+			std::string(mail->from),
+			mail->subject,
+			mail->message,
+			std::string());
+		break;
+	}
 	}
 }
 

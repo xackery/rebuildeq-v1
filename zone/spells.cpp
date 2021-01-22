@@ -1371,7 +1371,6 @@ void Mob::CastedSpellFinished(uint16 spell_id, uint32 target_id, CastingSlot slo
 							LogSpells("Spell [{}]: Canceled. Missing required reagent [{}] ([{}])", spell_id, TempItemName, component);
 						}
 					}
-					*/
 					//Commented out missingreags
 					missingreags = false;
 				} // end bard/not bard ifs
@@ -2769,8 +2768,8 @@ bool Mob::SpellFinished(uint16 spell_id, Mob *spell_target, CastingSlot slot, ui
 					if (dist2 > range2) continue;
 
 					manaCount++;
-					if (this->GetID() == groupMember->GetID()) groupMember->Message(MT_Spells, "Blood Realm %i granted you %i mana.", rank, amount);
-					else groupMember->Message(MT_Spells, "%s's Blood Realm %i granted you %i mana.", GetCleanName(), rank, amount);
+					if (this->GetID() == groupMember->GetID()) groupMember->Message(Chat::Spells, "Blood Realm %i granted you %i mana.", rank, amount);
+					else groupMember->Message(Chat::Spells, "%s's Blood Realm %i granted you %i mana.", GetCleanName(), rank, amount);
 					groupMember->SetMana(groupMember->GetMana() + amount);
 					manaTotal += amount;
 				}
@@ -3701,7 +3700,7 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
 
 				if (rank > 0 && isAffected) {
 					const int bonus = floor(duration * 0.2f * rank);
-					caster_client->Message(MT_FocusEffect, "Spirit of Speed increased duration by %i seconds.", bonus * 6);
+					caster_client->Message(Chat::FocusEffect, "Spirit of Speed increased duration by %i seconds.", bonus * 6);
 					duration += bonus;
 				}
 			}
@@ -3720,7 +3719,7 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
 
 				if (rank > 0 && isAffected) {
 					const int bonus = floor(duration * 0.3f * rank);
-					caster_client->Message(MT_FocusEffect, "Extended Haste increased duration by %i seconds.", bonus * 6);
+					caster_client->Message(Chat::FocusEffect, "Extended Haste increased duration by %i seconds.", bonus * 6);
 					duration += bonus;
 				}
 			}
@@ -3747,7 +3746,7 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
 
 				if (rank > 0 && isAffected) {
 					const int bonus = rank;
-					caster_client->Message(MT_FocusEffect, "Fury increased duration by %i seconds.", bonus * 6);
+					caster_client->Message(Chat::FocusEffect, "Fury increased duration by %i seconds.", bonus * 6);
 					duration += bonus;
 				}
 			}
@@ -3770,7 +3769,7 @@ int Mob::AddBuff(Mob *caster, uint16 spell_id, int duration, int32 level_overrid
 
 				if (rank > 0 && isAffected) {
 					const int bonus = floor(duration * 0.05f * rank);
-					caster_client->Message(MT_FocusEffect, "Extended Turgur increased duration by %i seconds.", bonus * 6);
+					caster_client->Message(Chat::FocusEffect, "Extended Turgur increased duration by %i seconds.", bonus * 6);
 					duration += bonus;
 				}
 			}
@@ -4974,7 +4973,7 @@ bool Mob::IsImmuneToSpell(uint16 spell_id, Mob *caster)
 				   (rank == 5 && GetLevel() > caster->CastToClient()->GetLevel() - 5)
 				) {
 					Log(Logs::Detail, Logs::Spells, "Our level (%d) is higher than the limit of this Charm spell (%d)", GetLevel(), spells[spell_id].max[effect_index]);
-                    caster->Message_StringID(MT_Shout, CANNOT_CHARM_YET);
+                    caster->MessageString(Chat::Shout, CANNOT_CHARM_YET);
                     caster->CastToClient()->ResetAlternateAdvancementTimer(aaDireCharm);
 					caster->CastToClient()->ResetAlternateAdvancementTimer(aaDireCharm2);
                     return true;

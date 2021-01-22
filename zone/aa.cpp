@@ -1505,7 +1505,7 @@ void Client::ActivateAlternateAdvancementAbility(int rank_id, int target_id) {
 		rb_rank = GetBuildRank(ROGUE, RB_ROG_APPRAISAL);
 		if (rb_rank) {
 			AddBuff(this, 271, rb_rank);
-			if (IsClient() && CastToClient()->ClientVersionBit() & EQEmu::versions::bit_UFAndLater)
+			if (IsClient() && CastToClient()->ClientVersionBit() & EQ::versions::maskUFAndLater)
 			{
 				EQApplicationPacket *outapp = MakeBuffsPacket(false);
 				CastToClient()->FastQueuePacket(&outapp);

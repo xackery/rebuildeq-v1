@@ -1606,7 +1606,7 @@ void Mob::ApplySpellsBonuses(uint16 spell_id, uint8 casterlevel, StatBonuses *ne
 		uint32 rank = CastToClient()->GetBuildRank(CLERIC, RB_CLR_HARKENTHEGODS);
 		if(rank > 0 && (spell_id == 210 || spell_id == 43 || spell_id == 44 || spell_id == 1534 || spell_id == 2326)) {
 			new_bonus->ATK += (5 * rank);// ATK, 5 per rank
-			new_bonus->Accuracy[EQEmu::skills::HIGHEST_SKILL + 1] = (5 * rank); // Accuracy, 5 per rank
+			new_bonus->Accuracy[EQ::skills::HIGHEST_SKILL + 1] = (5 * rank); // Accuracy, 5 per rank
 			new_bonus->ManaRegen += (1 * rank); // Mana Regen, 1 per tick per rank
 		}
 

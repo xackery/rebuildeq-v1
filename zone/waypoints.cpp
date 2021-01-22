@@ -565,7 +565,6 @@ void NPC::AssignWaypoints(int32 grid_id, int start_wp)
 {
 	if (grid_id == 0)
 		return; // grid ID 0 not supported
-	}
 
 	if (grid_id < 0) {
 		// Allow setting negative grid values for pausing pathing
@@ -642,7 +641,7 @@ void Mob::SendTo(float new_x, float new_y, float new_z) {
 
 	//fix up pathing Z, this shouldent be needed IF our waypoints
 	//are corrected instead
-	if (zone->HasMap() && RuleB(EQMap, FixPathingZOnSendTo))
+	if (zone->HasMap() && RuleB(Map, FixPathingZOnSendTo))
 	{
 		if (!RuleB(Watermap, CheckForWaterOnSendTo) || !zone->HasWaterMap() ||
 			(zone->HasWaterMap() && !zone->watermap->InWater(glm::vec3(m_Position))))
@@ -653,7 +652,7 @@ void Mob::SendTo(float new_x, float new_y, float new_z) {
 
 			LogAI("BestZ returned {} at {}, {}, {}", newz, m_Position.x, m_Position.y, m_Position.z);
 
-			if ((newz > -2000) && std::abs(newz - dest.z) < RuleR(EQMap, FixPathingZMaxDeltaSendTo)) // Sanity check.
+			if ((newz > -2000) && std::abs(newz - dest.z) < RuleR(Map, FixPathingZMaxDeltaSendTo)) // Sanity check.
 				m_Position.z = newz + 1;
 		}
 	}
@@ -670,7 +669,7 @@ void Mob::SendToFixZ(float new_x, float new_y, float new_z) {
 	m_Position.y = new_y;
 	m_Position.z = new_z + 0.1;
 
-	if (zone->HasMap() && RuleB(EQMap, FixPathingZOnSendTo))
+	if (zone->HasMap() && RuleB(Map, FixPathingZOnSendTo))
 	{
 		if (!RuleB(Watermap, CheckForWaterOnSendTo) || !zone->HasWaterMap() ||
 			(zone->HasWaterMap() && !zone->watermap->InWater(glm::vec3(m_Position))))
@@ -681,7 +680,7 @@ void Mob::SendToFixZ(float new_x, float new_y, float new_z) {
 
 			LogPathing("BestZ returned [{}] at [{}], [{}], [{}]", newz, m_Position.x, m_Position.y, m_Position.z);
 
-			if ((newz > -2000) && std::abs(newz - dest.z) < RuleR(EQMap, FixPathingZMaxDeltaSendTo)) // Sanity check.
+			if ((newz > -2000) && std::abs(newz - dest.z) < RuleR(Map, FixPathingZMaxDeltaSendTo)) // Sanity check.
 				m_Position.z = newz + 1;
 		}
 	}
@@ -865,9 +864,6 @@ float Mob::GetZOffset() const {
 		default:
 			offset = 3.125f;
 	}
-	float mob_size = (GetSize() > 0 ? GetSize() : GetDefaultRaceSize());
-	return static_cast<float>(0.2 * mob_size * offset);
-}
 
 	float mob_size = (GetSize() > 0 ? GetSize() : GetDefaultRaceSize());
 

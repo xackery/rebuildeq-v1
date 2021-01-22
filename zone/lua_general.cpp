@@ -917,22 +917,6 @@ int lua_get_currency_item_id(int currency_id) {
 	return quest_manager.getcurrencyitemid(currency_id);
 }
 
-std::string lua_get_data(std::string bucket_key) {
-	return DataBucket::GetData(bucket_key);
-}
-
-void lua_set_data(std::string bucket_key, std::string bucket_value) {
-	DataBucket::SetData(bucket_key, bucket_value);
-}
-
-void lua_set_data(std::string bucket_key, std::string bucket_value, std::string expires_at) {
-	DataBucket::SetData(bucket_key, bucket_value, expires_at);
-}
-
-bool lua_delete_data(std::string bucket_key) {
-	return DataBucket::DeleteData(bucket_key);
-}
-
 const char *lua_get_guild_name_by_id(uint32 guild_id) {
 	return quest_manager.getguildnamebyid(guild_id);
 }

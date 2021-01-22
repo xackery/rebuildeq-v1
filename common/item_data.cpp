@@ -227,7 +227,7 @@ bool EQ::ItemData::CheckLoreConflict(const ItemData* l_item, const ItemData* r_i
 }
 
 
-int EQEmu::ItemData::GetItemScore() const
+int EQ::ItemData::GetItemScore() const
 {
 	int itemScore = 0;
 	auto item = this;
