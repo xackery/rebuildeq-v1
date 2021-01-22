@@ -449,11 +449,11 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 			if (GetMana() > manaAmount) { //If I have enough mana
 				entity_list.LogManaEvent(this, this, -manaAmount);
 				SetMana((GetMana() - manaAmount)); //Take it from my bar
-				CastToClient()->Message(MT_NonMelee, "You have transferred %i mana to %s", manaAmount, target->GetCleanName());
+				CastToClient()->Message(Chat::NonMelee, "You have transferred %i mana to %s", manaAmount, target->GetCleanName());
 				entity_list.LogManaEvent(this, target, manaAmount);
 				target->SetMana((target->GetMana() + manaAmount)); //Give it to target
 				if (target->IsClient()) {
-					target->CastToClient()->Message(MT_NonMelee, "%s transferred %i mana to you.", target->GetCleanName(), manaAmount);
+					target->CastToClient()->Message(Chat::NonMelee, "%s transferred %i mana to you.", target->GetCleanName(), manaAmount);
 				}
 			}
 		}
@@ -474,7 +474,7 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 		rank = CastToClient()->GetBuildRank(CLERIC, RB_CLR_INSTILLLIFE);
 		if (IsClient() && rank > 0 && zone->random.Roll(int(2 * rank))) {
 			int healAmount = floor(target->GetMaxHP() * 0.02f * rank);
-			CastToClient()->Message(MT_Spells, "Instill Life %u gave a bonus %i healing.", rank, healAmount);
+			CastToClient()->Message(Chat::Spells, "Instill Life %u gave a bonus %i healing.", rank, healAmount);
 			value += healAmount;
 		}
 
@@ -491,14 +491,14 @@ int32 Mob::GetActSpellHealing(uint16 spell_id, int32 value, Mob* target) {
 		rank = CastToClient()->GetBuildRank(DRUID, RB_DRU_CONVERGENCEOFSPIRITS);
 		if (IsClient() && rank > 0) {			
 			int healAmount = floor(value * 0.05f * rank);
-			CastToClient()->Message(MT_Spells, "Convergence of Spirits %u gave a bonus %i healing.", rank, healAmount);
+			CastToClient()->Message(Chat::Spells, "Convergence of Spirits %u gave a bonus %i healing.", rank, healAmount);
 			value += healAmount;
 		}
 
 		rank = CastToClient()->GetBuildRank(DRUID, RB_DRU_NATURESBOON);
 		if (IsClient() && rank > 0) {			
 			int healAmount = floor(value * 0.05f * rank);
-			CastToClient()->Message(MT_Spells, "Nature's Boon %u gave a bonus %i healing.", rank, healAmount);
+			CastToClient()->Message(Chat::Spells, "Nature's Boon %u gave a bonus %i healing.", rank, healAmount);
 			value += healAmount;
 		}
 

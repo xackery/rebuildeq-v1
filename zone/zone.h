@@ -179,6 +179,17 @@ public:
 	int SaveTempItem(uint32 merchantid, uint32 npcid, uint32 item, int32 charges, bool sold = false);
 	int32 MobsAggroCount() { return aggroedmobs; }
 	DynamicZone GetDynamicZone();
+	//Creates a unique session hash using zone->random.Int
+	std::string CreateSessionHash() {
+		std::string hash;
+		static char hex[] = "0123456789ABCDEF";
+
+		for (size_t i = 0; i < 32; i++)
+		{
+			hash += hex[this->random.Int(0, 15)];
+		}
+		return hash;
+	}
 
 	IPathfinder                                   *pathing;
 	LinkedList<NPC_Emote_Struct *>                NPCEmoteList;

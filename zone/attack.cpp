@@ -357,7 +357,7 @@ bool Mob::CheckHitChance(Mob* other, DamageHitInfo &hit)
 
 	//Evade once bonus mechanics
 	if (IsClient() && tohit_roll <= chancetohit && other && CastToClient()->DoEvadeOnce()) {
-		Message(MT_OtherMissesYou, "At the last second, you EVADE %s's attack!", other->GetCleanName());
+		Message(Chat::OtherMissesYou, "At the last second, you EVADE %s's attack!", other->GetCleanName());
 		chancetohit = tohit_roll + 1;
 	}
 	*/
@@ -1658,7 +1658,7 @@ bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, b
 			}
 
 			rank = GetBuildRank(BARD, RB_BRD_OFFHANDATTACK);
-			if (Hand == EQEmu::invslot::slotSecondary && IsClient() && rank > 0) {
+			if (Hand == EQ::invslot::slotSecondary && IsClient() && rank > 0) {
 				hit_chance_bonus = int(my_hit.tohit * 0.05f * rank);
 				if (hit_chance_bonus < 1) hit_chance_bonus = 1;
 				DebugEcho(StringFormat("Offhand Attack %i chance to hit increased from %i to %i.", rank, my_hit.tohit, my_hit.tohit+hit_chance_bonus));
@@ -1717,10 +1717,10 @@ bool Client::Attack(Mob* other, int Hand, bool bRiposte, bool IsStrikethrough, b
 	}
 }
 
-bool Client::BuildProcCalc(float chance, int Hand, Mob* other, int proc_damage, EQEmu::skills::SkillType skillinuse) {
+bool Client::BuildProcCalc(float chance, int Hand, Mob* other, int proc_damage, EQ::skills::SkillType skillinuse) {
 	chance = GetProcChances(chance, Hand);
 
-	if (Hand != EQEmu::invslot::slotPrimary) //Is Archery intened to proc at 50% rate?
+	if (Hand != EQ::invslot::slotPrimary) //Is Archery intened to proc at 50% rate?
 		chance /= 2;
 
 	if (!(other->IsClient() && other->CastToClient()->dead) && zone->random.Roll(chance)) {
@@ -1773,7 +1773,7 @@ void Client::Damage(Mob* other, int32 damage, uint16 spell_id, EQ::skills::Skill
 
 		// Damage the pet
 		if(pet_damage > 0) {
-			Message(MT_DoTDamage, "Shared Health has caused %d incoming damage from %s to be shielded by %s.", pet_damage, other->GetCleanName(), GetPet()->GetCleanName());
+			Message(Chat::DotDamage, "Shared Health has caused %d incoming damage from %s to be shielded by %s.", pet_damage, other->GetCleanName(), GetPet()->GetCleanName());
 			GetPet()->CastToNPC()->Damage(other, pet_damage, spell_id, attack_skill, avoidable, buffslot, iBuffTic, special);
 		}
 	} else {
@@ -2616,16 +2616,16 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 
 		float my_dps_loss = (float)((float)my_hp_self_loss_net / cur_engage_duration);
 		float my_dps_target_loss = (float)((float)my_hp_target_loss_net / cur_engage_duration);
+		
+		//adminMessage.append(StringFormat("%s [T%i] DPS Report %d seconds, killed in %s\n", GetCleanName(), GetTier(), cur_engage_duration, StaticGetZoneName(zone->GetZoneID())));
+		//adminMessage.append(StringFormat("- dealt %i damage (%.1f DPS)\n", my_hp_self_loss_net, my_dps_loss));
+		//adminMessage.append(StringFormat("- took %i damage (%.1f DPS)\n", my_hp_target_loss_net, my_dps_target_loss));
+		//adminMessage.append(StringFormat("------ Participants ----------\n"));
 
-		adminMessage.append(StringFormat("%s [T%i] DPS Report %d seconds, killed in %s\n", GetCleanName(), GetTier(), cur_engage_duration, database.GetZoneName(zone->GetZoneID())));
-		adminMessage.append(StringFormat("- dealt %i damage (%.1f DPS)\n", my_hp_self_loss_net, my_dps_loss));
-		adminMessage.append(StringFormat("- took %i damage (%.1f DPS)\n", my_hp_target_loss_net, my_dps_target_loss));
-		adminMessage.append(StringFormat("------ Participants ----------\n"));
-
-		c->Message(MT_CritMelee, "------ %s DPS Report %d seconds ----------", GetCleanName(), cur_engage_duration);
-		c->Message(MT_CritMelee, "- dealt %i damage (%.1f DPS)", my_hp_self_loss_net, my_dps_loss);
-		c->Message(MT_CritMelee, "- took %i damage (%.1f DPS)", my_hp_target_loss_net, my_dps_target_loss);
-		c->Message(MT_CritMelee, "------ Participants ----------");
+		c->Message(Chat::MeleeCrit, "------ %s DPS Report %d seconds ----------", GetCleanName(), cur_engage_duration);
+		c->Message(Chat::MeleeCrit, "- dealt %i damage (%.1f DPS)", my_hp_self_loss_net, my_dps_loss);
+		c->Message(Chat::MeleeCrit, "- took %i damage (%.1f DPS)", my_hp_target_loss_net, my_dps_target_loss);
+		c->Message(Chat::MeleeCrit, "------ Participants ----------");
 		for (auto&& d : DPS()) {
 			if (d.ent_id == GetID()) { //if it's me
 				continue;
@@ -2636,7 +2636,7 @@ bool NPC::Death(Mob* killer_mob, int32 damage, uint16 spell, EQ::skills::SkillTy
 			cur_hps_dealt = (float)((float)d.hp_target_gain_net / cur_engage_duration);
 
 			if (!c->GetEPP().use_full_dps && c->GetID() != d.ent_id) continue; //Don't show DPS if self only is flagged
-			c->Message(MT_CritMelee, "- %s: %i damage (%.1f DPS)", d.character_name.c_str(), d.hp_target_loss_net, cur_dps);
+			c->Message(Chat::MeleeCrit, "- %s: %i damage (%.1f DPS)", d.character_name.c_str(), d.hp_target_loss_net, cur_dps);
 			adminMessage.append(StringFormat("- %s: %i damage (%.1f DPS)\n", d.character_name.c_str(), d.hp_target_loss_net, cur_dps));
 		}
 		++iterator;
@@ -3900,7 +3900,7 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 	}
 
 	// this should actually happen MUCH sooner, need to investigate though -- good enough for now
-	if ((skill_used == EQEmu::skills::SkillArchery || skill_used == EQEmu::skills::SkillThrowing) && GetSpecialAbility(IMMUNE_RANGED_ATTACKS)) {
+	if ((skill_used == EQ::skills::SkillArchery || skill_used == EQ::skills::SkillThrowing) && GetSpecialAbility(IMMUNE_RANGED_ATTACKS)) {
 		Log(Logs::Detail, Logs::Combat, "Avoiding %d damage due to IMMUNE_RANGED_ATTACKS.", damage);
 		damage = DMG_INVULNERABLE;
 	}
@@ -3915,7 +3915,7 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 			attacker->WipeHateList();
 			if (attacker->GetTarget() != nullptr) {
 				attacker->SetTarget(nullptr);
-				attacker->Say_StringID(MT_PetResponse, PET_CALMING);
+				if (attacker->GetOwner() && attacker->GetOwner()->IsClient()) attacker->GetOwner()->CastToClient()->SayString(attacker->GetOwner()->CastToClient(), Chat::PetResponse, PET_CALMING);
 			}
 			return;
 		}
@@ -4092,7 +4092,7 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 						if (groupSize < aggroCap) aggroCap = groupSize;
 						int healBonus = floor(healed * 0.05f * floor(attacker->CastToClient()->GetAggroCount()) * attacker->CastToClient()->GetAggroCount());
 						if (healBonus < 1) healBonus = aggroCap * rank;
-						attacker->CastToClient()->Message(MT_NonMelee, "Hungering Aura %u with %i enemies added %i bonus healing.", rank, attacker->CastToClient()->GetAggroCount(), healBonus);
+						attacker->CastToClient()->Message(Chat::NonMelee, "Hungering Aura %u with %i enemies added %i bonus healing.", rank, attacker->CastToClient()->GetAggroCount(), healBonus);
 						healed += healBonus;
 					}
 				}
@@ -4152,26 +4152,19 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 				healed = attacker->GetActSpellHealing(spell_id, healed);
 				LogCombat("Applying lifetap heal of [{}] to [{}]", healed, attacker->GetName());
 				attacker->HealDamage(healed);
-
-				//we used to do a message to the client, but its gone now.
-				// emote goes with every one ... even npcs
-				//entity_list.MessageClose(this, true, RuleI(Range, SpellMessages), MT_Emote, "%s beams a smile at %s", attacker->GetCleanName(), this->GetCleanName());
+				
+				//entity_list.MessageClose(this, true, RuleI(Range, SpellMessages), Chat::Emote, "%s beams a smile at %s", attacker->GetCleanName(), this->GetCleanName());
 			}
 
 			rank = GetBuildRank(PALADIN, RB_PAL_ARMOROFFAITH);
-			if (attacker && attacker->GetBodyType() == BT_Undead &&
-				rank > 0) {
-				int damageReduction = floor(damage * 0.025f * rank);
-				if (damageReduction > 0) {
-					BuildEcho(StringFormat("Armor of Faith %u reduced damage from %s by %i.", rank, attacker->GetCleanName(), damageReduction));
-					damage -= damageReduction;
+				if (attacker && attacker->GetBodyType() == BT_Undead &&
+					rank > 0) {
+					int damageReduction = floor(damage * 0.025f * rank);
+					if (damageReduction > 0) {
+						BuildEcho(StringFormat("Armor of Faith %u reduced damage from %s by %i.", rank, attacker->GetCleanName(), damageReduction));
+						damage -= damageReduction;
+					}
 				}
-			}
-
-
-
-				entity_list.MessageClose(this, true, RuleI(Range, SpellMessages), Chat::Emote, "%s beams a smile at %s", attacker->GetCleanName(), this->GetCleanName());
-			}
 		
 			// If a client pet is damaged while sitting, stand, fix sit button,
 			// and remove sitting regen.  Removes bug where client clicks sit
@@ -4236,11 +4229,11 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 
 						damage -= damage_reduction;
 						if (damage < 1) damage = 1;
-						Message(MT_Spells, "%s's Holy Servant %u has taken %i damage for you.", target->GetCleanName(), rank, damage_reduction);
+						Message(Chat::Spells, "%s's Holy Servant %u has taken %i damage for you.", target->GetCleanName(), rank, damage_reduction);
 
 						int damage_reduction2 = damage_reduction;
 						damage_reduction2 -= floor(damage_reduction * 0.02f * rank);
-						//target->Message(MT_Spells, "Holy Servant %u has drawn %i damage from %s and has dealt %i to you.", rank, damage_reduction, damage_reduction2, attacker->GetCleanName());
+						//target->Message(Chat::Spells, "Holy Servant %u has drawn %i damage from %s and has dealt %i to you.", rank, damage_reduction, damage_reduction2, attacker->GetCleanName());
 
 						//deal dmg to paladin
 						target->CommonDamage(attacker, damage_reduction2, spell_id, skill_used, avoidable, buffslot, iBuffTic, special);
@@ -4476,6 +4469,7 @@ void Mob::CommonDamage(Mob* attacker, int &damage, const uint16 spell_id, const 
 			SendHPUpdate(!iBuffTic); // the OP_Damage actually updates the client in these cases, so we skip the HP update for them
 	}	//end `if damage was done`
 
+
 	//send damage packet...
 	if (!iBuffTic) { //buff ticks do not send damage, instead they just call SendHPUpdate(), which is done above
 		auto outapp = new EQApplicationPacket(OP_Damage, sizeof(CombatDamage_Struct));
@@ -4672,8 +4666,8 @@ void Mob::HealDamage(uint32 amount, Mob *caster, uint16 spell_id)
 			if (manaAmount > 0) {
 				entity_list.LogManaEvent(this, this, manaAmount);
 				SetMana(GetMana() + manaAmount);
-				Message(MT_Spells, "%s's Refreshing Breeze %i gave you %i mana.", caster->GetCleanName(), rank, manaAmount);
-				caster->BuildEcho(StringFormat("Refreshing Breeze %i gave %s %i mana.", rank, GetCleanName(), manaAmount));
+				if (IsClient()) CastToClient()->Message(Chat::Spells, "%s's Refreshing Breeze %i gave you %i mana.", caster->GetCleanName(), rank, manaAmount);
+				if (caster->IsClient()) caster->CastToClient()->BuildEcho(StringFormat("Refreshing Breeze %i gave %s %i mana.", rank, GetCleanName(), manaAmount));
 			}
 		}
 
@@ -5178,11 +5172,11 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 		hit.damage_done = (hit.damage_done * SlayDmgBonus * 2.25f) / 100;
 
 		if (GetGender() == 1) {
-			entity_list.FilteredMessageClose_StringID(
+			entity_list.FilteredMessageCloseString(
 					this, /* Sender */
 					false, /* Skip Sender */
 					RuleI(Range, CriticalDamage),
-					MT_CritMelee, /* Type: 301 */
+					Chat::MeleeCrit, /* Type: 301 */
 					FilterMeleeCrits, /* FilterType: 12 */
 					FEMALE_SLAYUNDEAD, /* MessageFormat: %1's holy blade cleanses her target!(%2) */
 					GetCleanName(), /* Message1 */
@@ -5191,11 +5185,11 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 		}
 			/* Males and Neuter */
 		else {
-			entity_list.FilteredMessageClose_StringID(
+			entity_list.FilteredMessageCloseString(
 					this, /* Sender */
 					false, /* Skip Sender */
 					RuleI(Range, CriticalDamage),
-					MT_CritMelee, /* Type: 301 */
+					Chat::MeleeCrit, /* Type: 301 */
 					FilterMeleeCrits, /* FilterType: 12 */
 					MALE_SLAYUNDEAD, /* MessageFormat: %1's holy blade cleanses his target!(%2)  */
 					GetCleanName(), /* Message1 */
@@ -5220,7 +5214,7 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 
 	if (IsClient()) {
 		rank = CastToClient()->GetBuildRank(ROGUE, RB_ROG_SNEAKATTACK);
-		if (rank > 0 && defender->GetHPRatio() >= 90.0f && hit.skill == EQEmu::skills::SkillBackstab && CastToClient()->sneaking) {
+		if (rank > 0 && defender->GetHPRatio() >= 90.0f && hit.skill == EQ::skills::SkillBackstab && CastToClient()->sneaking) {
 			Log(Logs::Detail, Logs::Attack, "Sneak Attack crit? %u %i %i skill : %i", rank, CastToClient()->hidden, CastToClient()->sneaking, hit.skill);
 			BuildEcho(StringFormat("Sneak Attack %u catches %s off guard.", rank, defender->GetCleanName()));
 			crit_chance += floor(RuleI(Combat, MeleeCritDifficulty) * rank * .1f);
@@ -5290,7 +5284,7 @@ void Mob::TryCriticalHit(Mob *defender, DamageHitInfo &hit, ExtraAttackOptions *
 							GetLevel() >= defender->GetLevel()) {
 							//Harmony = 3601
 							//defender->SpellFinished(3601, defender);
-							CastToClient()->Message(MT_FocusEffect, "Hidden Dagger %u muffles %s.", rank, defender->GetCleanName());
+							CastToClient()->Message(Chat::FocusEffect, "Hidden Dagger %u muffles %s.", rank, defender->GetCleanName());
 							BuildEcho(StringFormat("HIDDEN_DAGGER: Failed chance roll or too low level"));
 						}
 						else {
@@ -6120,33 +6114,33 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 		int bonus_damage = 0;
 
 
-		if (hit.skill == EQEmu::skills::SkillBash && IsClient()) {
+		if (hit.skill == EQ::skills::SkillBash && IsClient()) {
 			rank = GetBuildRank(SHADOWKNIGHT, RB_SHD_BASHOFDEATH);
 			if (rank > 0 &&
 				defender->GetHPRatio() <= (rank * 10) &&
 				defender->GetLevel() <= GetLevel() && defender->GetLevel() <= 60) {
 				hit.damage_done += (GetLevel() * rank);
-				entity_list.MessageClose(this, true, 300, MT_Emote, "%s hits %s with a Bash of DEATH for %i damage", GetCleanName(), defender->GetCleanName(), hit.damage_done);
+				entity_list.MessageClose(this, true, 300, Chat::Emote, "%s hits %s with a Bash of DEATH for %i damage", GetCleanName(), defender->GetCleanName(), hit.damage_done);
 			}
 			if (defender->IsNPC()) CastToClient()->DoDivineBashEffect();
 		}
 
 		rank = GetBuildRank(ROGUE, RB_ROG_SINISTERSTRIKES);
-		if (rank > 0 && hit.hand == EQEmu::invslot::slotSecondary) {
+		if (rank > 0 && hit.hand == EQ::invslot::slotSecondary) {
 			bonus_damage = floor(hit.damage_done * 0.1f * rank);
 			BuildEcho(StringFormat("Sinister Strikes %i caused your offhand to deal %i additional damage.", rank, bonus_damage));
 			hit.damage_done += bonus_damage;
 		}
 
 		rank = attacker_client->GetBuildRank(SHADOWKNIGHT, RB_SHD_BLOODOATH);
-		if (rank > 0 && (hit.skill == EQEmu::skills::Skill2HBlunt || hit.skill == EQEmu::skills::Skill2HPiercing || hit.skill == EQEmu::skills::Skill2HSlashing)) {
+		if (rank > 0 && (hit.skill == EQ::skills::Skill2HBlunt || hit.skill == EQ::skills::Skill2HPiercing || hit.skill == EQ::skills::Skill2HSlashing)) {
 			bonus_damage = floor(hit.damage_done * 0.05f * rank);
 			if (bonus_damage > 0) attacker_client->BuildEcho(StringFormat("Blood Oath %u added %i bonus damage.", rank, bonus_damage));
 			hit.damage_done += bonus_damage;
 		}
 
 		rank = attacker_client->GetBuildRank(PALADIN, RB_PAL_KNIGHTSADVANTAGE);
-		if (rank > 0 && (hit.skill == EQEmu::skills::Skill2HBlunt || hit.skill == EQEmu::skills::Skill2HPiercing || hit.skill == EQEmu::skills::Skill2HSlashing)) {
+		if (rank > 0 && (hit.skill == EQ::skills::Skill2HBlunt || hit.skill == EQ::skills::Skill2HPiercing || hit.skill == EQ::skills::Skill2HSlashing)) {
 			bonus_damage = floor(hit.damage_done * 0.05f * rank);
 			if (bonus_damage > 0) attacker_client->BuildEcho(StringFormat("Knight's Advantage %u added %i bonus damage.", rank, bonus_damage));
 			hit.damage_done += bonus_damage;
@@ -6177,22 +6171,22 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 		uint16 spellid = 0;
 
 		rank = GetBuildRank(ROGUE, RB_ROG_MUGGINGSHOT);
-		if (rank > 0 && hit.hand == EQEmu::invslot::slotSecondary) {
+		if (rank > 0 && hit.hand == EQ::invslot::slotSecondary) {
 			chance = rank * 100;
 			int mana_drain = 0;
 			int hate_lower = 0;
 			bool is_interrupt = false;
 			//Get offhand skill
 			switch (hit.skill) {
-				case EQEmu::skills::Skill1HBlunt:
+				case EQ::skills::Skill1HBlunt:
 					hate_lower = 50 * rank;
 					proc_damage = 0;
 					is_interrupt = true;
 					break;
-				case EQEmu::skills::Skill1HSlashing:
+				case EQ::skills::Skill1HSlashing:
 					proc_damage = 5 * rank;
 					break;
-				case EQEmu::skills::Skill1HPiercing:
+				case EQ::skills::Skill1HPiercing:
 					proc_damage = 2 * rank;
 					mana_drain = 100 * rank;
 					break;
@@ -6231,10 +6225,10 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 		}
 
 
-		if (hit.skill != EQEmu::skills::SkillBash &&
-			hit.skill != EQEmu::skills::SkillBackstab &&
-			hit.skill != EQEmu::skills::SkillKick &&
-			hit.hand == EQEmu::invslot::slotPrimary) {
+		if (hit.skill != EQ::skills::SkillBash &&
+			hit.skill != EQ::skills::SkillBackstab &&
+			hit.skill != EQ::skills::SkillKick &&
+			hit.hand == EQ::invslot::slotPrimary) {
 
 			EnchanterBuildProc(defender, hit);
 
@@ -6287,7 +6281,7 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 				}
 
 				if (CastToClient()->BuildProcCalc(chance, hit.hand, defender, proc_damage, hit.skill)) {
-					CastToClient()->Message(MT_Spells, "Believe %u healed you for %i points of damage.", rank, proc_damage);
+					CastToClient()->Message(Chat::Spells, "Believe %u healed you for %i points of damage.", rank, proc_damage);
 					HealDamage(proc_damage);
 				}
 			}
@@ -6444,7 +6438,7 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 			}
 		}
 
-		if (hit.hand == EQEmu::invslot::slotPrimary) {
+		if (hit.hand == EQ::invslot::slotPrimary) {
 			int mana_amount = GetManaTapBonus(hit.damage_done);
 			if (mana_amount > 0) {
 				entity_list.LogManaEvent(this, this, mana_amount);
@@ -6455,13 +6449,13 @@ void Mob::CommonOutgoingHitSuccess(Mob* defender, DamageHitInfo &hit, ExtraAttac
 		}
 
 
-		if (hit.skill == EQEmu::skills::SkillTigerClaw ||
-			hit.skill == EQEmu::skills::SkillKick ||
-			hit.skill == EQEmu::skills::SkillRoundKick ||
-			hit.skill == EQEmu::skills::SkillEagleStrike ||
-			hit.skill == EQEmu::skills::SkillDragonPunch ||
-			hit.skill == EQEmu::skills::SkillTailRake ||
-			hit.skill == EQEmu::skills::SkillFlyingKick) {
+		if (hit.skill == EQ::skills::SkillTigerClaw ||
+			hit.skill == EQ::skills::SkillKick ||
+			hit.skill == EQ::skills::SkillRoundKick ||
+			hit.skill == EQ::skills::SkillEagleStrike ||
+			hit.skill == EQ::skills::SkillDragonPunch ||
+			hit.skill == EQ::skills::SkillTailRake ||
+			hit.skill == EQ::skills::SkillFlyingKick) {
 			Client *c = CastToClient();
 
 			rank = GetBuildRank(MONK, RB_MNK_FAMILIARITY);

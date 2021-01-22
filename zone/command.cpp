@@ -260,8 +260,6 @@ int command_init(void)
 		command_add("invul", "[on/off] - Turn player target's or your invulnerable flag on or off", 80, command_invul) ||
 		command_add("ipban", "[IP address] - Ban IP by character name", 200, command_ipban) ||
 		command_add("iplookup", "[charname] - Look up IP address of charname", 200, command_iplookup) ||
-		command_add("iteminfo", "- Get information about the item on your cursor", 10, command_iteminfo) ||
-		command_add("itemsearch", "[search criteria] - Search for an item", 10, command_itemsearch) ||
 		command_add("kick", "[charname] - Disconnect charname", 150, command_kick) ||
 		command_add("kill", "- Kill your target", 100, command_kill) ||
 		command_add("killallnpcs", " [npc_name] Kills all npcs by search name, leave blank for all attackable NPC's", 200, command_killallnpcs) ||
@@ -457,7 +455,34 @@ int command_init(void)
 		command_add("zsky", "[skytype] - Change zone sky type", 80, command_zsky) ||
 		command_add("zstats", "- Show info about zone header", 80, command_zstats) ||
 		command_add("zunderworld", "[zcoord] - Sets the underworld using zcoord", 80, command_zunderworld) ||
-		command_add("zuwcoords", "[z coord] - Set underworld coord", 80, command_zuwcoords)
+		command_add("zuwcoords", "[z coord] - Set underworld coord", 80, command_zuwcoords) ||
+
+		// RebuildEQ
+		command_add("buff", "- Pay platinum to receive buffs", 0, command_buff) ||
+		command_add("builds", "- Get a list of every build in game", 0, command_builds) ||
+		command_add("dps", "- Get a report of DPS on target", 0, command_dps) ||
+		command_add("encounter", "- Learn more about encounters, or claim rewards.", 0, command_encounter) ||
+		command_add("exp", "- Get current exp pool buffer. (60+)", 0, command_exp) ||
+		command_add("faq", "- Read the server FAQs", 0, command_faq) ||
+		command_add("feat", "- Display unlockable feats", 80, command_feat) ||
+		command_add("giveaa", "[aaid] - Grant an AA", 150, command_giveaa) || 
+		command_add("identity", "- Display or set your identity.", 0, command_identity) ||
+		command_add("issue", "- Report an issue with the server", 0, command_issue) ||
+		command_add("iteminfo", "- Get information about the item on your cursor", 100, command_iteminfo) ||
+		command_add("itemsearch", "[search criteria] - Search for an item", 100, command_itemsearch) ||		
+		command_add("playsound", "Play a sound", 150, command_playsound) ||
+		command_add("rebuildaa", "- Rebuild AAs.", 200, command_rebuildaa) ||
+		command_add("refer", "- Refer-a-friend reward system", 0, command_refer) ||
+		command_add("rested", "- Learn about rested status", 0, command_rested) ||
+		command_add("return", "- Return to the safe point of the last zone you died", 0, command_return) ||
+		command_add("rez", "- Pay platinum to summon and resurrect corpses in your current zone", 0, command_rez) ||		
+		command_add("setallbuilds", "- Set all builds to specified amount", 255, command_setallbuilds) ||
+		command_add("setbuild", "- Set a build", 255, command_setbuild) ||
+		command_add("setidentity", "[name] - Set a user's identity.", 200, command_setidentity) ||
+		command_add("spawnanpc", "[npcid] [isboss] - spawns an adjusted npc to target's level, or ifboss, to group's level", 200, command_spawnanpc) ||
+		command_add("spelleffect", "Play a sound", 150, command_spelleffect) ||
+		command_add("teleport", "- Pay platinum to teleport to a location", 0, command_teleport) ||
+		command_add("toggle", " - Toggle server options", 0, command_toggle)
 	) {
 		command_deinit();
 		return -1;
@@ -6291,54 +6316,6 @@ void command_goto(Client *c, const Seperator *sep)
 	}
 }
 
-void command_iteminfo(Client *c, const Seperator *sep)
-{
-	auto inst = c->GetInv()[EQ::invslot::slotCursor];
-	if (!inst) {
-		c->Message(Chat::Red, "Error: You need an item on your cursor for this command");
-		return;
-	}
-	auto item = inst->GetItem();
-	if (!item) {
-		LogInventory("([{}]) Command #iteminfo processed an item with no data pointer");
-		c->Message(Chat::Red, "Error: This item has no data reference");
-		return;
-	}
-
-	EQ::SayLinkEngine linker;
-	linker.SetLinkType(EQ::saylink::SayLinkItemInst);
-	linker.SetItemInst(inst);
-
-	c->Message(Chat::White, "*** Item Info for [%s] ***", linker.GenerateLink().c_str());
-	c->Message(Chat::White, ">> ID: %u, ItemUseType: %u, ItemClassType: %u", item->ID, item->ItemType, item->ItemClass);
-	c->Message(Chat::White, ">> IDFile: '%s', IconID: %u", item->IDFile, item->Icon);
-	c->Message(Chat::White, ">> Size: %u, Weight: %u, Price: %u, LDoNPrice: %u", item->Size, item->Weight, item->Price, item->LDoNPrice);
-	c->Message(Chat::White, ">> Material: 0x%02X, Color: 0x%08X, Tint: 0x%08X, Light: 0x%02X", item->Material, item->Color, inst->GetColor(), item->Light);
-	c->Message(Chat::White, ">> IsLore: %s, LoreGroup: %u, Lore: '%s'", (item->LoreFlag ? "TRUE" : "FALSE"), item->LoreGroup, item->Lore);
-	c->Message(Chat::White, ">> NoDrop: %u, NoRent: %u, NoPet: %u, NoTransfer: %u, FVNoDrop: %u",
-		item->NoDrop, item->NoRent, (uint8)item->NoPet, (uint8)item->NoTransfer, item->FVNoDrop);
-
-	if (item->IsClassBook()) {
-		c->Message(Chat::White, "*** This item is a Book (filename:'%s') ***", item->Filename);
-	}
-	else if (item->IsClassBag()) {
-		c->Message(Chat::White, "*** This item is a Container (%u slots) ***", item->BagSlots);
-	}
-	else {
-		c->Message(Chat::White, "*** This item is Common ***");
-		c->Message(Chat::White, ">> Classes: %u, Races: %u, Slots: %u", item->Classes, item->Races, item->Slots);
-		c->Message(Chat::White, ">> ReqSkill: %u, ReqLevel: %u, RecLevel: %u", item->RecSkill, item->ReqLevel, item->RecLevel);
-		c->Message(Chat::White, ">> SkillModType: %u, SkillModValue: %i", item->SkillModType, item->SkillModValue);
-		c->Message(Chat::White, ">> BaneRaceType: %u, BaneRaceDamage: %u, BaneBodyType: %u, BaneBodyDamage: %i",
-			item->BaneDmgRace, item->BaneDmgRaceAmt, item->BaneDmgBody, item->BaneDmgAmt);
-		c->Message(Chat::White, ">> Magic: %s, SpellID: %i, ProcLevel: %u, Charges: %u, MaxCharges: %u",
-			(item->Magic ? "TRUE" : "FALSE"), item->Click.Effect, item->Click.Level, inst->GetCharges(), item->MaxCharges);
-		c->Message(Chat::White, ">> EffectType: 0x%02X, CastTime: %.2f", (uint8)item->Click.Type, ((double)item->CastTime / 1000));
-	}
-
-	if (c->Admin() >= 200)
-		c->Message(Chat::White, ">> MinStatus: %u", item->MinStatus);
-}
 
 void command_uptime(Client *c, const Seperator *sep)
 {
@@ -7962,91 +7939,6 @@ void command_givemoney(Client *c, const Seperator *sep)
 		//TODO: update this to the client, otherwise the client doesn't show any weight change until you zone, move an item, etc
 		c->GetTarget()->CastToClient()->AddMoneyToPP(atoi(sep->arg[4]), atoi(sep->arg[3]), atoi(sep->arg[2]), atoi(sep->arg[1]), true);
 		c->Message(Chat::White, "Added %i Platinum, %i Gold, %i Silver, and %i Copper to %s's inventory.",  atoi(sep->arg[1]), atoi(sep->arg[2]), atoi(sep->arg[3]), atoi(sep->arg[4]), c->GetTarget()->GetName());
-	}
-}
-
-void command_itemsearch(Client *c, const Seperator *sep)
-{
-	if (sep->arg[1][0] == 0)
-		c->Message(Chat::White, "Usage: #itemsearch [search string]");
-	else
-	{
-		const char *search_criteria=sep->argplus[1];
-
-		const EQ::ItemData* item = nullptr;
-		EQ::SayLinkEngine linker;
-		linker.SetLinkType(EQ::saylink::SayLinkItemData);
-
-		if (Seperator::IsNumber(search_criteria)) {
-			item = database.GetItem(atoi(search_criteria));
-			if (item) {
-				linker.SetItemData(item);
-
-				c->Message(Chat::White, "%u: %s",  item->ID, linker.GenerateLink().c_str());
-			}
-			else {
-				c->Message(Chat::White, "Item #%s not found",  search_criteria);
-			}
-
-			return;
-		}
-
-		int count = 0;
-		char sName[64];
-		char sCriteria[255];
-		strn0cpy(sCriteria, search_criteria, sizeof(sCriteria));
-		strupr(sCriteria);
-		char* pdest;
-		uint32 it = 0;
-		while ((item = database.IterateItems(&it))) {
-			strn0cpy(sName, item->Name, sizeof(sName));
-			strupr(sName);
-			pdest = strstr(sName, sCriteria);
-			if (pdest != nullptr) {
-				linker.SetItemData(item);
-				std::string item_id = std::to_string(item->ID);
-				std::string saylink_commands = 
-					"[" + 
-					EQ::SayLinkEngine::GenerateQuestSaylink(
-						"#si " + item_id,
-						false,
-						"X"
-					) + 
-					"] ";
-				if (item->Stackable && item->StackSize > 1) {
-					std::string stack_size = std::to_string(item->StackSize);
-					saylink_commands += 
-					"[" + 
-					EQ::SayLinkEngine::GenerateQuestSaylink(
-						"#si " + item_id + " " + stack_size,
-						false,
-						stack_size
-					) + 
-					"]";
-				}
-
-				c->Message(
-					Chat::White,
-					fmt::format(
-						" Summon {} [{}] [{}]",
-						saylink_commands,
-						linker.GenerateLink(),
-						item->ID
-					).c_str()
-				);
-
-				++count;
-			}
-
-			if (count == 50)
-				break;
-		}
-
-		if (count == 50)
-			c->Message(Chat::White, "50 items shown...too many results.");
-		else
-			c->Message(Chat::White, "%i items found",  count);
-
 	}
 }
 
@@ -14075,3 +13967,1815 @@ void command_bot(Client *c, const Seperator *sep)
 	}
 }
 #endif
+
+
+
+// RebuildEQ Commands
+
+void command_buff(Client *c, const Seperator *sep) {
+	if (c->GetAggroCount() > 0) {
+		c->Message(0, "This command does not work while in combat.");
+		return;
+	}
+	if (c->GetHPRatio() < 99) {
+		c->Message(0, "This command does not work until full health.");
+		return;
+	}
+	if (c->IsTaskActivityActive(307, 12)) c->UpdateTaskActivity(FEAT_GETTINGSTARTED, 12, 1);
+
+	std::string displayCost;
+	uint64 cost = 0;
+	
+	cost = (uint64)((float)(40 * (float)((float)c->GetLevel() / (float)60)) * 1000);	
+	//if (c->GetLevel() >= 50) {
+	//	cost += (c->GetLevel() / 1.5f) * 1000;
+	//}
+	if (cost < 1000) {
+		cost = 1000;
+	}
+	displayCost = StringFormat("%u platinum", (cost / 1000));
+	if (c->GetLevel() <= 10) {
+		displayCost = "nothing";
+		cost = 0;
+	}
+
+	if (sep->arg[1] && strcasecmp(sep->arg[1], "confirm") == 0) {
+		if (!c->HasMoneyInInvOrBank(cost)) {
+			c->Message(0, "Not enough platinum to receive buffs.");
+			return;
+		}
+		if (!c->TakeMoneyFromPPOrBank(cost, true)) {
+			char *hacker_str = nullptr;
+			MakeAnyLenString(&hacker_str, "Buff Cheat: attempted to buy buffs and didn't have enough money\n");
+			database.SetMQDetectionFlag(c->AccountName(), c->GetName(), hacker_str, zone->GetShortName());
+			safe_delete_array(hacker_str);
+			return;
+		}
+
+		Mob* target = c;
+		uint8 level = target->GetLevel();
+		int duration = 600; // 1 hour
+
+		if (level < 39) target->QuickBuff(target, 144, duration); //regeneration 38
+		else if (level < 52) target->QuickBuff(target, 145, duration); //chloro 51
+		else target->QuickBuff(target, 1568, duration); //regrowth 52+
+
+		if (level < 10) target->QuickBuff(target, 26, duration); //skin like wood 1
+		else if (level < 20) target->QuickBuff(target, 2511, duration); //prot of wood 9
+		else if (level < 25) target->QuickBuff(target, 263, duration); //skin like rock 14
+		else if (level < 30) target->QuickBuff(target, 2512, duration); //prot of rock 19
+		else if (level < 35) target->QuickBuff(target, 421, duration); //skin like steel 24
+		else if (level < 40) target->QuickBuff(target, 2513, duration); //prot like steel 27
+		else if (level < 45) target->QuickBuff(target, 422, duration); //skin like diamond 36
+		else if (level < 50) target->QuickBuff(target, 2514, duration); //prot diamond 39
+		else if (level < 55) target->QuickBuff(target, 423, duration); //skin like nature 46
+		else target->QuickBuff(target, 2515, duration); //prot of nature 49
+
+		if (level < 17) target->QuickBuff(target, 256, duration); //shield of thistles 7
+		else if (level < 27) target->QuickBuff(target, 273, duration); //shield of barbs 17
+		else if (level < 37) target->QuickBuff(target, 129, duration); //shield of brambles 27
+		else if (level < 47) target->QuickBuff(target, 432, duration); //shield of spikes 37
+		else if (level < 49) target->QuickBuff(target, 356, duration); //shield of thorns 47
+		else if (level < 58) target->QuickBuff(target, 1727, duration); //legacy of spike 49
+		else target->QuickBuff(target, 1560, duration); //shield of blades 58
+
+		/*if (level < 2) target->QuickBuff(target, 268, duration); //str of earth 1
+		else if (level < 35) target->QuickBuff(target, 429, duration); //str of stone 34
+		else target->QuickBuff(target, 430, duration); //storm str 44*/
+
+		/*
+		//no longer gives clarity
+		if (level > 40) target->QuickBuff(target, 1693, duration);
+		else target->QuickBuff(target, 174, duration);*/
+		//giving breeze with buff at least
+		if (level >= 14) target->QuickBuff(target, 697, duration);
+		//if (!zone->CanCastOutdoor()) 
+		target->QuickBuff(target, 278, duration);
+
+		if (c->HasPet()) {
+			target = c->GetPet();
+			if (level < 39 && level > 34) target->QuickBuff(target, 144, duration); //regeneration 38
+			else if (level < 52) target->QuickBuff(target, 145, duration); //chloro 51
+			else target->QuickBuff(target, 1568, duration); //regrowth 52+
+
+			if (level < 10) target->QuickBuff(target, 26, duration); //skin like wood 1
+			else if (level < 20) target->QuickBuff(target, 2511, duration); //prot of wood 9
+			else if (level < 25) target->QuickBuff(target, 263, duration); //skin like rock 14
+			else if (level < 30) target->QuickBuff(target, 2512, duration); //prot of rock 19
+			else if (level < 35) target->QuickBuff(target, 421, duration); //skin like steel 24
+			else if (level < 40) target->QuickBuff(target, 2513, duration); //prot like steel 27
+			else if (level < 45) target->QuickBuff(target, 422, duration); //skin like diamond 36
+			else if (level < 50) target->QuickBuff(target, 2514, duration); //prot diamond 39
+			else if (level < 55) target->QuickBuff(target, 423, duration); //skin like nature 46
+			else target->QuickBuff(target, 2515, duration); //prot of nature 49
+
+			if (level < 10 && level >= 7) target->QuickBuff(target, 256, duration); //shield of thistles 7
+			else if (level < 20) target->QuickBuff(target, 273, duration); //shield of barbs 17
+			else if (level < 30) target->QuickBuff(target, 129, duration); //shield of brambles 27
+			else if (level < 40) target->QuickBuff(target, 432, duration); //shield of spikes 37
+			else if (level < 50) target->QuickBuff(target, 356, duration); //shield of thorns 47
+			else if (level < 55) target->QuickBuff(target, 1727, duration); //legacy of spike 49
+			else target->QuickBuff(target, 1560, duration); //shield of blades 58
+
+			target->QuickBuff(target, 278, duration);
+		}
+		if (c->IsClient() && c->CastToClient()->ClientVersionBit() & EQ::versions::maskUFAndLater)
+		{
+			EQApplicationPacket *outapp = target->MakeBuffsPacket(false);
+			c->CastToClient()->FastQueuePacket(&outapp);
+		}
+
+		c->Message(0, "You paid %s for buffs.", displayCost.c_str());
+		return;
+	}
+	else {
+		std::string outdoor = "You will get SoW due to being outdoors.";
+		if (!zone->CanCastOutdoor()) outdoor = "You will NOT get SoW, you are indoors.";
+		c->Message(0, "At level %u, it will cost you %s to receive buffs, %s [ %s ]", c->GetLevel(), displayCost.c_str(), outdoor.c_str(), c->CreateSayLink("#buff confirm", "Confirm").c_str());
+	}
+}
+
+void command_builds(Client *c, const Seperator *sep)
+{
+	//c->RebuildAA();
+
+	if (c->IsTaskActivityActive(307, 7)) c->UpdateTaskActivity(FEAT_GETTINGSTARTED, 7, 1);
+	uint8 freeLevel = 61;
+	if (!c->IsBuildAvailable()) {
+		c->Message(0, "This class does not yet have builds available. It will be coming soon!");
+		return;
+	}
+	c->RefreshBuild();
+	if (c->GetLevel() == 60) c->UpdateSkillsAndSpells(); //This is so any re-learned spells at 60 can be retrained
+	
+
+	auto calculateCost = [](Client* pClient) -> uint64 {
+		const auto clientLevel = pClient->GetLevel();
+		uint8 freeLevel = 10;
+		// Free!
+		if (clientLevel <= freeLevel) return 0;
+
+		uint64 cost = 0;
+		cost = (uint64)((float)(1000 * (float)((float)clientLevel / (float)60)) * 1000);
+		if (clientLevel < 20) cost /= 4;
+		if (clientLevel < 40) cost /= 3;
+		if (clientLevel < 50) cost /= 2;
+		
+		cost /= 10; //while testing, cut price
+		if (cost < 1000) {
+			cost = 1000;
+		}
+
+		return cost;
+	};
+
+	const auto cost = calculateCost(c);
+
+	
+	if (sep->arg[1] && strcasecmp(sep->arg[1], "reset") != 0) { //don't reset builds, just list
+		const char *windowTitle = "Builds";
+		uint8 unspent = c->GetBuildUnspentPoints();
+		std::string unspentMessage = "";
+		if (unspent > 0) {
+			unspentMessage = StringFormat("<c \"#FFDF00\">You have %u point%s available to spend.</c><br>", unspent, (unspent == 1) ? "" : "s");
+		}
+
+
+		// align=\"center\"
+		std::string windowText = StringFormat("<table align=\"center\" width=\"100%\"><tr><td><a href=\"http://rebuildeq.com/builds/%s/%s/\">Click To Review Your Build</a></td></tr></table>",
+			c->GetBaseClassName().c_str(),
+			c->GetSession()
+		);
+
+		windowText.append(unspentMessage);
+
+		windowText.append(c->GetBuildReport());
+		c->SendPopupToClient(windowTitle, windowText.c_str());
+		std::string resetCost = StringFormat("free until level %i", freeLevel);
+		if (c->GetLevel() >= freeLevel) {
+			resetCost = StringFormat("%i platinum at level %i", (cost / 1000), c->GetLevel());
+		}
+		c->Message(0, "You can %s your build choices for %s.", c->CreateSayLink("#builds reset", "reset").c_str(), resetCost.c_str());
+		return;
+	} else { //reset builds
+		//GM override ability.
+		if (c->Admin() > 200 && //account flagged GM
+			c->GetPP().gm > 0) { //is green
+
+			if (c->GetTarget() == nullptr ||
+				!c->GetTarget()->IsClient()) {
+				c->Message(0, "Not a valid target for resetting a build.");
+				return;
+			}
+			c->GetTarget()->CastToClient()->ResetBuild();
+			c->GetTarget()->Message(0, "Your build points were reset by the GM %s.", c->GetCleanName());
+			c->Message(0, "You reset the build points of %s.", c->GetTarget()->GetCleanName());
+			return;
+		}
+
+		//Reset confirm
+		if (sep->arg[2] && strcasecmp(sep->arg[2], "confirm") == 0) {
+			if (c->GetLevel() >= freeLevel && cost > 0) {
+				// Handle: Not enough money.
+				if (!c->HasMoneyInInvOrBank(cost)) {
+					c->Message(0, "Not enough money to reset.");
+					return;
+				}
+				// FYI This is not needed. If it triggers there is a bug in HasMoneyInInvOrBank..
+				if (!c->TakeMoneyFromPPOrBank(cost, true)) {
+					char *hacker_str = nullptr;
+					MakeAnyLenString(&hacker_str, "Zone Cheat: attempted to buy build reset and didn't have enough money\n");
+					database.SetMQDetectionFlag(c->AccountName(), c->GetName(), hacker_str, zone->GetShortName());
+					safe_delete_array(hacker_str);
+					return;
+				}				
+				c->Message(0, "You paid %u platinum to reset your build choices.", cost / 1000);
+				c->ResetBuild();
+				return;
+			}
+			c->Message(0, "Your reset your build choices for free.");
+			c->ResetBuild();
+			return;
+		}
+
+
+		//show cost if #builds or #builds reset
+		std::string resetCost = "free";
+		if (c->GetLevel() >= freeLevel) {
+			resetCost = StringFormat("%u platinum at level %i", (cost / 1000), c->GetLevel());
+		}
+		c->Message(0, "Would you like to reset your build choices for %s? [ %s ] ", resetCost.c_str(), c->CreateSayLink("#builds reset confirm", "confirm").c_str());
+		return;
+	}
+
+
+	//Link in game browser
+	//if (sep->arg[1] && strcasecmp(sep->arg[1], "link") == 0) {
+	//	c->SendWebLink(StringFormat("http://localhost/builds/%s/%s/", GetEQClassName(c->GetClass()), c->GetSession()).c_str());
+	//}
+
+	//if (c->GetClientVersionBit() & BIT_TitaniumAndEarlier) {
+		
+	//} else {
+	//	c->Message(0, "%s to view your build inside EQ.", c->CreateSayLink("#builds link", "click").c_str());
+	//}
+	return;
+}
+
+void command_dps(Client *c, const Seperator *sep)
+{
+	Mob *target = c->GetTarget();
+
+	if (!strcasecmp(sep->arg[1], "self")) {
+		target = c;		
+	}
+
+	if (!target) {
+		c->Message(0, "You must target something to use this command, or type #dps self to get your received dps so far.");
+		return;
+	}
+
+	if (!target->IsCorpse() && target->GetHPRatio() > 95.0f) {
+		c->Message(0, "#dps is disabled until your target is 95 percent or less health.");
+		return;
+	}
+	/*if (!target->IsCorpse()) {
+		c->Message(0, "Invalid Target type (Not corpse), bypassing for now");
+	}*/
+	if (target->IsCorpse() && c->IsTaskActivityActive(307, 13)) c->UpdateTaskActivity(FEAT_GETTINGSTARTED, 13, 1);
+
+	if (target->DPS().size() < 1) {
+		c->Message(0, "Target %s not engaged.", (target->IsCorpse() ? "was" : "is"));		
+		return;
+	}
+	int my_hp_self_loss_net = 0;
+	int my_hp_target_loss_net = 0;
+	int cur_engage_duration = 0;
+	
+	if (target->IsCorpse()) { //target is dead, use the corpse's engage_duration
+		cur_engage_duration = target->engage_duration;
+	}
+
+	for (auto&& d : target->DPS()) {
+		if (d.ent_id == target->GetID()) {
+			my_hp_self_loss_net = d.hp_self_loss_net;
+			my_hp_target_loss_net = d.hp_target_loss_net;
+		}
+		//we have to tally duration since fight is ongoing
+		if (!target->IsCorpse() && cur_engage_duration < time(nullptr) - d.engage_start) cur_engage_duration = time(nullptr) - d.engage_start;		
+	}
+	if (cur_engage_duration < 1) cur_engage_duration = 1;
+
+	float my_dps_loss = (float)((float)my_hp_self_loss_net / cur_engage_duration);
+	float my_dps_target_loss = (float)((float)my_hp_target_loss_net / cur_engage_duration);
+	c->Message(Chat::MeleeCrit, "------ %s DPS over %i seconds ----------", target->GetCleanName(), cur_engage_duration);
+	c->Message(Chat::MeleeCrit, "- dealt %i damage (%.1f DPS)", my_hp_self_loss_net, my_dps_loss);
+	c->Message(Chat::MeleeCrit, "- took %i damage (%.1f DPS)", my_hp_target_loss_net, my_dps_target_loss);
+	c->Message(Chat::MeleeCrit, "------ Participants ----------");
+	for (auto&& d : target->DPS()) {
+
+		float cur_dps = (float)((float)d.hp_target_loss_net / cur_engage_duration);
+		//float cur_hps_taken = (float)((float)d.hp_self_gain_net / engage_duration);
+		//float cur_hps_dealt = (float)((float)d.hp_target_gain_net / engage_duration);
+		c->Message(Chat::MeleeCrit, "- %s: %i damage (%.1f DPS)", d.character_name.c_str(), d.hp_target_loss_net, cur_dps);
+	}
+
+}
+
+//Spawns an encounter, if a valid timing
+void command_encounter(Client *c, const Seperator *sep) {
+	uint32 unclaimed_rewards = 0;
+	uint32 next_daily_claim = 0;
+
+	if (c->GetEPP().encounter_type > 0 &&
+		c->GetEPP().encounter_timeout > time(nullptr) && 
+		sep->arg[1] && strcasecmp(sep->arg[1], "trigger") == 0
+		//c->InEncounterArea()
+		) {
+		c->SpawnEncounter(false, c->GetEPP().encounter_type);
+		return;
+	}
+	if (c->IsTaskActivityActive(307, 3)) c->UpdateTaskActivity(FEAT_GETTINGSTARTED, 3, 1);
+	//GM: emote an encounter for targetted player
+	if (c->Admin() >= 200 && sep->arg[1] && strcasecmp(sep->arg[1], "emote") == 0) {
+		if (c->GetTarget() != nullptr && c->GetTarget()->IsClient()) {
+			c->Message(0, "[GM] Created an encounter for %s", c->GetTarget()->GetCleanName());
+			c->GetTarget()->CastToClient()->EmoteEncounter();
+			return;
+		}
+		return;
+	}
+
+	//GM: spawn an encounter for targetted player
+	if (c->Admin() > 200 && sep->arg[1] && strcasecmp(sep->arg[1], "spawn") == 0) {
+		if (c->GetTarget() == nullptr || !c->GetTarget()->IsClient()) {
+			c->Message(0, "You must target a player first to spawn an encounter.");
+			return;
+		}
+		if (sep->arg[2] && strlen(sep->arg[2]) > 3) {
+			c->Message(0, "[GM] Spawning an encounter for %s...", c->GetTarget()->GetCleanName());
+			c->GetTarget()->CastToClient()->SpawnEncounter(true, atoi(sep->arg[2]));
+			return;
+		}
+		c->Message(0, "Specify an encounter id, e.g. #spawn encounter 187###");		
+		return;
+	}
+
+
+	//Get the unclaimed_encounter_rewards
+	std::string query = StringFormat("SELECT unclaimed_encounter_rewards, next_daily_claim FROM account_custom WHERE account_id = %u LIMIT 1", c->AccountID());
+	auto results = database.QueryDatabase(query);
+	if (results.Success()) {
+		if (results.RowCount() == 1) {
+			auto row = results.begin();
+			unclaimed_rewards = atoi(row[0]);
+			next_daily_claim = atoi(row[1]);
+		}
+		else { //No record in DB yet for character_custom, let's fix that.
+			next_daily_claim = time(nullptr) + 72000;
+			std::string query = StringFormat("INSERT INTO account_custom (account_id, next_daily_claim) VALUES (%u, %i)", c->AccountID(), next_daily_claim);
+			
+			auto results = database.QueryDatabase(query);
+			if (!results.Success()) {
+				c->Message(13, "Claiming reward failed. The admins have been notified."); // Update failed!MySQL gave the following error : ");
+				Log(Logs::General, Logs::Normal, "Creating account_custom failed with error user %u: %s", c->AccountID(), results.ErrorMessage().c_str());
+				return;
+			}
+		}
+
+	} else {
+		Log(Logs::General, Logs::Normal, "Failed to select unclaimed_encounter_rewards for user %u: %s", c->AccountID(), results.ErrorMessage().c_str());
+		return;
+	}
+
+	//See if eligable for daily reward
+	if (next_daily_claim < time(nullptr)) {
+		next_daily_claim = time(nullptr) + 72000;
+		std::string query = StringFormat("UPDATE account_custom SET unclaimed_encounter_rewards = unclaimed_encounter_rewards + 1, unclaimed_encounter_rewards_total = unclaimed_encounter_rewards_total + 1, next_daily_claim = %i WHERE account_id = %u and unclaimed_encounter_rewards = %u", next_daily_claim,  c->AccountID(), unclaimed_rewards);
+		unclaimed_rewards++;
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(13, "Setting daily claim failed. The admins have been notified."); // Update failed!MySQL gave the following error : ");
+			Log(Logs::General, Logs::Normal, "Daily claim increment failed for user %u: %s", c->AccountID(), results.ErrorMessage().c_str());
+			return;
+		}
+		c->Message(15, "You have acquired the daily login reward [ %s ]! In 20 hours a new reward will be available to claim.", c->CreateSayLink("#encounter claim", "claim").c_str());
+	}
+
+	if (sep->arg[1] && strcasecmp(sep->arg[1], "claim") == 0) {
+		if (c->IsTaskActivityActive(307, 4)) c->UpdateTaskActivity(FEAT_GETTINGSTARTED, 4, 1);
+		if (unclaimed_rewards == 0) {
+			c->Message(13, "You have no unclaimed rewards.");
+			return;
+		}
+
+		EQ::ItemInstance *CursorItemInst = c->GetInv().GetItem(EQ::invslot::slotCursor);
+		if (CursorItemInst) {
+			c->Message(13, "Your cursor must be empty before claiming a reward.");
+			return;
+		}
+
+		int itemid = 100002;
+
+		if (sep->arg[2] && strcasecmp(sep->arg[2], "armor") == 0) {
+			itemid = 100002;
+		} else if (sep->arg[2] && strcasecmp(sep->arg[2], "weapon") == 0) {
+			itemid = 100005;
+		} else {
+			c->Message(0, "Please choose which type of reward to claim: [ %s ], [ %s ].", c->CreateSayLink("#encounter claim armor", "armor box").c_str(), c->CreateSayLink("#encounter claim weapon", "weapon box").c_str());
+			return;
+		}
+
+		std::string query = StringFormat("UPDATE account_custom SET unclaimed_encounter_rewards = unclaimed_encounter_rewards - 1 WHERE account_id = %u and unclaimed_encounter_rewards = %u", c->AccountID(), unclaimed_rewards);
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(13, "Claiming reward failed. The admins have been notified."); // Update failed!MySQL gave the following error : ");
+			Log(Logs::General, Logs::Normal, "Summon Item Failed during #encounter claim for user %u: %s", c->AccountID(), results.ErrorMessage().c_str());			
+			return;
+		}		
+
+		const EQ::ItemData * item = database.GetItem(itemid);
+		if (!c->SummonItem(itemid)) { //
+			Log(Logs::General, Logs::Normal, "Summon Item Failed during #encounter claim for user %u", c->CharacterID());
+			c->Message(13, "Something went wrong during the claim. The admins have been notified.");
+			return;
+		}
+		c->Message(Chat::Experience, "Your encounter reward is: %s!", item->Name);		
+		return;
+	}
+	
+
+	if (c->Admin() >= 200 && sep->arg[1] && strcasecmp(sep->arg[1], "reward") == 0) {
+		if (c->GetTarget() != nullptr && c->GetTarget()->IsClient()) {
+			std::string query = StringFormat("UPDATE account_custom SET unclaimed_encounter_rewards = unclaimed_encounter_rewards + 1, unclaimed_encounter_rewards_total = unclaimed_encounter_rewards_total + 1 WHERE account_id = %u", c->GetTarget()->CastToClient()->AccountID());
+			auto results = database.QueryDatabase(query);
+			c->GetTarget()->Message(Chat::Experience, "You earned an encounter reward! [ %s ]", c->CreateSayLink("#encounter claim", "claim").c_str());
+			c->Message(Chat::Experience, "You gave %s an encounter reward.", c->GetTarget()->GetCleanName());
+			return;
+		}
+		c->Message(0, "Invalid target");
+		return;
+	}
+
+	if (c->GetEPP().next_encounter_time > time(nullptr)) {
+		c->Message(0, "You are not eligible for encounters.");
+	}
+	else {
+		if (c->InEncounterArea()) {
+			c->Message(0, "You are eligible for encounters and are in an encounter area.");
+		}
+		else {
+			c->Message(0, "You are eligible for encounters, but not in an encounter area.");
+		}
+	}
+	
+
+	if (unclaimed_rewards == 0) {
+		c->Message(0, "You have no unclaimed encounter rewards. Watch for them across Norrath and team up with allies to achieve prizes.");
+		return;
+	}
+
+
+	//If a GM types #encounter targetting a player, gives a report
+	if (c->Admin() > 200 && c->GetTarget() != nullptr && c->GetTarget()->IsClient()) {
+		std::string query = StringFormat("SELECT unclaimed_encounter_rewards, unclaimed_encounter_rewards_total FROM account_custom WHERE account_id = %u LIMIT 1", c->GetTarget()->CastToClient()->AccountID());
+		auto results = database.QueryDatabase(query);
+		if (results.Success()) {
+			if (results.RowCount() == 1) {
+				auto row = results.begin();
+				unclaimed_rewards = atoi(row[0]);
+				uint32 unclaimed_rewards_total = atoi(row[1]);
+				c->Message(0, "[GM] %s [%s] (%u) has %u unclaimed rewards and %u total rewards ever, and next encounter is in %u seconds", c->GetTarget()->CastToClient()->GetCleanName(), c->GetTarget()->CastToClient()->Identity(), c->GetTarget()->CastToClient()->AccountID(), unclaimed_rewards, unclaimed_rewards_total, (time(nullptr) > c->GetEPP().next_encounter_time) ? 0 : c->GetEPP().next_encounter_time - time(nullptr));
+			}
+			else {
+				c->Message(0, "Target failed to get a record result");
+			}
+		}
+		else {
+			c->Message(0, "Target failed to get unclaimed_encounter_rewards");
+		}
+		return;
+	}
+	
+	c->Message(0, "You have %u unclaimed encounter rewards. [ %s ]", unclaimed_rewards, c->CreateSayLink("#encounter claim", "claim").c_str());
+}
+
+void command_exp(Client *c, const Seperator *sep) 
+{
+	
+	uint8 maxlevel = 60;
+	
+	if (c->GetLevel() < maxlevel) {
+		c->Message(0, "When a player reaches level %u and fills their experience bar, any excess experience goes into a pool reserve. This reserve can be drawn from on death as well as placed into experience bottles.", maxlevel);
+		return;
+	}
+
+	if (!c->IsTaskCompleted(FEAT_GETTINGSTARTED)) {
+		for (int i = 0; i < 20; i++) {
+			c->UpdateTaskActivity(FEAT_GETTINGSTARTED, i, 1);
+		}
+	}
+	
+	uint64 exp_pool = 0;
+	auto query = StringFormat("SELECT exp_pool FROM character_custom WHERE character_id = %i", c->CharacterID());
+	auto results = database.QueryDatabase(query);
+	if (results.Success() && results.RowCount() != 0) {
+		auto row = results.begin();
+		exp_pool = atoll(row[0]);
+	}
+	int bottles = exp_pool / RuleI(AA, ExpPerPoint);
+
+	if (sep->arg[1][0] == '\0' || !strcasecmp(sep->arg[1], "help")) {
+		c->Message(0, "You currently have %i experience bottles in reserve, each representing %i experience. Buy empty bottles from Nola Z`Ret in East Commonlands, and then you can [ %s ] it for 500 platinum.", bottles, RuleI(AA, ExpPerPoint), c->CreateSayLink("#exp fill", "fill").c_str());
+		return;
+	}
+	if (!strcasecmp(sep->arg[1], "limit")) {
+		if (sep->arg[2] && sep->IsNumber(2)) {
+			int limit = atoi(sep->arg[2]);
+			if (limit > 0 && limit <= 100){
+				std::string query = StringFormat("UPDATE character_custom SET exp_limit = %i WHERE character_id = %i", limit, c->CharacterID());
+				auto results = database.QueryDatabase(query);
+				c->Message(0, "Your experience limit is now set to %i%%.", limit);
+				return;
+			}
+			else {
+				c->Message(0, "Invalid value for limit: %i", limit);
+				return;
+			}
+		}
+	
+		auto query = StringFormat("SELECT exp_limit FROM character_custom WHERE character_id = %i", c->CharacterID());
+		auto results = database.QueryDatabase(query);
+		if (results.Success() && results.RowCount() != 0) {
+			auto row = results.begin();
+			int limit = atoi(row[0]);
+			c->Message(0, "Your experience limit is set to %i%%. Usage: #exp limit ##, where ## is the % of exp to limit gains.", limit);
+			return;
+		}
+		c->Message(0, "Usage: #exp limit ##, where ## is the % of exp to limit gains.");	
+		return;		
+	}
+
+	if (!strcasecmp(sep->arg[1], "fill")) {
+		if (bottles < 1) {
+			c->Message(0, "You need more experience in order to fill a bottle.");
+			return;
+		}
+
+		int16 inv_slot_id = c->GetInv().HasItem(100000, 1, invWhereWorn | invWherePersonal);
+		if (inv_slot_id == -1) {
+			c->Message(0, "You need an empty bottle of experience in your inventory to use this command.");
+			return;
+		}
+
+
+		auto inst = c->GetInv()[EQ::invslot::slotCursor];
+		if (inst) { 
+			c->Message(0, "Your cursor needs to be empty to run this command."); 
+			return;
+		}
+
+		int64 cost = 500000;
+		// Handle: Not enough money.
+		if (!c->HasMoneyInInvOrBank(cost)) {
+			c->Message(0, "Not enough money to fill the bottle.");
+			return;
+		}
+		if (!c->TakeMoneyFromPPOrBank(cost, true)) {
+			c->Message(0, "Something went wrong when getting enough money to fill the bottle.");
+			return;
+		}
+
+		//Handle item move
+		c->DeleteItemInInventory(inv_slot_id, 1, true);
+		c->SummonItem(100001, 1);
+
+		std::string query = StringFormat("UPDATE character_custom SET exp_pool = exp_pool - %i WHERE character_id = %i", RuleI(AA, ExpPerPoint), c->CharacterID());
+		auto results = database.QueryDatabase(query);
+
+		c->Message(Chat::Experience, "You have paid 500 platinum to fill a bottle of experience.");
+		return;
+	}
+}
+
+void command_faq(Client *c, const Seperator *sep) {
+	c->Message(0, "Frequently Asked Questions:");
+	c->Message(0, "Do I need custom files for this server? No");
+	c->Message(0, "How do I access unique skills? /say #builds");
+	c->Message(0, "Is boxing allowed? No. Contact GMs for multiple people on same IP.");
+	c->Message(0, "Is MacroQuest or other assisting tools allowed? No.");
+}
+
+void command_feat(Client *c, const Seperator *sep)
+{
+	if (c->IsTaskActivityActive(307, 15)) c->UpdateTaskActivity(FEAT_GETTINGSTARTED, 15, 1);
+	if (!sep->arg[1] || strlen(sep->arg[1]) < 1 || !sep->arg[1][0]) {
+		c->Message(0, "Choose the type of feats to display: [ %s ] [ %s ] [ %s ] [ %s ].",
+			c->CreateSayLink("#feat aa", "aa").c_str(),
+			c->CreateSayLink("#feat class", "class").c_str(),
+			c->CreateSayLink("#feat general", "general").c_str(),
+			c->CreateSayLink("#feat pet", "pet").c_str()	
+		);
+		if (c->GetLevel() < 60) c->Message(0, "Note: Feats are difficult, and will take a significant amount of time! Only level 60 characters can create the Full Experience Bottles needed to complete feats, but they are tradable! Attempting feats is not recommended for characters below level 55.");
+		return;
+	}
+		
+	struct Feat {
+		std::string FeatType;
+		std::string FeatName;
+		std::string FeatShort;
+		int AAID;
+		uint32 AARank;
+		uint32 FeatClass;
+		int TaskID;
+		int ItemID;
+		explicit Feat(std::string pFeatType, std::string pFeatName, std::string pFeatShort, int pTaskID, uint32 pFeatClass, int pAAID, uint32 pAARank, int pItemID) : FeatType(pFeatType), FeatName(pFeatName),FeatShort(pFeatShort), TaskID(pTaskID), FeatClass(pFeatClass), AAID(pAAID), AARank(pAARank), ItemID(pItemID) {};
+	};
+
+	static Feat Feats[] = {
+		//Feat("pet", "Pet Naming", "naming", FEAT_PETNAMING, 65535, 0, 0, 0),		
+		Feat("pet", "Pet Discipline", "discipline", FEAT_PETDISCIPLINE, 65535, aaPetDiscipline, 1, 0),
+		Feat("class", "Charm of Defense", "defense", FEAT_CHARMOFDEFENSE, 21, 0, 0, 100045),
+		Feat("class", "Charm of Mana", "defense", FEAT_CHARMOFMANA, 546, 0, 0, 100088),
+		Feat("general", "Frontal Stun Immunity", "stun", FEAT_FRONTSTUN, 65535, 0, 0, 0),
+		//Feat("general", "Cursed Fragments", "cursed", FEAT_CURSEDFRAGMENTS, 65535, 0, 0, 0),
+		Feat("aa", "Innate Runspeed", "runspeed", FEAT_INNATERUNSPEED, 65535, aaInnateRunSpeed, 3, 0),
+		Feat("pet", "Pet Affinity", "affinity", FEAT_PETAFFINITY, 65535, aaPetAffinity, 1, 0)
+	};
+
+	if (sep->arg[2]) { //if 2nd argument passed
+		for (auto&& feat : Feats) {
+			if (strcmp(sep->arg[1], feat.FeatType.c_str()) != 0) continue; //Only show feats of proper type
+			if (strcmp(sep->arg[2], feat.FeatShort.c_str()) != 0) continue; //Only matching argument shortname			
+			if ((GetPlayerClassBit(c->GetClass()) & feat.FeatClass) != GetPlayerClassBit(c->GetClass())) continue; //Class bit filter
+			
+			std::string message = StringFormat("Feat %s ", feat.FeatName.c_str());
+			if (!c->IsTaskCompleted(feat.TaskID)) {
+				if (!c->IsTaskActive(feat.TaskID)) {
+					c->AssignTask(feat.TaskID, 0);
+					return;
+				}
+				else {
+					message.append("is already in progress.");
+				}
+			}
+			else {
+				message.append("has already been completed.");
+
+				if (feat.ItemID > 0 && c->IsValidItem(feat.ItemID)) {
+					c->Message(15, "A new copy of %s has been given to you.", feat.FeatName.c_str());
+					c->SummonItem(feat.ItemID);
+				}
+			
+				if (feat.AAID > 0 && c->GetAA(feat.AAID) < feat.AARank) {
+					c->SetAA(feat.AAID, feat.AARank, 0);
+					c->SaveAA();
+					c->SendAlternateAdvancementPoints();
+					c->SendAlternateAdvancementStats();
+					c->CalcBonuses();
+					c->Message(15, "You have been granted the AA for %s!", feat.FeatName.c_str());
+				}
+			}
+			c->Message(0, message.c_str());
+			return;
+		}
+	}
+
+	//2nd argument failed or wasn't passed, display all feats of type.
+	int featCount = 0;
+	for (auto&& feat : Feats) {		
+		if (strcmp(sep->arg[1], feat.FeatType.c_str()) != 0) continue; //Only show feats of proper type
+		if ((GetPlayerClassBit(c->GetClass()) & feat.FeatClass) != GetPlayerClassBit(c->GetClass())) continue; //Class bit filter
+
+		featCount++;
+		std::string message = StringFormat("%s: ", feat.FeatName.c_str());
+		if (!c->IsTaskCompleted(feat.TaskID)) {
+			if (c->IsTaskActive(feat.TaskID)) message.append("In Progress");
+			else message.append(StringFormat("[ %s ]", c->CreateSayLink(StringFormat("#feat %s %s", feat.FeatType.c_str(), feat.FeatShort.c_str()).c_str(), "Get Task").c_str()));
+		}
+		else {
+			message.append(StringFormat("[ %s ]", c->CreateSayLink(StringFormat("#feat %s %s", feat.FeatType.c_str(), feat.FeatShort.c_str()).c_str(), "Completed").c_str()));
+		}
+		c->Message(0, message.c_str());
+	}
+	if (featCount == 0) c->Message(0, "No feats are available for this type: %s", sep->arg[1]);
+}
+
+//Give AAs
+void command_giveaa(Client *c, const Seperator *sep)
+{
+	if (!sep->IsNumber(1)) {
+		c->Message(0, "Usage: #grantaa altid");
+		return;
+	}
+	int abilityid = atoi(sep->arg[1]);
+	if (abilityid == 0) {
+		c->Message(0, "Invalid ability ID");
+		return;
+	}
+	if (!c->SetAA(abilityid, 1, 0)) {
+		c->Message(0, "Failed to set AA");
+	}
+	c->SendAlternateAdvancementPoints();
+	c->SendAlternateAdvancementStats();
+	c->CalcBonuses();
+	c->SaveAA();
+	
+	c->Message(270, "You have become better at %i! (1)", abilityid);
+}
+
+void command_identity(Client *c, const Seperator *sep) {
+	c->Message(0, "Your identity is: %s", c->Identity());
+}
+
+void command_issue(Client *c, const Seperator *sep) {
+
+	//Get the unclaimed_encounter_rewards
+	if (sep->arg[1] && strcasecmp(sep->arg[1], "delete") == 0) { //Delete an issue
+		if (!sep->arg[2] || atoi(sep->arg[2]) == 0) {
+			c->Message(0, "Invalid issue id. Format: #issue delete <number>");
+			return;
+		}
+		uint32 issue_id = atoi(sep->arg[2]);
+		std::string query = StringFormat("UPDATE issues SET is_deleted = 1 WHERE is_deleted = 0 AND my_character_id = %u AND id = %u LIMIT 1", c->CharacterID(), issue_id);
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(13, "Deleting an issue failed. The admins have been notified.");
+			Log(Logs::General, Logs::Normal, "#issue creation failed for user %u: %s", c->CharacterID(), results.ErrorMessage().c_str());
+			return;
+		}
+		c->Message(0, "You have deleted issue #%u.", issue_id);
+		return;
+	}
+
+	if (sep->arg[1] && strcasecmp(sep->arg[1], "list") == 0) { //List past issues
+		//List Issues
+		std::string query = StringFormat("SELECT id, github_issue_id, is_in_progress, is_fixed, tar_name, message FROM issues WHERE my_character_id = %u AND is_deleted = 0 ORDER BY last_modified DESC LIMIT 10", c->CharacterID());
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(13, "Listing issues failed. The admins have been notified.");
+			Log(Logs::General, Logs::Normal, "#issue list failed for user %u: %s", c->CharacterID(), results.ErrorMessage().c_str());
+			return;
+		}
+		if (results.RowCount() == 0) {
+			c->Message(0, "You have no pending issues.");
+			return;
+		}
+
+		c->Message(0, "Your %u most recently updated issues:", results.RowCount());
+		for (auto row = results.begin(); row != results.end(); ++row) {
+			std::string status = "New";
+			if (atoi(row[1]) > 0) status = "Reported";
+			if (atoi(row[2]) == 1) status = "In Progress";
+			if (atoi(row[3]) == 1) status = "Fixed";
+
+			std::string details = "";
+			if (strlen(row[4]) > 0 && strcasecmp(row[4], "(null)") != 0) details.append(StringFormat("(%s) ", row[4]));
+			std::string deletecommand = StringFormat("#issue delete %u", atoi(row[0]));
+			details.append(StringFormat("%s", row[5]));
+
+			c->Message(0, "#%u status: %s, details: %s [ %s ]", atoi(row[0]), status.c_str(), details.c_str(), c->CreateSayLink(deletecommand.c_str(), "delete").c_str());
+		}
+		return;
+	}
+
+
+	if (!sep->arg[1] || (strlen(sep->arg[1]) == 0)) {
+		uint32 issue_count = 0;
+		std::string query = StringFormat("SELECT count(id) FROM issues WHERE my_character_id = %u AND is_deleted = 0 LIMIT 1", c->CharacterID());
+		auto results = database.QueryDatabase(query);
+		if (results.Success()) {
+			if (results.RowCount() == 1) {
+				auto row = results.begin();
+				issue_count = atoi(row[0]);
+			}
+		}		
+
+		if (issue_count > 0) c->Message(0, "You have %u previously submitted issues. [ %s ]", issue_count, c->CreateSayLink("#issue list", "list").c_str());
+		c->Message(0, "To report something to the GMs, you may target a mob or player and then:");
+		c->Message(0, "/say #issue Your report message");
+		return;
+	}
+	
+
+	std::string itemname = "";
+	uint32 itemid = 0;
+	
+	const EQ::ItemInstance * inst = c->GetInv()[EQ::invslot::slotCursor];
+	if (inst) { 
+		auto item = inst->GetItem();
+		if (item) {
+			itemname = item->Name;
+			itemid = item->ID;
+		}
+	}
+
+	
+	std::string query = StringFormat("INSERT INTO issues"
+		"(my_name, my_account_id, my_character_id, my_class, my_zone_id, my_zone_name, my_x, my_y, my_z, message, tar_name, tar_is_npc, tar_is_client, tar_account_id, tar_character_id, tar_npc_type_id, tar_npc_spawngroup_id, item_id, item_name, client)"
+		"VALUES (\"%s\", %u, %u, \"%s\", %u, \"%s\", %f, %f, %f, \"%s\", \"%s\", %u, %u, %u, %u, %u, %u, %u, \"%s\", \"%s\")",
+		StringFormat("%s (%s)", c->GetName(), c->Identity()).c_str(),
+		c->AccountID(),
+		c->CharacterID(),
+		c->GetBaseClassName().c_str(),
+		c->GetZoneID(),
+		zone->GetShortName(),
+		c->GetX(),
+		c->GetY(),
+		c->GetZ(),
+		EscapeString(sep->argplus[1]).c_str(), //message
+		((c->GetTarget() == nullptr) ? 0 : EscapeString(c->GetTarget()->GetCleanName()).c_str()),
+		((c->GetTarget() == nullptr || !c->GetTarget()->IsNPC()) ? 0 : 1),
+		((c->GetTarget() == nullptr || !c->GetTarget()->IsClient()) ? 0 : 1),
+		((c->GetTarget() == nullptr || !c->GetTarget()->IsClient()) ? 0 : c->GetTarget()->CastToClient()->AccountID()),
+		((c->GetTarget() == nullptr || !c->GetTarget()->IsClient()) ? 0 : c->GetTarget()->CastToClient()->CharacterID()),
+		((c->GetTarget() == nullptr || !c->GetTarget()->IsNPC()) ? 0 : c->GetTarget()->CastToNPC()->GetNPCTypeID()),		
+		((c->GetTarget() == nullptr || !c->GetTarget()->IsNPC()) ? 0 : c->GetTarget()->CastToNPC()->GetSpawnGroupId()),
+		itemid,
+		EscapeString(itemname.c_str()).c_str(),
+		EQ::versions::ClientVersionName(c->ClientVersion())
+		);
+	auto results = database.QueryDatabase(query);
+	if (!results.Success()) {
+		c->Message(13, "Creating an issue failed. The admins have been notified.");
+		Log(Logs::General, Logs::Normal, "#issue creation failed for user %u: %s", c->CharacterID(), results.ErrorMessage().c_str());
+		return;		
+	}
+
+	c->Message(0, "Your issue #%i has been submitted.", results.LastInsertedID());
+}
+
+void command_iteminfo(Client *c, const Seperator *sep)
+{
+	auto inst = c->GetInv()[EQ::invslot::slotCursor];
+	if (!inst) {
+		c->Message(13, "Error: You need an item on your cursor for this command");
+		return;
+	}
+	auto item = inst->GetItem();
+	if (!item) {
+		Log(Logs::General, Logs::Inventory, "(%s) Command #iteminfo processed an item with no data pointer");
+		c->Message(13, "Error: This item has no data reference");
+		return;
+	}
+
+	EQ::SayLinkEngine linker;
+	linker.SetLinkType(EQ::saylink::SayLinkItemInst);
+	linker.SetItemInst(inst);
+
+	auto item_link = linker.GenerateLink();
+
+	c->Message(0, "*** Item Info for [%s] ***", item_link.c_str());
+	c->Message(0, ">> ID: %u, ItemUseType: %u, ItemClassType: %u", item->ID, item->ItemType, item->ItemClass);
+	c->Message(0, ">> IDFile: '%s', IconID: %u", item->IDFile, item->Icon);
+	c->Message(0, ">> Size: %u, Weight: %u, Price: %u, LDoNPrice: %u", item->Size, item->Weight, item->Price, item->LDoNPrice);
+	c->Message(0, ">> Material: 0x%02X, Color: 0x%08X, Tint: 0x%08X, Light: 0x%02X", item->Material, item->Color, inst->GetColor(), item->Light);
+	c->Message(0, ">> IsLore: %s, LoreGroup: %u, Lore: '%s'", (item->LoreFlag ? "TRUE" : "FALSE"), item->LoreGroup, item->Lore);
+	c->Message(0, ">> NoDrop: %u, NoRent: %u, NoPet: %u, NoTransfer: %u, FVNoDrop: %u",
+		item->NoDrop, item->NoRent, (uint8)item->NoPet, (uint8)item->NoTransfer, item->FVNoDrop);
+
+	if (item->IsClassBook()) {
+		c->Message(0, "*** This item is a Book (filename:'%s') ***", item->Filename);
+	}
+	else if (item->IsClassBag()) {
+		c->Message(0, "*** This item is a Container (%u slots) ***", item->BagSlots);
+	}
+	else {
+		c->Message(0, "*** This item is Common ***");
+		c->Message(0, ">> Classes: %u, Races: %u, Slots: %u", item->Classes, item->Races, item->Slots);
+		c->Message(0, ">> ReqSkill: %u, ReqLevel: %u, RecLevel: %u", item->RecSkill, item->ReqLevel, item->RecLevel);
+		c->Message(0, ">> SkillModType: %u, SkillModValue: %i", item->SkillModType, item->SkillModValue);
+		c->Message(0, ">> BaneRaceType: %u, BaneRaceDamage: %u, BaneBodyType: %u, BaneBodyDamage: %i",
+			item->BaneDmgRace, item->BaneDmgRaceAmt, item->BaneDmgBody, item->BaneDmgAmt);
+		c->Message(0, ">> Magic: %s, SpellID: %i, ProcLevel: %u, Charges: %u, MaxCharges: %u",
+			(item->Magic ? "TRUE" : "FALSE"), item->Click.Effect, item->Click.Level, inst->GetCharges(), item->MaxCharges);
+		c->Message(0, ">> EffectType: 0x%02X, CastTime: %.2f", (uint8)item->Click.Type, ((double)item->CastTime / 1000));
+	}
+
+	if (c->Admin() >= 200)
+		c->Message(0, ">> MinStatus: %u", item->MinStatus);
+}
+
+void command_itemsearch(Client *c, const Seperator *sep)
+{
+	if (sep->arg[1][0] == 0)
+		c->Message(Chat::White, "Usage: #itemsearch [search string]");
+	else
+	{
+		const char *search_criteria=sep->argplus[1];
+
+		const EQ::ItemData* item = nullptr;
+		EQ::SayLinkEngine linker;
+		linker.SetLinkType(EQ::saylink::SayLinkItemData);
+
+		if (Seperator::IsNumber(search_criteria)) {
+			item = database.GetItem(atoi(search_criteria));
+			if (item) {
+				linker.SetItemData(item);
+
+				c->Message(Chat::White, "%u: %s",  item->ID, linker.GenerateLink().c_str());
+			}
+			else {
+				c->Message(Chat::White, "Item #%s not found",  search_criteria);
+			}
+
+			return;
+		}
+
+		int count = 0;
+		char sName[64];
+		char sCriteria[255];
+		strn0cpy(sCriteria, search_criteria, sizeof(sCriteria));
+		strupr(sCriteria);
+		char* pdest;
+		uint32 it = 0;
+		while ((item = database.IterateItems(&it))) {
+			strn0cpy(sName, item->Name, sizeof(sName));
+			strupr(sName);
+			pdest = strstr(sName, sCriteria);
+			if (pdest != nullptr) {
+				linker.SetItemData(item);
+				std::string item_id = std::to_string(item->ID);
+				std::string saylink_commands = 
+					"[" + 
+					EQ::SayLinkEngine::GenerateQuestSaylink(
+						"#si " + item_id,
+						false,
+						"X"
+					) + 
+					"] ";
+				if (item->Stackable && item->StackSize > 1) {
+					std::string stack_size = std::to_string(item->StackSize);
+					saylink_commands += 
+					"[" + 
+					EQ::SayLinkEngine::GenerateQuestSaylink(
+						"#si " + item_id + " " + stack_size,
+						false,
+						stack_size
+					) + 
+					"]";
+				}
+
+				c->Message(
+					Chat::White,
+					fmt::format(
+						" Summon {} [{}] [{}]",
+						saylink_commands,
+						linker.GenerateLink(),
+						item->ID
+					).c_str()
+				);
+
+				++count;
+			}
+
+			if (count == 50)
+				break;
+		}
+
+		if (count == 50)
+			c->Message(Chat::White, "50 items shown...too many results.");
+		else
+			c->Message(Chat::White, "%i items found",  count);
+
+	}
+}
+
+//Play a sound
+void command_playsound(Client *c, const Seperator *sep) {
+	if (!sep->arg[1]) {
+		c->Message(13, "Usage: #playsound <filename>, e.g. bowdraw.mp3");
+		return;
+	}
+	c->Message(13, "Playing %s to all players in zone.", sep->arg[1]);
+
+	std::list<Client*> client_list;
+	entity_list.GetClientList(client_list);
+	auto iter = client_list.begin();
+
+	while (iter != client_list.end()) {
+		Client *entry = (*iter);
+		if (!entry->IsLD()) {
+			entry->PlayMP3(sep->arg[1]);
+		}
+		iter++;
+	}
+}
+
+void command_rebuildaa(Client* c, const Seperator *sep) {
+	c->RebuildAA();
+}
+
+void command_refer(Client *c, const Seperator *sep) {
+	c->Message(0, "Refer a friend not yet implemented.");
+	return;
+}
+
+void command_rested(Client *c, const Seperator *sep) {
+	const char *windowTitle = "What is Rested Status?";
+
+	std::string windowText = StringFormat("You currently have %u pooled rested experience.<br> In certain areas across Norrath, players are able to obtain rested experience.<br>Rested experience represents your character's rested state, and is a bonus to normal experience.<br>You are able to obtain rested experience while online or offline if you're within a rested area.",
+		(uint32)c->GetEPP().rested_exp);
+
+	c->SendPopupToClient(windowTitle, windowText.c_str());	
+}
+
+void command_return(Client *c, const Seperator *sep) {
+	if (sep->arg[1] && strlen(sep->arg[1]) > 0 && strcasecmp(sep->arg[1], "info") == 0) {
+		const char *message = "The #return command is used to return a player to the safe point of a zone they last died at. <br> \
+				Only your most recent death, with experience loss, is allowed to be returned to. Be careful to not bind in a location that death may happen, as your return point may be overwritten. If you die in a zone flagged raid zone (You get a notification on zoning in), the return feature will not work either.<br> \
+				<br> \
+				Return is only available when the following situation is true: <br> \
+				Not in combat.<br> \
+				At full health.<br> \
+				You are not in the zone you last died.<br> \
+				Have enough platinum either in your inventory or in bank.";
+		c->SendPopupToClient("Return Info", message);
+		return;
+	}
+	if (c->GetAggroCount() > 0) {
+		c->Message(0, "This command does not work while in combat.");
+		return;
+	}
+	if (c->GetHPRatio() < 99) {
+		c->Message(0, "This command does not work until full health.");
+		return;
+	}
+
+	if (c->IsTaskActivityActive(307, 14)) c->UpdateTaskActivity(FEAT_GETTINGSTARTED, 14, 1);
+
+	std::string returnZoneName;
+
+	
+	std::string query = StringFormat("SELECT return_zone FROM character_custom WHERE character_id = %u LIMIT 1", c->CharacterID());
+	auto results = database.QueryDatabase(query);
+	if (results.Success()) {
+		if (results.RowCount() == 1) {
+			auto row = results.begin();
+			returnZoneName = row[0];
+		}
+	}
+	uint16 zoneid = 0;
+	
+	zoneid = zone_store.GetZoneID(returnZoneName);
+	if (zoneid == 0) {
+		returnZoneName = "";
+	}
+
+	if (zoneid > 0 && c->GetZoneID() == zoneid) {
+		c->Message(0, "You are already in the zone you last died.");
+		return;
+	}
+
+
+
+	std::string displayCost;
+	uint64 cost = 0;
+	cost = (uint64)((float)(40 * (float)((float)c->GetLevel() / (float)60)) * 1000);
+
+	cost /= 2;	
+	if (c->GetLevel() >= 50) {
+		cost += (c->GetLevel() / 1.5f) * 1000;
+	}
+	if (cost < 1000) {
+		cost = 1000;
+	}
+	displayCost = StringFormat("%u platinum", (cost / 1000));
+
+	if (sep->arg[1] && strcasecmp(sep->arg[1], "confirm") == 0) {
+		if (returnZoneName.c_str() == "") {
+			c->Message(0, "No return point is currently available.");
+			return;
+		}
+		if (c->GetLevel() >= 10) {
+			if (!c->HasMoneyInInvOrBank(cost)) {
+				c->Message(0, "Not enough money to return to %s.", returnZoneName.c_str());
+				return;
+			}
+
+			if (!c->TakeMoneyFromPPOrBank(cost, true)) {
+				char *hacker_str = nullptr;
+				MakeAnyLenString(&hacker_str, "Buff Cheat: attempted to buy buffs and didn't have enough money\n");
+				database.SetMQDetectionFlag(c->AccountName(), c->GetName(), hacker_str, zone->GetShortName());
+				safe_delete_array(hacker_str);
+				c->Message(0, "Not enough money to return to %s.", returnZoneName.c_str());
+				return;
+			}
+
+			c->Message(0, "You paid %s to return to %s.", displayCost.c_str(), returnZoneName.c_str());
+		}
+		else {
+			c->Message(0, "You return to %s for free since you are level 10 or under.", displayCost.c_str(), returnZoneName.c_str());
+		}
+		
+		//zone to safe coords
+		c->MovePC(zoneid, 0.0f, 0.0f, 0.0f, 0.0f, 0, ZoneToSafeCoords);
+		query = StringFormat("UPDATE character_custom SET return_zone = '' WHERE character_id = %u LIMIT 1", c->CharacterID());
+		auto results = database.QueryDatabase(query);
+		return;
+	}
+	if (returnZoneName == "") {
+		if (c->GetLevel() > 10) {
+			c->Message(0, "It costs %s to use #return at your level. You have not died recently. ( %s )", displayCost.c_str(), c->CreateSayLink("#return info", "info").c_str());
+		}
+		else {
+			c->Message(0, "It costs nothing to use #return until level 10. You have not died recently. ( %s )", c->CreateSayLink("#return info", "info").c_str());
+		}
+	} else {
+		if (c->GetLevel() > 10) {
+			c->Message(0, "It costs %s to use #return at your level. Your last death was at %s. Teleport? [ %s ] ( %s )", displayCost.c_str(), returnZoneName.c_str(), c->CreateSayLink("#return confirm", "confirm").c_str(), c->CreateSayLink("#return info", "info").c_str());
+		}
+		else {
+			c->Message(0, "It costs nothing to use #return until level 10. Your last death was at %s. Teleport? [ %s ] ( %s )", returnZoneName.c_str(), c->CreateSayLink("#return confirm", "confirm").c_str(), c->CreateSayLink("#return info", "info").c_str());
+		}
+	}
+}
+
+void command_rez(Client *c, const Seperator *sep) {
+	if (c->GetAggroCount() > 0) {
+		c->Message(0, "This command does not work while in combat.");
+		return;
+	}
+
+	std::string displayCost;
+	uint64 cost = 0;
+	cost = (uint64)((float)(40 * (float)((float)c->GetLevel() / (float)60)) * 1000);
+	if (c->GetLevel() >= 50) {
+		cost += (c->GetLevel() / 1.5f) * 1000;
+	}
+	if (c->GetLevel() < 40) {
+		cost /= 2; //divide by 1/2 when lower than 40
+	}
+	if (c->GetLevel() < 20) {
+		cost /= 4; //divide by 1/4 when lower than 20
+	}
+	if (cost < 1000) {
+		cost = 1000;
+	}
+	displayCost = StringFormat("%u platinum", (cost / 1000));
+	if (c->GetLevel() <= 10) {
+		displayCost == "nothing";
+		cost = 0;
+	}
+
+	Corpse *corpse = entity_list.GetUnrezzedCorpseByOwner(c);
+	
+	//no corpses found
+	if (!corpse) {
+		c->Message(0, "At level %u, it will cost you %s to summon and resurrect one of your corpses in this zone. There are no corpses in this zone that are eligible.", c->GetLevel(), displayCost.c_str());
+		return;
+	}
+
+	if (sep->arg[1] && strcasecmp(sep->arg[1], "confirm") == 0) {
+		if (!c->HasMoneyInInvOrBank(cost)) {
+			c->Message(0, "Not enough money to summon and resurrect a corpse in zone.");
+			return;
+		}
+
+		if (!c->TakeMoneyFromPPOrBank(cost, true)) {
+			char *hacker_str = nullptr;
+			MakeAnyLenString(&hacker_str, "Buff Cheat: attempted to buy buffs and didn't have enough money\n");
+			database.SetMQDetectionFlag(c->AccountName(), c->GetName(), hacker_str, zone->GetShortName());
+			safe_delete_array(hacker_str);
+			return;
+		}
+
+		//summon corpse
+		corpse->Summon(c, false, false);
+
+		// Mark the corpse as rezzed in the database, just in case the corpse has buried, or the zone the
+		// corpse is in has shutdown since the rez spell was cast.
+		database.MarkCorpseAsRezzed(corpse->GetCorpseDBID());
+		c->BuffFadeNonPersistDeath(); //strip buffs
+
+		int SpellEffectDescNum = GetSpellEffectDescNum(1524); //Reviviscence
+		// Rez spells with Rez effects have this DescNum (first is Titanium, second is 6.2 Client)
+		if ((SpellEffectDescNum == 82) || (SpellEffectDescNum == 39067)) {
+			c->SetMana(0);
+			c->SetHP(c->GetMaxHP() / 5);
+			c->SpellOnTarget(756, c->CastToMob()); // Rezz effects
+		}
+
+		if (spells[1524].base[0] < 100 && spells[1524].base[0] > 0 && corpse->GetRezExp() > 0)
+		{				
+			c->SetEXP(((int)(c->GetEXP() + ((float)((corpse->GetRezExp() / 100) * spells[1524].base[0])))),
+			c->GetAAXP(), true);
+		}
+		
+		//This was missing before, this is the pivotal step.
+		corpse->IsRezzed(true);
+		corpse->CompleteResurrection();
+
+
+		//Was sending the packet back to initiate client zone...
+		entity_list.RefreshClientXTargets(c);
+		c->Message(0, "You paid %s to summon and resurrect a corpse in this zone.", displayCost.c_str());
+		return;
+	}
+	else {
+		c->Message(0, "At level %u, it will cost you %s to summon and resurrect the closest nearby corpse in this zone. This will not work if you killed yourself and will also not restore lost experience that is pooled. [ %s ]", c->GetLevel(), displayCost.c_str(), c->CreateSayLink("#rez confirm", "Confirm").c_str());
+	}
+}
+
+void command_setallbuilds(Client *c, const Seperator *sep) {
+	// Check: Valid input (count and type).
+	if (sep->argnum != 1 || !sep->IsNumber(1)) {
+		c->Message(0, "Usage: #setallbuilds rank");
+		return;
+	}
+
+	const int rank = atoi(sep->arg[1]);
+	// Check: Valid input (rank range).
+	if (rank < 0 || rank > 5) {
+		c->Message(0, "Usage: #setallbuilds <rank(0-5)>");
+		return;
+	}
+
+	
+	// Get a session, this allows RefreshBuild to detect that changes have happened.
+	c->GetSession();
+	
+	std::string build = "55555555555555555555555555555555555555555555555555555";
+	if (rank == 0) build = "00000000000000000000000000000000000000000000000000000";
+	if (rank == 1) build = "11111111111111111111111111111111111111111111111111111";
+	if (rank == 2) build = "22222222222222222222222222222222222222222222222222222";
+	if (rank == 3) build = "33333333333333333333333333333333333333333333333333333";
+	if (rank == 4) build = "44444444444444444444444444444444444444444444444444444";
+
+	std::string query = StringFormat("UPDATE character_data SET build_data = '%s' WHERE id = %i", EscapeString(build).c_str(), (int)c->CharacterID());
+	auto results = database.QueryDatabase(query);
+	if (!results.Success()) {
+		c->Message(13, "Failed to set build.");
+		return;
+	}
+	c->Message(15, "Successfully updated your build.");
+		
+	// Trigger refresh on target.
+	c->RefreshBuild();
+}
+
+void command_setbuild(Client *c, const Seperator *sep) {
+	// Check: Valid input (count and type).
+	if (sep->argnum != 2 || !sep->IsNumber(1) || !sep->IsNumber(2)) {
+		c->Message(0, "Usage: #setbuild id rank");
+		return;
+	}
+
+	const int id = atoi(sep->arg[1]);
+	// Check: Valid input (id range).
+	if (id < 0 || id > 53) { // TODO: Remove hard code values.
+		c->Message(0, "Usage: #setbuild id(0-53) rank");
+		return;
+	}
+
+	const int rank = atoi(sep->arg[2]);
+	// Check: Valid input (rank range).
+	if (rank < 0 || rank > 5) {
+		c->Message(0, "Usage: #setbuild id rank(0-5)");
+		return;
+	}
+
+	Client* cTarget = nullptr;
+	auto target = c->GetTarget();
+
+	// Check: Valid target.
+	if (target && target->IsClient()) {
+		cTarget = c->GetTarget()->CastToClient();
+	}
+	// No target or target is not a Client, use self instead.
+	else {
+		cTarget = c;
+	}
+
+	// Get a session, this allows RefreshBuild to detect that changes have happened.
+	cTarget->GetSession();
+
+	// Copy existing build.
+	std::string build = cTarget->GetEPP().build;
+	build[id] = std::to_string(rank)[0];
+	build.erase(53);
+
+	std::string query = StringFormat("UPDATE character_data SET build_data = '%s' WHERE id = %i", EscapeString(build).c_str(), cTarget->CharacterID());
+	auto results = database.QueryDatabase(query);
+	if (!results.Success()) {
+		c->Message(13, "Failed to set build.");
+		return;
+	}
+	else {
+		if (c == cTarget) {
+			c->Message(15, "Successfully updated your build.");
+		}
+		else {
+			c->Message(15, "Successfully updated your target's build.");
+			cTarget->Message(15, "Your build has been updated.");
+		}
+	}
+
+	// Trigger refresh on target.
+	cTarget->RefreshBuild();
+}
+
+void command_setidentity(Client *c, const Seperator *sep)
+{
+	Client *target = nullptr;
+
+	if (c->GetGM()) {
+		if (!c->GetTarget() || c->GetTarget() == nullptr || !c->GetTarget()->IsClient()) {
+			c->Message(0, "Need to target a player to use this command.");
+			return;
+		}
+		target = c->GetTarget()->CastToClient();
+	}
+	else {
+		target = c;
+	}
+
+	if (!sep->arg[1][0]) {
+		c->Message(0, "Usage: #setidentity [name]");
+		return;
+	}
+
+	auto name = sep->arg[1];
+
+	if (!database.SetIdentity(c->GetTarget()->CastToClient()->AccountID(), name)) {
+		c->Message(0, "Setting identity failed.");
+		return;
+	}
+	
+	target->Message(0, "Your identity has been changed. You must fully log out (not just character select) to have it take effect.");
+	if (target != c) c->Message(0, "You have set %s's identity", target->GetCleanName());
+	return;
+}
+
+void command_spawnanpc(Client *c, const Seperator *sep)
+{
+	Mob *target = c->GetTarget();
+	if (!target || !target->IsClient()) {
+		c->Message(0, "Client Target required!");
+		return;
+	}
+	int npcId = 0;
+	bool isBoss = false;
+	bool hasLoot = false;
+	bool retainSpells = false;
+	
+	if (!sep->IsNumber(1)) {
+		c->Message(0, "Usage: #spawnpc <npcid> <isboss> <hasloot> <retainspells>");
+		return;
+	}
+	npcId = atoi(sep->arg[1]);
+	if (npcId < 1) {
+		c->Message(0, "Invalid npcid: %i", npcId);
+		return;
+	}
+	if (!sep->IsNumber(2)) {
+		c->Message(0, "Invalid value, either 0 or 1 for isBoss flag");
+		return;
+	}
+	isBoss = (atoi(sep->arg[2]) == 1);
+
+	if (!sep->IsNumber(3)) {
+		c->Message(0, "Invalid value, either 0 or 1 for hasLoot flag");
+		return;
+	}
+	hasLoot = (atoi(sep->arg[3]) == 1);
+
+	if (!sep->IsNumber(4)) {
+		c->Message(0, "Invalid value, either 0 or 1 for retainSpells flag");
+		return;
+	}
+	retainSpells = (atoi(sep->arg[4]) == 1);
+
+	const NPCType* npctype = 0;
+	npctype = database.LoadNPCTypesData(npcId);
+	if (!npctype) {
+		c->Message(0, "NPCType not found in DB!");
+		return;
+	}
+
+	NPCType *enpc = new NPCType;
+	memcpy(enpc, npctype, sizeof(NPCType));
+
+	Item_Reward drop = Item_Reward(0, 0);
+	//we copy the npc_type data because we need to edit it a bit
+	if (isBoss) {
+		int groupSize = 0;
+		int avgLevel = 3;
+
+		auto group = target->GetGroup();
+		
+
+		bool hasHealer = false;
+		bool hasTank = false;
+		bool hasDPS = false;
+		int playerTotalHP = 0;
+		int playerAC = 0;
+		Mob *gTarget;
+		unsigned int gi = 0;
+
+
+		if (target->HasGroup()) {
+			for (; gi < MAX_GROUP_MEMBERS; gi++)
+			{
+				if (!group->members[gi]) continue;
+				gTarget = group->members[gi];
+				if (gTarget->GetZoneID() != target->GetZoneID()) continue; //don't count group members not in zone
+				
+				playerTotalHP += gTarget->GetMaxHP();
+				groupSize++;
+				if (gTarget->GetClass() == CLERIC || gTarget->GetClass() == DRUID || gTarget->GetClass() == SHAMAN) hasHealer = true;
+				if (gTarget->GetClass() == WARRIOR || gTarget->GetClass() == SHADOWKNIGHT || gTarget->GetClass() == PALADIN) hasTank = true;
+				if (gTarget->GetClass() == WIZARD || gTarget->GetClass() == ROGUE || gTarget->GetClass() == MAGICIAN) hasDPS = true;
+				playerAC += gTarget->GetAC();
+				avgLevel += gTarget->GetLevel();
+			}
+		}
+		else { //solo boss!
+			if (target->GetClass() == CLERIC || target->GetClass() == DRUID || target->GetClass() == SHAMAN) hasHealer = true;
+			if (target->GetClass() == WARRIOR || target->GetClass() == SHADOWKNIGHT || target->GetClass() == PALADIN) hasTank = true;
+			if (target->GetClass() == WIZARD || target->GetClass() == ROGUE || target->GetClass() == MAGICIAN) hasDPS = true;
+			avgLevel += target->GetLevel();
+			playerTotalHP += target->GetMaxHP();
+			playerAC += target->GetAC();
+		}
+		
+		if (groupSize < 1) groupSize = 1;
+		avgLevel /= groupSize; //get average level to spawn npc level.
+		playerAC /= groupSize; //get average AC
+		//playerAC /= 2; //divide by 2... I think..
+
+		enpc->level = avgLevel;
+		enpc = c->AdjustNPC(enpc, retainSpells, false);
+		strcpy(enpc->special_abilities, "1,1^12,1^21,1");
+		enpc->max_hp = playerTotalHP;		
+		enpc->AC = playerAC; //average AC is applied
+		if (hasTank) enpc->max_dmg *= 1.2f; //give 20% more max dmg if have a tank
+		if (hasHealer) enpc->min_dmg *= 1.2f; //another 20% more min dmg if have a healer
+		if (hasDPS && hasHealer && hasTank) {
+			enpc->max_hp *= 2; //double hp if they have a well balanced group
+			enpc->attack_delay -= enpc->attack_delay * 0.05f * groupSize; //reduce attack delay by 5% per group member, meaning 30% faster with solid group
+		}
+		
+		enpc->npc_faction_id = 79; // KoS non-assist
+
+		enpc->current_hp = enpc->max_hp;
+		NPC* npc = new NPC(enpc, nullptr, c->GetPosition(), GravityBehavior::Flying);
+
+		if (hasLoot) npc->AddLootTable();
+
+		if (target->HasGroup()) {
+			gi = 0;
+			for (; gi < MAX_GROUP_MEMBERS; gi++)
+			{
+				if (!group->members[gi]) continue;
+				gTarget = group->members[gi];
+				if (gTarget->GetZoneID() != target->GetZoneID()) continue; //don't count group members not in zone
+			
+				drop = gTarget->GetBoxReward(0, zone->random.Int(0, 1));
+				npc->AddItem(drop.item_id, 1, false);
+			}
+		}
+		else {
+			drop = target->GetBoxReward(0, zone->random.Int(0, 1));
+			npc->AddItem(drop.item_id, 1, false);
+		}
+		entity_list.AddNPC(npc, true, true);
+		//npc->SendPositionUpdate();
+		c->Message(0, "Spawned adjusted boss npc");
+		return;
+	}
+	else {
+		enpc->level = target->GetLevel();
+		enpc = c->AdjustNPC(enpc, retainSpells, false);
+
+		strcpy(enpc->special_abilities,  "1^21");
+		enpc->npc_faction_id = 79; // KoS non-assist		
+		NPC* npc = new NPC(enpc, nullptr, c->GetPosition(), GravityBehavior::Flying);
+		if (hasLoot) npc->AddLootTable();
+		if (hasLoot && zone->random.Roll(5)) { //5% chance of artifact loot
+			drop = target->GetBoxReward(0, zone->random.Int(0, 1));
+			npc->AddItem(drop.item_id, 1, false);
+		}
+		entity_list.AddNPC(npc, true, true);
+		//npc->SendPositionUpdate();
+		c->Message(0, "Spawned adjusted npc");
+	}
+}
+
+void command_spelleffect(Client *c, const Seperator *sep) {
+	if (!sep->arg[1]) {
+		c->Message(13, "Usage: #spelleffect #");
+		return;
+	}
+	if (!c->GetTarget()) {
+		c->Message(13, "You must have a target.");
+		return;
+	}
+
+	uint32		effectid = (uint32)atoi(sep->arg[1]);
+	uint32		duration = 5000;
+	uint32		finish_delay = 0;
+	bool		zone_wide = true;
+	uint32		unk20 = 3000;
+	bool		perm_effect = false;	
+
+	c->Message(13, "Sending spell effect %u on %s", effectid, c->GetTarget()->GetCleanName());
+	c->GetTarget()->SendSpellEffect(effectid, duration, finish_delay, zone_wide, unk20, perm_effect, nullptr);
+}
+
+void command_teleport(Client *c, const Seperator *sep) {
+
+	static const int FreeLevel = 10;
+
+	struct Location {
+		explicit Location(std::string pZoneName, unsigned int pZoneID, float pX, float pY, float pZ, float pHeading, unsigned int pMinimumLevel, unsigned int pItemID) : ZoneName(pZoneName), ZoneID(pZoneID), X(pX), Y(pY), Z(pZ), Heading(pHeading), MinimumLevel(pMinimumLevel), ItemID(pItemID) {};
+		std::string ZoneName;
+		unsigned int ZoneID;
+		float X;
+		float Y;
+		float Z;
+		float Heading;
+		unsigned int MinimumLevel;
+		unsigned int ItemID;
+		bool Bind; // Not in use currently.
+	};
+
+	static Location Locations[] = {
+		Location("airplane", 71, 614, 1415, -663.62, 55.8, 46, 10094),
+		Location("cobaltscar", 117, -1574.95, -1053.25, 307.74, 56.1, 10, 100011),
+		Location("chardok", 103, 865.17, 23.58, 103.72, 188.8, 10, 100018),
+		Location("dreadlands", 86, 9565.0, 2806.0, 1045.19, 0.0, 10, 100016),
+		Location("ecommons", 22, -73.06, -1787.51, 3.13, 51.8, 1, 0),
+		Location("emeraldjungle", 94, 3474.83, -3123.34, -341.34, 1.5, 10, 100013),
+		Location("fieldofbone", 78, 1447, -1692.32, -62.08, 190, 1, 0),
+		Location("gfaydark", 54, -411, -2023, -0.28, 47.8, 1, 0),
+		Location("greatdivide", 118, 3654.25, -3826.56, -242.37, 136.3, 10, 100008),
+		Location("hateplane", 76, -353, -374, 3.75, 128, 46, 10092),
+		Location("iceclad", 110, 4879.12, -604.28, 109.21, 214.3, 10, 100010),
+		Location("lavastorm", 27, -25, 182, -73.26, 252.3, 10, 100015),
+		Location("pojustice", 201, 469.48, 765.68, 9.63, 63.5, 1, 0),
+		Location("northkarana", 13, 1205.91, -3685.44, -8.56, 126.6, 10, 0),
+		Location("sebilis", 89, 0, 250, 39.13, 125.0, 30, 100014),
+		Location("skyfire", 91, 783.57, -3097.01, -159.38, 1.8, 10, 100012),
+		Location("sro", 35, 124.6, -1041.51, 9.45, 99.5, 10, 0),
+		Location("timorous", 96, 4351.98, -12257.01, -278.9, 64.1, 10, 100017),
+		Location("toxxulia", 414, -1656.96, -1502.43, 72.29, 58.2, 1, 0),
+		Location("wakening", 119, -2980.7, -3020, 26.5, 42.9, 10, 100009)
+	};
+
+	auto search = [](const char * pZoneName) -> Location* {
+		for (auto&& i : Locations)
+			if (strcasecmp(pZoneName, i.ZoneName.c_str()) == 0)
+				return &i;
+
+		return nullptr;
+	};
+
+	auto calculateCost = [](Client* pClient) -> uint64 {
+		const auto clientLevel = pClient->GetLevel();
+		// Free!
+		if (clientLevel <= FreeLevel) return 0;
+
+		// TODO: Clean this up.
+		uint64 cost = 0;
+		cost = (uint64)((float)(40 * (float)((float)clientLevel / (float)60)) * 1000);
+		cost /= 2;
+		if (cost < 1000) {
+			cost = 1000;
+		}
+
+		return cost;
+	};
+
+	// Check: Prevent #teleport if in combat.
+	if (c->GetAggroCount() > 0) {
+		c->Message(0, "This command does not work while in combat.");
+		return;
+	}
+	// Check: Prevent #teleport if not full health.
+	if (c->GetHPRatio() < 99) {
+		c->Message(0, "This command does not work until full health.");
+		return;
+	}
+	
+	// Handle: Player is trying to #teleport to a location.
+	if (sep->arg[1] && strlen(sep->arg[1]) > 0 ) {
+		if (strcasecmp(sep->arg[1], "info") == 0) {
+			const char *message = "The #teleport command is used to simplify teleporting around Norrath. <br> \
+				You can always teleport to pojustice for free and will not be bound there automatically. <br> \
+				You will find in certain zones (typically where druid/wizard can teleport) will have a chance of fragments dropping off every mob in the zone. The chance is low, and once looted the item dissapears, and you unlock the ability to #teleport to the zone in the future.<br> \
+				<br> \
+				Teleporting is only available when the following situation is true: <br> \
+				* Not in combat.<br> \
+				* At full health.<br> \
+				* Have enough platinum either in your inventory or in bank.";
+			c->SendPopupToClient("Teleport Info", message);
+			return;
+		}
+		auto location = search(sep->arg[1]);
+
+		// Handle: Invalid zone.
+		if (!location) {
+			c->Message(0, "That zone is not available to teleport to.");
+			return;
+		}
+		
+		// Handle: Not high enough level.
+		if (c->GetLevel() < location->MinimumLevel) {
+			c->Message(0, "You are too low to teleport to %s.", location->ZoneName.c_str());
+			return;
+		}
+
+		// Handle: Already in the zone.
+		if (c->GetZoneID() == location->ZoneID) {
+			c->Message(0, "You are already in %s.", location->ZoneName.c_str());
+			return;
+		}
+
+		if (location->ItemID > 0 && !c->KeyRingCheck(location->ItemID) && location->ItemID != 10092 && location->ItemID != 10094) {
+			c->Message(0, "That zone is not yet available to teleport to.");
+			return;
+		}
+		
+		bool portisfree = false;
+		if (location->ZoneID == 201) portisfree = true;
+
+		// Calculate cost.
+		const auto cost = calculateCost(c);
+		
+		// Handle: Payment.
+		if (cost > 0 && portisfree == false) {
+			// Handle: Not enough money.
+			if (!c->HasMoneyInInvOrBank(cost)) {
+				c->Message(0, "Not enough money to teleport.");
+				return;
+			}
+			// FYI This is not needed. If it triggers there is a bug in HasMoneyInInvOrBank..
+			if (!c->TakeMoneyFromPPOrBank(cost, true)) {
+				char *hacker_str = nullptr;
+				MakeAnyLenString(&hacker_str, "Zone Cheat: attempted to buy teleport and didn't have enough money\n");
+				database.SetMQDetectionFlag(c->AccountName(), c->GetName(), hacker_str, zone->GetShortName());
+				safe_delete_array(hacker_str);
+				return;
+			}
+			if (location->ItemID == 10092 || location->ItemID == 10094) {
+
+				int16 inv_slot_id = c->GetInv().HasItem(location->ItemID, 1, invWhereWorn | invWherePersonal);
+				if (inv_slot_id != -1) {
+					c->DeleteItemInInventory(inv_slot_id, 1, true);
+				} else {
+					c->Message(13, "You must have the proper reagent to teleport to %s.", location->ZoneName.c_str());
+					return;
+				}
+			}
+			c->Message(0, "You paid %s to teleport to %s.", StringFormat("%u platinum", (cost / 1000)).c_str(), location->ZoneName.c_str());
+		}
+		else {
+			if (portisfree == false) {
+				c->Message(0, "You are being teleported and bound to %s for free due to being level %i or under.", location->ZoneName.c_str(), FreeLevel);
+				c->SetBindPoint(0, location->ZoneID, 0, glm::vec3(location->X, location->Y, location->Z));
+			}
+			else {
+				c->Message(0, "You are being teleported to %s for free.", location->ZoneName.c_str());
+			}
+		}
+		if (c->IsTaskActivityActive(307, 1)) c->UpdateTaskActivity(FEAT_GETTINGSTARTED, 1, 1);
+		if (c->IsTaskActivityActive(307, 9)) c->UpdateTaskActivity(FEAT_GETTINGSTARTED, 9, 1);
+
+		// Finally, Teleport!
+		c->MovePC(location->ZoneID, location->X, location->Y, location->Z, location->Heading, (uint8)'\000', ZoneSolicited);
+		return;
+	}
+
+	// Handle: Player entered #teleport and needs some prompting.
+	const auto cost = calculateCost(c);
+	std::stringstream ss;
+	ss << "You may teleport to [ " << c->CreateSayLink("#teleport pojustice", "pojustice") << " ] for free at any level. ";
+	if (cost > 0) {
+		ss << "At level " << (int)c->GetLevel() << ", it will cost " << (cost / 1000) << " platinum to teleport to";
+	}
+	else {
+		ss << "Until level " << FreeLevel << ", you may teleport and be bound for free to";
+	}
+
+	// Build message with available locations.
+	for (auto&& i : Locations) {
+		if (c->GetLevel() < i.MinimumLevel) continue;		
+		if (i.ItemID > 0 && !c->KeyRingCheck(i.ItemID) && c->GetInv().HasItem(i.ItemID, 1, invWhereWorn | invWherePersonal) < 1) continue;
+		if (c->GetZoneID() == i.ZoneID) {
+			ss << " [ " << i.ZoneName.c_str() << " ] ";
+		}
+		else {
+			if (i.ZoneID != 201) {
+				ss << " [ " << c->CreateSayLink(StringFormat("#teleport %s", i.ZoneName.c_str()).c_str(), i.ZoneName.c_str()) << " ] ";
+			}
+		}
+	}
+	ss << " ( " << c->CreateSayLink("#teleport info", "info") << " )";
+
+	c->Message(0, ss.str().c_str());
+}
+
+void command_toggle(Client *c, const Seperator *sep)
+{	
+
+	if (sep->arg[1][0] == '\0' || !strcasecmp(sep->arg[1], "help")) {
+		c->Message(0, "Syntax: #toggle [option].");
+		c->Message(0, "-- Options --");
+		c->Message(0, "...newcon [%s] - Use new consider system", ((c->GetEPP().use_new_con) ? "ON" : "OFF"));
+		c->Message(0, "...healtarget [%s] - Cast beneficial spells on %s instead of an enemy target", ((c->GetEPP().use_self_target) ? "Self" : "Target's Target"), ((c->GetEPP().use_self_target) ? "self" : "target's target"));
+		c->Message(0, "...pettaunt [%s] - Set default option for pet taunting", ((c->GetEPP().use_pet_taunt) ? "ON" : "OFF"));
+		c->Message(0, "...dpsfull [%s] - When a mob dies you hurted, shows report of all DPS", ((c->GetEPP().use_full_dps) ? "ON" : "OFF"));
+		c->Message(0, "...dpsself [%s] - When a mob dies you hurted, shows your DPS in report", ((c->GetEPP().use_self_dps) ? "ON" : "OFF"));
+		c->Message(0, "...buildecho [%s] - Display verbose build debug information, breaking down how builds work", ((c->GetEPP().use_self_dps) ? "ON" : "OFF"));		
+		return;
+	}
+	
+	if (!strcasecmp(sep->arg[1], "debugecho")) {
+		c->GetEPP().show_debug_echo = 1 - c->GetEPP().show_debug_echo;
+		c->Message(0, "You have %s debug echos. This goes away after zoning.", ((c->GetEPP().show_debug_echo) ? "enabled" : "disabled"));
+		return;
+	}
+
+	if (!strcasecmp(sep->arg[1], "buildecho") || 
+		!strcasecmp(sep->arg[1], "echobuild") || 
+		!strcasecmp(sep->arg[1], "buildsecho") || 
+		!strcasecmp(sep->arg[1], "echobuilds")) {
+		c->GetEPP().show_rb_echo = 1 - c->GetEPP().show_rb_echo;
+		std::string query = StringFormat("UPDATE account_custom SET show_rb_echo = %i WHERE account_id = %u", c->GetEPP().show_rb_echo, c->AccountID());
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(13, "Setting option failed. The devs have been notified.");
+			Log(Logs::General, Logs::Normal, "Option failed for user %u: %s", c->AccountID(), results.ErrorMessage().c_str());
+			return;
+		}
+		c->Message(0, "You have %s verbose build echos.", ((c->GetEPP().show_rb_echo) ? "enabled" : "disabled"));
+		return;
+	}
+
+
+	if (!strcasecmp(sep->arg[1], "newcon")) {
+		c->GetEPP().use_new_con = 1 - c->GetEPP().use_new_con;
+		std::string query = StringFormat("UPDATE account_custom SET use_new_con = %i WHERE account_id = %u", c->GetEPP().use_new_con, c->AccountID());
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(13, "Setting option failed. The devs have been notified.");
+			Log(Logs::General, Logs::Normal, "Option failed for user %u: %s", c->AccountID(), results.ErrorMessage().c_str());
+			return;
+		}
+		c->Message(0, "You have %s the new consider system.", ((c->GetEPP().use_new_con) ? "enabled" : "disabled"));
+		return;
+	}
+
+	if (!strcasecmp(sep->arg[1], "healtarget")) {
+		c->GetEPP().use_self_target = 1 - c->GetEPP().use_self_target;
+		std::string query = StringFormat("UPDATE account_custom SET use_self_target = %i WHERE account_id = %u", c->GetEPP().use_self_target, c->AccountID());
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(13, "Setting option failed. The devs have been notified.");
+			Log(Logs::General, Logs::Normal, "Option failed for user %u: %s", c->AccountID(), results.ErrorMessage().c_str());
+			return;
+		}
+		c->Message(0, "You will now cast beneficial spells on %s instead of an enemy target.", ((c->GetEPP().use_self_target) ? "self" : "target's target"));
+		return;
+	}
+
+	if (!strcasecmp(sep->arg[1], "pettaunt")) {
+		c->GetEPP().use_self_target = 1 - c->GetEPP().use_self_target;
+		std::string query = StringFormat("UPDATE account_custom SET use_pet_taunt = %i WHERE account_id = %u", c->GetEPP().use_pet_taunt, c->AccountID());
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(13, "Setting option failed. The devs have been notified.");
+			Log(Logs::General, Logs::Normal, "Option failed for user %u: %s", c->AccountID(), results.ErrorMessage().c_str());
+			return;
+		}
+		c->Message(0, "Pet taunting is now %s by default.", ((c->GetEPP().use_pet_taunt) ? "enabled" : "disabled"));
+		return;
+	}
+
+	if (!strcasecmp(sep->arg[1], "dpsfull")) {
+		c->GetEPP().use_full_dps = 1 - c->GetEPP().use_full_dps;
+		std::string query = StringFormat("UPDATE account_custom SET use_full_dps = %i WHERE account_id = %u", c->GetEPP().use_full_dps, c->AccountID());
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(13, "Setting option failed. The devs have been notified.");
+			Log(Logs::General, Logs::Normal, "Option failed for user %u: %s", c->AccountID(), results.ErrorMessage().c_str());
+			return;
+		}
+		c->Message(0, "Full DPS is now %s by default.", ((c->GetEPP().use_full_dps) ? "enabled" : "disabled"));
+		return;
+	}
+
+	if (!strcasecmp(sep->arg[1], "dpsself")) {
+		c->GetEPP().use_self_dps = 1 - c->GetEPP().use_self_dps;
+		std::string query = StringFormat("UPDATE account_custom SET use_self_dps = %i WHERE account_id = %u", c->GetEPP().use_self_dps, c->AccountID());
+		auto results = database.QueryDatabase(query);
+		if (!results.Success()) {
+			c->Message(13, "Setting option failed. The devs have been notified.");
+			Log(Logs::General, Logs::Normal, "Option failed for user %u: %s", c->AccountID(), results.ErrorMessage().c_str());
+			return;
+		}
+		c->Message(0, "Self DPS is now %s by default.", ((c->GetEPP().use_self_dps) ? "enabled" : "disabled"));
+		return;
+	}
+}

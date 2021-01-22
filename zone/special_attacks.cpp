@@ -54,34 +54,8 @@ int Mob::GetBaseSkillDamage(EQ::skills::SkillType skill, Mob *target)
 				base += 2;
 			if (GetLevel() > 54)
 				base++;
-			if (skill_level >= 175)
+			if (GetLevel() > 59)
 				base++;
-			return base;
-		case EQEmu::skills::SkillFrenzy:
-			if (IsClient() && CastToClient()->GetInv().GetItem(EQEmu::invslot::slotPrimary)) {
-				if (GetLevel() > 15)
-					base += GetLevel() - 15;
-				if (base > 23)
-					base = 23;
-				if (GetLevel() > 50)
-					base += 2;
-				if (GetLevel() > 54)
-					base++;
-				if (GetLevel() > 59)
-					base++;
-			}
-			return base;
-		case EQEmu::skills::SkillFlyingKick: {
-			float skill_bonus = skill_level / 9.0f;
-			float ac_bonus = 0.0f;
-			if (IsClient()) {
-				auto inst = CastToClient()->GetInv().GetItem(EQEmu::invslot::slotFeet);
-				if (inst)
-					ac_bonus = inst->GetItemArmorClass(true) / 25.0f;
-			}
-			if (ac_bonus > skill_bonus)
-				ac_bonus = skill_bonus;
-			return static_cast<int>(ac_bonus + skill_bonus);
 		}
 		return base;
 	case EQ::skills::SkillFlyingKick: {
@@ -104,11 +78,6 @@ int Mob::GetBaseSkillDamage(EQ::skills::SkillType skill, Mob *target)
 			auto inst = CastToClient()->GetInv().GetItem(EQ::invslot::slotFeet);
 			if (inst)
 				ac_bonus = inst->GetItemArmorClass(true) / 25.0f;
-			else
-				return 0; // return 0 in cases where we don't have an item
-			if (ac_bonus > skill_bonus)
-				ac_bonus = skill_bonus;
-			return static_cast<int>(ac_bonus + skill_bonus);
 		}
 		if (ac_bonus > skill_bonus)
 			ac_bonus = skill_bonus;
@@ -148,18 +117,19 @@ int Mob::GetBaseSkillDamage(EQ::skills::SkillType skill, Mob *target)
 					if (inst->GetItemBaneDamageBody(true) || inst->GetItemBaneDamageRace(true))
 						base += target->CheckBaneDamage(inst);
 				}
-			} else if (IsNPC()) {
-				auto *npc = CastToNPC();
-				base = std::max(base, npc->GetBaseDamage());
-				// parses show relatively low BS mods from lots of NPCs, so either their BS skill is super low
-				// or their mod is divided again, this is probably not the right mod, but it's better
-				skill_bonus /= 3.0f;
 			}
-			// ahh lets make sure everything is casted right :P ugly but w/e
-			return static_cast<int>(static_cast<float>(base) * (skill_bonus + 2.0f));
+		} else if (IsNPC()) {
+			auto *npc = CastToNPC();
+			base = std::max(base, npc->GetBaseDamage());
+			// parses show relatively low BS mods from lots of NPCs, so either their BS skill is super low
+			// or their mod is divided again, this is probably not the right mod, but it's better
+			skill_bonus /= 3.0f;
 		}
-		default:
-			return 0;
+		// ahh lets make sure everything is casted right :P ugly but w/e
+		return static_cast<int>(static_cast<float>(base) * (skill_bonus + 2.0f));
+	}
+	default:
+		return 0;
 	}
 }
 
@@ -219,7 +189,7 @@ void Mob::DoSpecialAttackDamage(Mob *who, EQ::skills::SkillType skill, int32 bas
 	
 	if (IsClient()) {
 		int rank = GetBuildRank(ROGUE, RB_ROG_SNEAKATTACK);
-		if (skill == EQEmu::skills::SkillBackstab && rank > 0 && who->GetHPRatio() >= 90.0f && CastToClient()->sneaking) {
+		if (skill == EQ::skills::SkillBackstab && rank > 0 && who->GetHPRatio() >= 90.0f && CastToClient()->sneaking) {
 			int hit_chance_bonus = int(my_hit.tohit * 20 * rank);
 			if (hit_chance_bonus < 1) hit_chance_bonus = 1;
 			BuildEcho(StringFormat("Sneak Attack %i chance to hit increased from %i to %i.", rank, my_hit.tohit, my_hit.tohit + hit_chance_bonus));
@@ -277,12 +247,12 @@ void Client::OPCombatAbility(const CombatAbility_Struct *ca_atk)
 	if (ca_atk->m_skill == EQ::skills::SkillBash) { // SLAM - Bash without a shield equipped
 		switch (GetRace())
 		{
-			case OGRE:
-			case TROLL:
-			case BARBARIAN:
-				CanBypassSkillCheck = true;
-			default:
-				break;
+		case OGRE:
+		case TROLL:
+		case BARBARIAN:
+			CanBypassSkillCheck = true;
+		default:
+			break;
 		}
 	}
 
@@ -449,6 +419,7 @@ void Client::OPCombatAbility(const CombatAbility_Struct *ca_atk)
 				MonkSpecialAttack(GetTarget(), (classic ? MonkSPA[zone->random.Int(0, 4)] : ca_atk->m_skill));
 				--extra;
 			}
+		}
 
 		if (ReuseTime < 100) {
 			// hackish... but we return a huge reuse time if this is an
@@ -461,6 +432,14 @@ void Client::OPCombatAbility(const CombatAbility_Struct *ca_atk)
 	case ROGUE: {
 		if (ca_atk->m_atk != 100 || ca_atk->m_skill != EQ::skills::SkillBackstab)
 			break;
+		ReuseTime = BackstabReuseTime-1 - skill_reduction;
+		TryBackstab(GetTarget(), ReuseTime);
+		break;
+	}
+	default:
+		//they have no abilities... wtf? make em wait a bit
+		ReuseTime = 9 - skill_reduction;
+		break;
 	}
 
 	ReuseTime = (ReuseTime * HasteMod) / 100;

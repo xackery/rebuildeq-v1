@@ -516,7 +516,7 @@ bool Client::Process() {
 			rank = GetBuildRank(ROGUE, RB_ROG_GANGSTERSPARADISE);
 			if (rank > 0 && hidden && !improved_hidden && GetAggroCount() < 1 && zone->random.Roll(1 * rank)) {
 				improved_hidden = true;
-				Message(MT_FocusEffect, "You discover a Gangster's Paradise.");
+				Message(Chat::FocusEffect, "You discover a Gangster's Paradise.");
 			}
 			DoRestedStatus();
 			if(tribute_timer.Check()) {
@@ -1814,9 +1814,9 @@ void Client::DoHPRegen() {
 }
 
 void Client::DoManaRegen() {
-	if (GetMana() >= max_mana && spellbonuses.ManaRegen >= 0)
-		return;
-
+	if (GetManaRatio() == 100) return;
+	int finalManaRegen = CalcManaRegen();
+	//if (GetMana() >= max_mana && spellbonuses.ManaRegen >= 0) return;
 	if (GetMana() < max_mana && (IsSitting() || CanMedOnHorse()) && HasSkill(EQ::skills::SkillMeditate))
 		CheckIncreaseSkill(EQ::skills::SkillMeditate, nullptr, -5);
 

@@ -550,10 +550,10 @@ void Client::SendZoneInPackets()
 		Message(0, "While less than level 10, you may wish to %s to a starting area.", CreateSayLink("#teleport", "#teleport").c_str());
 	}
 	if (IsBuildAvailable() && GetBuildUnspentPoints() > 0) {
-		Message(MT_Experience, "You have unspent build points. Visit %s to spend them.", CreateSayLink("#builds", "#builds").c_str());
+		Message(Chat::Experience, "You have unspent build points. Visit %s to spend them.", CreateSayLink("#builds", "#builds").c_str());
 	}
 	if (IsRaidZone()) {
-		Message(MT_Experience, "Beware, adventurer. Tread lightly, as the place you have entered is not easily returnable upon death.");
+		Message(Chat::Experience, "Beware, adventurer. Tread lightly, as the place you have entered is not easily returnable upon death.");
 	}
 
 	if ((GetZoneID() == 118 && !KeyRingCheck(100008)) ||
@@ -564,16 +564,16 @@ void Client::SendZoneInPackets()
 		(GetZoneID() == 94 && !KeyRingCheck(100013)) ||
 		(GetZoneID() == 27 && !KeyRingCheck(100015)) ||
 		(GetZoneID() == 86 && !KeyRingCheck(100016))) {
-		Message(MT_Experience, "This area has a fragment to unlock #teleport to it that you have not yet discovered. Kill monsters to find it.");
+		Message(Chat::Experience, "This area has a fragment to unlock #teleport to it that you have not yet discovered. Kill monsters to find it.");
 	}
 
 	if ((GetZoneID() == 89 && !KeyRingCheck(100014)) ||
 		(GetZoneID() == 103 && !KeyRingCheck(100018))) {
-		Message(MT_Experience, "This area has a RARE fragment to unlock #teleport to it that you have not yet discovered. Kill monsters to find it.");
+		Message(Chat::Experience, "This area has a RARE fragment to unlock #teleport to it that you have not yet discovered. Kill monsters to find it.");
 	}
 
 	if (GetLevel() == 39 && !HasMoneyInBank(39000)) {
-		Message(MT_Experience, "At level 40, you will begin dropping items and money on your corpse. To #return/#rez safely, it is suggested you store money in your non-shared bank platinum slot, money will also remove this message on zoning.");
+		Message(Chat::Experience, "At level 40, you will begin dropping items and money on your corpse. To #return/#rez safely, it is suggested you store money in your non-shared bank platinum slot, money will also remove this message on zoning.");
 	}
 
 	//Reset evade on zoning
@@ -4256,7 +4256,7 @@ void Client::SendPickPocketResponse(Mob *from, uint32 amt, int type, const EQ::I
 				break;
 			}
 			if (isGroupedInZone) {
-				Message(MT_FocusEffect, "Your Sleight Distraction %u distracts %s.", rank, from->GetCleanName());
+				Message(Chat::FocusEffect, "Your Sleight Distraction %u distracts %s.", rank, from->GetCleanName());
 				SpellFinished(292, from);
 				EvadeOnce(this);
 			}
@@ -8933,8 +8933,8 @@ std::string Client::CreateSayLink(const char* message, const char* name) {
 	uint32 saylink_id = database.LoadSaylinkID(escaped_string);
 	safe_delete_array(escaped_string);	
 
-	EQEmu::SayLinkEngine linker;
-	linker.SetLinkType(EQEmu::saylink::SayLinkItemData);
+	EQ::SayLinkEngine linker;
+	linker.SetLinkType(EQ::saylink::SayLinkItemData);
 	linker.SetProxyItemID(SAYLINK_ITEM_ID);
 	linker.SetProxyAugment1ID(saylink_id);
 	linker.SetProxyText(name);
@@ -9895,7 +9895,7 @@ void Client::DoRestedStatus() {
 		
 	if (!FindBuff(9016)) { //Aura of Regeneration visual when you're in a rested area.
 		AddBuff(this, 9016, 600, 1);
-		if (IsClient() && CastToClient()->ClientVersionBit() & EQEmu::versions::bit_UFAndLater)
+		if (IsClient() && CastToClient()->ClientVersionBit() & EQ::versions::maskUFAndLater)
 		{
 			EQApplicationPacket *outapp = MakeBuffsPacket(false);
 			CastToClient()->FastQueuePacket(&outapp);
@@ -9905,7 +9905,7 @@ void Client::DoRestedStatus() {
 	}
 
 	if (!m_epp.in_rested_area) { //We just entered a rested area.
-		Message(MT_Experience, "You feel %s.", CreateSayLink("#rested", "rested").c_str());
+		Message(Chat::Experience, "You feel %s.", CreateSayLink("#rested", "rested").c_str());
 	}
 	else { //This is a tick update for a rested area.
 		AddRestedExperience(6);
@@ -10532,7 +10532,7 @@ void Client::SpawnEncounter(bool skipChecks, uint32 type) {
 	const NPCType* tmp = 0;
 	uint32 id = GetEncounterNPCID();
 	if (tmp = database.LoadNPCTypesData(type)) {
-		NPC* npc = new NPC(tmp, 0, GetPosition(), FlyMode3);
+		NPC* npc = new NPC(tmp, 0, GetPosition(), GravityBehavior::Flying);
 		//npc->SetNPCFactionID(atoi(sep->arg[2]));
 		if (Admin() > 200) Message(0, "[GM] Spawning encounter");
 		npc->SetEntityVariable("client", StringFormat("%u", CharacterID()).c_str());
@@ -10576,29 +10576,29 @@ int Client::GiveBoxReward(int minimumRarity, int boxType) {
 	
 	Item_Reward reward = GetBoxReward(minimumRarity, boxType);
 
-	const EQEmu::ItemData * item = database.GetItem(reward.item_id);
+	const EQ::ItemData * item = database.GetItem(reward.item_id);
 	if (!SummonItem(reward.item_id)) {
 		//nats.SendAdminMessage(StringFormat("Failed to give reward to %s [%s] itemid: %i rarity: %i", GetCleanName(), GetIdentity(), reward.item_id, reward.rarity));
 		return 0;
 	}
 
-	EQEmu::SayLinkEngine linker;
-	linker.SetLinkType(EQEmu::saylink::SayLinkItemData);
+	EQ::SayLinkEngine linker;
+	linker.SetLinkType(EQ::saylink::SayLinkItemData);
 	linker.SetItemData(item);
 	std::string item_link;
 	item_link = linker.GenerateLink();
 
 	if (reward.rarity == 3) { //Legendary Drop!
-		worldserver.SendEmoteMessage(0, 0, MT_Broadcasts, StringFormat("%s opened a box to find a LEGENDARY %s inside it!", GetCleanName(), item_link.c_str()).c_str());
+		worldserver.SendEmoteMessage(0, 0, Chat::Broadcasts, StringFormat("%s opened a box to find a LEGENDARY %s inside it!", GetCleanName(), item_link.c_str()).c_str());
 	}
 	else if (reward.rarity == 2) { //Rare Drop!
-		worldserver.SendEmoteMessage(0, 0, MT_Broadcasts, StringFormat("%s opened a box to find a rare %s inside it!", GetCleanName(), item_link.c_str()).c_str());
+		worldserver.SendEmoteMessage(0, 0, Chat::Broadcasts, StringFormat("%s opened a box to find a rare %s inside it!", GetCleanName(), item_link.c_str()).c_str());
 	}
 	else if (reward.rarity == 1) { //Uncommon Drop
-		Message(MT_Experience, "Opening the box revealed an uncommon %s!", item_link.c_str());
+		Message(Chat::Experience, "Opening the box revealed an uncommon %s!", item_link.c_str());
 	}
 	else if (reward.rarity == 0) { //Common Drop
-		Message(MT_Experience, "Opening the box revealed a common %s!", item_link.c_str());
+		Message(Chat::Experience, "Opening the box revealed a common %s!", item_link.c_str());
 	}
 	return reward.item_id;
 }
@@ -10930,14 +10930,6 @@ bool Client::IsSwornEnemyID(uint16 id) {
 	return(m_epp.focus_enemy_id == id);
 }
 
-bool Client::IsStanding() {
-        bool result = false;
-        if(GetAppearance() == eaStanding)
-                result = true;
-
-        return result;
-}
-
 bool Client::IsBuildAvailable() {
 	if (GetClass() == RANGER ||
 		GetClass() == WARRIOR ||
@@ -10981,9 +10973,9 @@ bool Client::DoEvadeOnce() {
 //Obtain an item score for a character based on worn inventory.
 int Client::GetCharacterItemScore() {
 	int x;
-	const EQEmu::ItemInstance* inst;
+	const EQ::ItemInstance* inst;
 	int itemScore = 0;
-	for (x = EQEmu::invslot::EQUIPMENT_BEGIN; x < EQEmu::invslot::EQUIPMENT_END; x++) { // include cursor or not?
+	for (x = EQ::invslot::EQUIPMENT_BEGIN; x < EQ::invslot::EQUIPMENT_END; x++) { // include cursor or not?
 		inst = GetInv().GetItem(x);
 		if (!inst) continue;
 		itemScore += inst->GetItemScore();
@@ -11046,8 +11038,8 @@ void Client::DoDivineBashEffect() {
 	if (healTarget == nullptr) return;
 
 	int healAmount = floor(GetMaxHP() * 0.04f * rank);
-	Message(MT_Spells, "Divine Bash healed %s for %i.", healTarget->GetCleanName(), healAmount);
-	healTarget->Message(MT_Spells, "%s has healed you for %i with their Divine Bash.", healTarget->GetCleanName(), healAmount);
+	Message(Chat::Spells, "Divine Bash healed %s for %i.", healTarget->GetCleanName(), healAmount);
+	healTarget->Message(Chat::Spells, "%s has healed you for %i with their Divine Bash.", healTarget->GetCleanName(), healAmount);
 	GetActSpellHealing(200, healAmount, this); //emulate minor healing for actspellhealing
 	healTarget->HealDamage(healAmount, this);
 }
@@ -11076,7 +11068,7 @@ void Client::DoMendingAura(int amount) {
 			if (dist2 > range2) continue;
 
 			healCount++;
-			c->Message(MT_Spells, "%s has healed you for %i.", GetCleanName(), amount);
+			c->Message(Chat::Spells, "%s has healed you for %i.", GetCleanName(), amount);
 			c->HealDamage(amount, this);
 			
 		}
@@ -11100,7 +11092,7 @@ void Client::DoMendingAura(int amount) {
 				if (dist2 > range2) continue;
 
 				healCount++;
-				c->Message(MT_Spells, "%s has healed you for %i.", GetCleanName(), amount);
+				c->Message(Chat::Spells, "%s has healed you for %i.", GetCleanName(), amount);
 				c->HealDamage(amount, this);
 			}
 		}
@@ -11156,7 +11148,7 @@ char * Client::GetIdentity() {
 }
 
 bool Client::IsValidItem(int itemid) {
-	const EQEmu::ItemData* item = database.GetItem(itemid);
+	const EQ::ItemData* item = database.GetItem(itemid);
 	if (!item) {
 		return false;
 	}
@@ -11173,6 +11165,8 @@ bool Client::IsValidItem(int itemid) {
 		return false;
 	}
 	return true;
+}
+
 bool Client::GetDisplayMobInfoWindow() const
 {
 	return display_mob_info_window;

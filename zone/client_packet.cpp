@@ -873,7 +873,7 @@ void Client::CompleteConnect()
 
 		if (m_pp.birthday > time(nullptr) - 120) { //If they're less than 2 minutes old
 			if (!IsTaskActive(FEAT_GETTINGSTARTED)) AssignTask(FEAT_GETTINGSTARTED, 0);
-			worldserver.SendEmoteMessage(0, 0, MT_Broadcasts, StringFormat("Welcome %s to the server!", display_name.c_str()).c_str());
+			worldserver.SendEmoteMessage(0, 0, Chat::Broadcasts, StringFormat("Welcome %s to the server!", display_name.c_str()).c_str());
 			UpdateSkillsAndSpells();
 			std::string query = StringFormat("SELECT id FROM character_data WHERE account_id = %i", AccountID());
 			auto results = database.QueryDatabase(query);
@@ -884,7 +884,7 @@ void Client::CompleteConnect()
 		}
 		else if(m_pp.lastlogin < time(nullptr) - 600 && 
 			(!GetAnon() && !GetHideMe())) { //not anon or GM hideme
-			worldserver.SendEmoteMessage(0, 0, MT_Broadcasts, StringFormat("Welcome back to the server, %s!", display_name.c_str()).c_str());
+			worldserver.SendEmoteMessage(0, 0, Chat::Broadcasts, StringFormat("Welcome back to the server, %s!", display_name.c_str()).c_str());
 		}
 
 		/* Rested Status Update */
@@ -3841,14 +3841,14 @@ void Client::Handle_OP_Begging(const EQApplicationPacket *app)
 		rank = GetBuildRank(ROGUE, RB_ROG_CONFUSE);
 		if (rank > 0 && zone->random.Roll(0.005f * rank) == 1) {
 			if (GetTarget()->GetSpecialAbility(UNMEZABLE)) {
-				Message(MT_NonMelee, "%s is immune to mesmerize effects.", GetTarget()->GetCleanName());
+				Message(Chat::NonMelee, "%s is immune to mesmerize effects.", GetTarget()->GetCleanName());
 			}
 			else if (GetTarget()->GetLevel() >= GetLevel()) {
-				Message(MT_NonMelee, "%s is too high for you to mesmerize.", GetTarget()->GetCleanName());
+				Message(Chat::NonMelee, "%s is too high for you to mesmerize.", GetTarget()->GetCleanName());
 			}
 			else {
 				GetTarget()->AddBuff(this, 292, 6);
-				Message(MT_NonMelee, "Confuse %u has worked on %s.", rank, GetTarget()->GetCleanName());
+				Message(Chat::NonMelee, "Confuse %u has worked on %s.", rank, GetTarget()->GetCleanName());
 			}
 		}
 	}
@@ -5035,7 +5035,7 @@ void Client::Handle_OP_Consider(const EQApplicationPacket *app)
 		std::string race_name;
 		if (tmob->IsNPC()) {
 			auto loot_list = tmob->CastToNPC()->SpecialLoot(true);
-			Log(Logs::General, Logs::Client_Server_Packet, "Size of SpecialLoot: %i", loot_list.size());
+			Log(Logs::General, Logs::PacketClientServer, "Size of SpecialLoot: %i", loot_list.size());
 			for (auto&& i : loot_list) race_name += ", "+i.name;
 			if (race_name.length() > 3) race_name = race_name.substr(2).c_str();
 			else race_name = "Unknown";
@@ -9158,7 +9158,7 @@ void Client::Handle_OP_ItemVerifyRequest(const EQApplicationPacket *app)
 						item->ID == 100004 || //Old Violet Box
 						item->ID == 100005) {  //Old Weapon Box
 						
-						EQEmu::ItemInstance *CursorItemInst = GetInv().GetItem(EQEmu::invslot::slotCursor);
+						EQ::ItemInstance *CursorItemInst = GetInv().GetItem(EQ::invslot::slotCursor);
 						if (CursorItemInst) {
 							Message(13, "Your cursor must be empty before opening the box.");
 							return;
@@ -9924,7 +9924,7 @@ void Client::Handle_OP_Mend(const EQApplicationPacket *app)
 	int mendhp = GetMaxHP() / 4;
 	int currenthp = GetHP();
 	int roll = zone->random.Int(0, 199);
-	if (roll > (int)GetSkill(EQEmu::skills::SkillMend)) mendhp = 0;
+	if (roll > (int)GetSkill(EQ::skills::SkillMend)) mendhp = 0;
 	if (mendhp == 0 && rank > 0) {
 		mendhp = (GetMaxHP() / 4) * 0.1f * rank;
 		BuildEcho(StringFormat("Partial Mending %i prevented mend from failing! Mend healed for %i.", rank, mendhp));
@@ -13333,14 +13333,14 @@ void Client::Handle_OP_ShopPlayerBuy(const EQApplicationPacket *app)
 	int haggle = 0;
 	if (rank > 0) {
 		haggle = floor(SinglePrice * 0.02f * rank);
-		Message(MT_FocusEffect, "Haggle %i reduced buy price by %i copper.", rank, haggle);
+		Message(Chat::FocusEffect, "Haggle %i reduced buy price by %i copper.", rank, haggle);
 		SinglePrice -= haggle;
 	}
 
 	rank = GetBuildRank(ENCHANTER, RB_ENC_PERSUASION);
 	if (rank > 0) {
 		haggle = floor(SinglePrice * 0.03f * rank);
-		Message(MT_FocusEffect, "Persuasion %i reduced buy price by %i copper.", rank, haggle);
+		Message(Chat::FocusEffect, "Persuasion %i reduced buy price by %i copper.", rank, haggle);
 		SinglePrice -= haggle;
 	}
 
@@ -13583,7 +13583,7 @@ void Client::Handle_OP_ShopPlayerSell(const EQApplicationPacket *app)
 	int haggle = 0;
 	if (rank > 0) {
 		haggle = floor(price * 0.02f * rank);
-		Message(MT_FocusEffect, "Haggle %i improved sell price by %i copper", rank, haggle);
+		Message(Chat::FocusEffect, "Haggle %i improved sell price by %i copper", rank, haggle);
 		price += haggle;
 	}
 
@@ -13591,7 +13591,7 @@ void Client::Handle_OP_ShopPlayerSell(const EQApplicationPacket *app)
 	haggle = 0;
 	if (rank > 0) {
 		haggle = floor(price * 0.02f * rank);
-		Message(MT_FocusEffect, "Persuasion %i improved sell price by %i copper", rank, haggle);
+		Message(Chat::FocusEffect, "Persuasion %i improved sell price by %i copper", rank, haggle);
 		price += haggle;
 	}
 

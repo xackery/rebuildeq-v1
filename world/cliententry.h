@@ -134,7 +134,6 @@ public:
 private:
 	void	ClearVars(bool iAll = false);
 	void	RefreshIdentity();
-
 	const uint32	id;
 	uint32	pIP;
 	CLE_Status pOnline;
@@ -147,14 +146,13 @@ private:
 	char	plskey[16]{};
 	int16	pworldadmin;		// Login server's suggested admin status setting
 	bool	plocal;
-	
-	char identity[32];
 
 	// Account stuff
 	uint32	paccountid;
 	char	paccountname[32]{};
 	MD5		pMD5Pass;
 	int16	padmin{};
+	char 	identity[32]{};
 
 	// Character info
 	ZoneServer* pzoneserver{};
@@ -183,4 +181,3 @@ private:
 };
 
 #endif /*CLIENTENTRY_H_*/
-

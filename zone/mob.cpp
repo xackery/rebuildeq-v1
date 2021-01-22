@@ -2193,7 +2193,7 @@ void Mob::TierBanish(Mob * target) {
 		target->SetHP(hp);
 		target->SpellOnTarget(756, target->CastToMob()); // Rezz effects
 	}
-	target->Message(MT_Experience, "%s banished you for being the 7th player to engage him. Tier monsters can only be engaged by 6 players at a time.", GetCleanName());
+	target->Message(Chat::Experience, "%s banished you for being the 7th player to engage him. Tier monsters can only be engaged by 6 players at a time.", GetCleanName());
 	Say("You are not worthy of my attention, %s, BEGONE!", target->GetCleanName());
 	
 	//banish
@@ -2831,11 +2831,11 @@ bool Mob::HateSummon() {
 			rank = target->GetBuildRank(MONK, RB_MNK_GROUNDEDESSENCE);
 			if (rank > 0 && zone->random.Roll(rank * 2)) {
 				target->BuildEcho(StringFormat("Grounded Essence %i resisted a summon attempt.", rank));
-				entity_list.MessageClose(this, true, 500, MT_Say, "%s says,'How dare you evade me, %s!' ", GetCleanName(), target->GetCleanName());
+				entity_list.MessageClose(this, true, 500, Chat::Say, "%s says,'How dare you evade me, %s!' ", GetCleanName(), target->GetCleanName());
 				return true;
 			}
 
-			entity_list.MessageClose(this, true, 500, MT_Say, "%s says,'You will not evade me, %s!' ", GetCleanName(), target->GetCleanName() );
+			entity_list.MessageClose(this, true, 500, Chat::Say, "%s says,'You will not evade me, %s!' ", GetCleanName(), target->GetCleanName() );
 
 			if (target->IsClient())
 				target->CastToClient()->MovePC(zone->GetZoneID(), zone->GetInstanceID(), m_Position.x, m_Position.y, m_Position.z, target->GetHeading(), 0, SummonPC);
@@ -2847,10 +2847,10 @@ bool Mob::HateSummon() {
 			rank = target->GetBuildRank(MONK, RB_MNK_GROUNDEDESSENCE);
 			if (rank > 0 && zone->random.Roll(rank * 2)) {
 				target->BuildEcho(StringFormat("Grounded Essence %i resisted a summon attempt.", rank));
-				entity_list.MessageClose(this, true, 500, MT_Say, "%s says,'How dare you evade me, %s!' ", GetCleanName(), target->GetCleanName());
+				entity_list.MessageClose(this, true, 500, Chat::Say, "%s says,'How dare you evade me, %s!' ", GetCleanName(), target->GetCleanName());
 				return false;
 			}
-			entity_list.MessageClose(this, true, 500, MT_Say, "%s says,'You will not evade me, %s!'", GetCleanName(), target->GetCleanName());
+			entity_list.MessageClose(this, true, 500, Chat::Say, "%s says,'You will not evade me, %s!'", GetCleanName(), target->GetCleanName());
 			GMMove(target->GetX(), target->GetY(), target->GetZ());
 		}
 	}
@@ -3317,19 +3317,6 @@ void Mob::SetTarget(Mob *mob)
 	if (this->IsClient() && this->GetTarget() && this->CastToClient()->hp_other_update_throttle_timer.Check()) {
 		this->GetTarget()->SendHPUpdate(false, true);
 	}
-}
-
-// For when we want a Ground Z at a location we are not at yet
-// Like MoveTo.
-float Mob::FindDestGroundZ(glm::vec3 dest, float z_offset)
-{
-	float best_z = BEST_Z_INVALID;
-	if (zone->zonemap != nullptr)
-	{
-		dest.z += z_offset;
-		best_z = zone->zonemap->FindBestZ(dest, nullptr);
-	}
-	return best_z;
 }
 
 // For when we want a Ground Z at a location we are not at yet
@@ -5596,21 +5583,6 @@ bool Mob::GetSeeInvisible(uint8 see_invis)
 	return false;
 }
 
-bool Mob::GetSeeInvisible(uint8 see_invis)
-{
-	if(see_invis > 0)
-	{
-		if(see_invis == 1)
-			return true;
-		else
-		{
-			if (zone->random.Int(0, 99) < see_invis)
-				return true;
-		}
-	}
-	return false;
-}
-
 int32 Mob::GetSpellStat(uint32 spell_id, const char *identifier, uint8 slot)
 {
 	if (!IsValidSpell(spell_id))
@@ -6101,7 +6073,7 @@ NPCType* Mob::AdjustNPC(NPCType* npctype, bool keepSpells = true, bool isPet = f
 		hp = 6000 + (200 * (npctype->level - 55));
 	}
 
-	npctype->cur_hp = hp;
+	npctype->current_hp = hp;
 	npctype->max_hp = hp;
 	npctype->runspeed = 1.25;
 	npctype->hp_regen = (int32)(npctype->max_hp / 320); //regen rate
@@ -6297,7 +6269,7 @@ NPCType* Mob::AdjustNPC(NPCType* npctype, bool keepSpells = true, bool isPet = f
 	//Encounter Triggers
 	if (isPet) { //lower max hp of pets.
 		npctype->max_hp /= 2;
-		npctype->cur_hp /= 2;
+		npctype->current_hp /= 2;
 		npctype->min_dmg /= 2;
 		npctype->max_dmg /= 2;
 	}
@@ -7500,7 +7472,7 @@ int Mob::DoCripplingPresenceAndEmpathy(Mob *attacker, DamageHitInfo &hit) {
 					)) {
 				int choke_damage = floor(c->GetLevel() * rank / 4);
 				c->BuildEcho(StringFormat("Choke %i caused %i damage.", rank, choke_damage));
-				attacker->Damage(c, choke_damage, spell_id, EQEmu::skills::SkillAbjuration, false);
+				attacker->Damage(c, choke_damage, spell_id, EQ::skills::SkillAbjuration, false);
 				isChoke = true;
 			}
 
@@ -7532,7 +7504,7 @@ bool Mob::CheckBackfire() {
 		if (rank < 1) continue;
 		bonus_damage = floor(rank * 25 * 0.2f * GetLevel());
 		c->BuildEcho(StringFormat("Backfire %i dealt %i damage to %s.", rank, bonus_damage, GetCleanName()));
-		Damage(c, bonus_damage, spell_id, EQEmu::skills::SkillEvocation, false);
+		Damage(c, bonus_damage, spell_id, EQ::skills::SkillEvocation, false);
 		//remove debuff
 		BuffFadeBySlot(j, false);		
 		CalcBonuses();

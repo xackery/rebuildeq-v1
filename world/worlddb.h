@@ -50,6 +50,8 @@ public:
 		EQ::InventoryProfile *p_inventory_profile
 	);
 
+	bool GetAllCharacters(std::vector<CharData_Struct*> &chars);
+
 private:
 	void SetTitaniumDefaultStartZone(PlayerProfile_Struct* in_pp, CharCreate_Struct* in_cc);
 	void SetSoFDefaultStartZone(PlayerProfile_Struct* in_pp, CharCreate_Struct* in_cc);

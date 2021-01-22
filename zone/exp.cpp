@@ -583,7 +583,6 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 		SendAlternateAdvancementStats();
 	}
 
-
 	float expPct = 0;
 	if ((set_exp + set_aaxp) > (m_pp.exp+m_pp.expAA)) {
 		i = set_exp - m_pp.exp;
@@ -593,24 +592,75 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 			expPct = (float)((float)i / (float)(GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel())))*(float)100; //EXP needed for level
 		}
 		if (isrezzexp) {
-			if (RuleI(Character, ShowExpValues) > 0)
-				Message(Chat::Experience, "You regain %s experience from resurrection. %s", exp_amount_message.c_str(), exp_percent_message.c_str());
-			else MessageString(Chat::Experience, REZ_REGAIN);
-		} else {
+			//this->Message_StringID(Chat::Experience, REZ_REGAIN);
+			Message(Chat::Experience, "You regain %i experience from resurrection. (%.3f%%)", i,  expPct);
+		}
+		else {
 			if (membercount > 1) {
-				if (RuleI(Character, ShowExpValues) > 0)
-					Message(Chat::Experience, "You have gained %s party experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
-				else MessageString(Chat::Experience, GAIN_GROUPXP);
+				if (m_epp.rested_exp < 1 || (i * 0.05) < 1) {
+					Message(Chat::Experience, "You have gained %i party experience! (%.3f%%)", i, expPct);
+				} else {//Rested EXP available
+
+					int restedExp = i * 0.1;
+					int totalExp = i + restedExp;
+
+					m_epp.rested_exp -= restedExp; //remove from rested
+					if (m_epp.rested_exp < 0) { //not enough rested exp
+						totalExp += m_epp.rested_exp; //take negative away from bonus
+						restedExp += m_epp.rested_exp;
+						m_epp.rested_exp = 0; //reset rested to 0
+					}					
+					
+					expPct = (float)((float)totalExp / (float)(GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel())))*(float)100; //EXP needed for level
+					Message(Chat::Experience, "You have gained %i party experience! (+%i rested) (%.3f%%)", i, restedExp, expPct);
+					set_exp += restedExp; //Now add bonus exp to set_exp
+				}
 			}
-			else if (IsRaidGrouped()) {
-				if (RuleI(Character, ShowExpValues) > 0)
-					Message(Chat::Experience, "You have gained %s raid experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
-				else MessageString(Chat::Experience, GAIN_RAIDEXP);
+			else if(IsRaidGrouped()) {
+				
+				if (m_epp.rested_exp < 1 || (i * 0.05) < 1) {
+					Message(Chat::Experience, "You have gained %i raid experience! (%.3f%%)", i, expPct);
+				} else {//Rested EXP available
+
+					int restedExp = i * 0.1;
+					int totalExp = i + restedExp;
+
+					m_epp.rested_exp -= restedExp; //remove from rested
+					if (m_epp.rested_exp < 0) { //not enough rested exp
+						totalExp += m_epp.rested_exp; //take negative away from bonus
+						restedExp += m_epp.rested_exp;
+						m_epp.rested_exp = 0; //reset rested to 0
+					}
+
+					expPct = (float)((float)totalExp / (float)(GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel())))*(float)100; //EXP needed for level
+					Message(Chat::Experience, "You have gained %i raid experience! (+%i rested) (%.3f%%)", i, restedExp, expPct);
+					set_exp += restedExp; //Now add bonus exp to set_exp
+				}
 			}
 			else {
-				if (RuleI(Character, ShowExpValues) > 0)
-					Message(Chat::Experience, "You have gained %s experience! %s", exp_amount_message.c_str(), exp_percent_message.c_str());
-				else MessageString(Chat::Experience, GAIN_XP);
+				if (m_epp.rested_exp < 1 || (i * 0.025) < 1) {
+					Message(Chat::Experience, "You have gained %i experience! (%.3f%%)", i, expPct);
+				} else {//Rested EXP available
+
+					//int restedExp = (int)((float)i * 0.25); //25% bonus exp when solo, intentionally it's crappy.					
+					int restedExp = i * 0.05; //5% rested exp when solo.
+					int totalExp = i + restedExp;
+
+					m_epp.rested_exp -= restedExp; //remove from rested
+					if (m_epp.rested_exp < 0) { //not enough rested exp
+						totalExp += m_epp.rested_exp; //take negative away from bonus
+						restedExp += m_epp.rested_exp;
+						m_epp.rested_exp = 0; //reset rested to 0
+					}
+
+					if (m_epp.rested_exp < 0) { //not enough rested exp for double
+						totalExp += m_epp.rested_exp; //take negative away from bonus
+						m_epp.rested_exp = 0; //reset rested to 0
+					}
+					expPct = (float)((float)totalExp / (float)(GetEXPForLevel(GetLevel() + 1) - GetEXPForLevel(GetLevel())))*(float)100; //EXP needed for level
+					Message(Chat::Experience, "You have gained %i experience! (+%i rested) (%.3f%%)", i, totalExp - i, expPct);
+					set_exp += restedExp; //Now add bonus exp to set_exp
+				}
 			}
 
 		
@@ -770,7 +820,7 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 			if (bottle_exp >= 175000000) { //bottle is full
 
 			//make a full bottle
-			const EQEmu::Item_Struct* full_bottle_struct = database.GetItem(100001);
+			const EQ::Item_Struct* full_bottle_struct = database.GetItem(100001);
 			ItemInst* full_bottle = database.CreateItem(full_bottle_struct, 1);
 
 			if (full_bottle) {
@@ -823,7 +873,7 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 				Message(15, "Welcome to level %i!", check_level);				
 
 			if (!isrezzexp) {
-				worldserver.SendEmoteMessage(0, 0, MT_Broadcasts, StringFormat("%s [%s] is now level %i!", GetCleanName(), Identity(), check_level).c_str());
+				worldserver.SendEmoteMessage(0, 0, Chat::Broadcasts, StringFormat("%s [%s] is now level %i!", GetCleanName(), Identity(), check_level).c_str());
 				DailyGain(AccountID(), CharacterID(), Identity(), 1, 0, 0);
 			}
 
@@ -852,7 +902,7 @@ void Client::SetEXP(uint32 set_exp, uint32 set_aaxp, bool isrezzexp) {
 	if (level_increase) {
 		//Build Stuff
 		if (IsBuildAvailable() && GetBuildUnspentPoints() > 0) {
-			Message(MT_Experience, "You have unspent build points. Use %s to spend them.", CreateSayLink("#builds", "#builds").c_str());
+			Message(Chat::Experience, "You have unspent build points. Use %s to spend them.", CreateSayLink("#builds", "#builds").c_str());
 		}
 	}
 
@@ -980,7 +1030,7 @@ void Client::UpdateSkillsAndSpells() {
 	uint16 abilityCount = 0;
 	uint16 spellCount = 0;
 	//Scribe New Spells and Disciplines
-	for (curspell = 0, book_slot = this->GetNextAvailableSpellBookSlot(), spellCount = 0; curspell < SPDAT_RECORDS && book_slot < MAX_PP_SPELLBOOK; curspell++, book_slot = this->GetNextAvailableSpellBookSlot(book_slot))
+	for (curspell = 0, book_slot = this->GetNextAvailableSpellBookSlot(), spellCount = 0; curspell < SPDAT_RECORDS && book_slot < 400; curspell++, book_slot = this->GetNextAvailableSpellBookSlot(book_slot))
 	{
 
 		if (
@@ -1061,8 +1111,8 @@ void Client::UpdateSkillsAndSpells() {
 
 
 	//Skill logic
-	//if (GetSkill(EQEmu::skills::Skill1HBlunt) == 0) SetSkill(EQEmu::skills::Skill1HBlunt, 1);
-	if (GetSkill(EQEmu::skills::SkillDodge) == 0) {
+	//if (GetSkill(EQ::skills::Skill1HBlunt) == 0) SetSkill(EQ::skills::Skill1HBlunt, 1);
+	if (GetSkill(EQ::skills::SkillDodge) == 0) {
 		if (
 			(GetClass() == WIZARD && GetLevel() >= 22) ||
 			(GetClass() == BARD && GetLevel() >= 10) ||
@@ -1079,10 +1129,10 @@ void Client::UpdateSkillsAndSpells() {
 			(GetClass() == ROGUE && GetLevel() >= 4) ||
 			(GetClass() == WARRIOR && GetLevel() >= 6)
 			) {
-			SetSkill(EQEmu::skills::SkillDodge, 1);
+			SetSkill(EQ::skills::SkillDodge, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillDualWield) == 0) {
+	if (GetSkill(EQ::skills::SkillDualWield) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >= 17) ||
 			(GetClass() == RANGER && GetLevel() >= 17) ||
@@ -1090,34 +1140,34 @@ void Client::UpdateSkillsAndSpells() {
 			(GetClass() == WARRIOR && GetLevel() >= 13) ||
 			(GetClass() == ROGUE && GetLevel() >= 13)
 			) {
-			SetSkill(EQEmu::skills::SkillDualWield, 1);
+			SetSkill(EQ::skills::SkillDualWield, 1);
 		}
 	}
 
-	if (GetSkill(EQEmu::skills::SkillKick) == 0) {
+	if (GetSkill(EQ::skills::SkillKick) == 0) {
 		if (
 			(GetClass() == RANGER && GetLevel() >= 5)
 			) {
-			SetSkill(EQEmu::skills::SkillKick, 1);
+			SetSkill(EQ::skills::SkillKick, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillPickPockets) == 0) {
+	if (GetSkill(EQ::skills::SkillPickPockets) == 0) {
 		if (
 			(GetClass() == ROGUE && GetLevel() >= 1)
 			) {
-			SetSkill(EQEmu::skills::SkillPickPockets, 1);
+			SetSkill(EQ::skills::SkillPickPockets, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillIntimidation) == 0) {
+	if (GetSkill(EQ::skills::SkillIntimidation) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >=16) ||
 			(GetClass() == MONK && GetLevel() >= 18) ||
 			(GetClass() == ROGUE && GetLevel() >= 22)
 			) {
-			SetSkill(EQEmu::skills::SkillIntimidation, 1);
+			SetSkill(EQ::skills::SkillIntimidation, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillParry) == 0) {
+	if (GetSkill(EQ::skills::SkillParry) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >= 25) ||
 			(GetClass() == PALADIN && GetLevel() >= 17) ||
@@ -1126,10 +1176,10 @@ void Client::UpdateSkillsAndSpells() {
 			(GetClass() == WARRIOR && GetLevel() >= 10) ||
 			(GetClass() == ROGUE && GetLevel() >= 12)
 			) {
-			SetSkill(EQEmu::skills::SkillParry, 1);
+			SetSkill(EQ::skills::SkillParry, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillRiposte) == 0) {
+	if (GetSkill(EQ::skills::SkillRiposte) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >= 30) ||
 			(GetClass() == WARRIOR && GetLevel() >= 25) ||
@@ -1139,10 +1189,10 @@ void Client::UpdateSkillsAndSpells() {
 			(GetClass() == RANGER && GetLevel() >= 35) ||
 			(GetClass() == MONK && GetLevel() >= 35)
 			) {
-			SetSkill(EQEmu::skills::SkillRiposte, 1);
+			SetSkill(EQ::skills::SkillRiposte, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillMeditate) == 0) {
+	if (GetSkill(EQ::skills::SkillMeditate) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >= 10) ||
 			(GetClass() == CLERIC && GetLevel() >= 8) ||
@@ -1156,10 +1206,10 @@ void Client::UpdateSkillsAndSpells() {
 			(GetClass() == RANGER && GetLevel() >= 12) ||
 			(GetClass() == SHADOWKNIGHT && GetLevel() >= 12)
 			) {
-			SetSkill(EQEmu::skills::SkillMeditate, 1);
+			SetSkill(EQ::skills::SkillMeditate, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillChanneling) == 0) {
+	if (GetSkill(EQ::skills::SkillChanneling) == 0) {
 		if (
 			(GetClass() == CLERIC && GetLevel() >= 4) ||
 			(GetClass() == DRUID && GetLevel() >= 4) ||
@@ -1168,89 +1218,89 @@ void Client::UpdateSkillsAndSpells() {
 			(GetClass() == PALADIN && GetLevel() >= 9) ||
 			(GetClass() == SHADOWKNIGHT && GetLevel() >= 9)
 			) {
-			SetSkill(EQEmu::skills::SkillChanneling, 1);
+			SetSkill(EQ::skills::SkillChanneling, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillBash) == 0) {
+	if (GetSkill(EQ::skills::SkillBash) == 0) {
 		if (
 			(GetClass() == PALADIN && GetLevel() >= 6) ||
 			(GetClass() == SHADOWKNIGHT && GetLevel() >= 6)
 			) {
-			SetSkill(EQEmu::skills::SkillBash, 1);
+			SetSkill(EQ::skills::SkillBash, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillForage) == 0) {
+	if (GetSkill(EQ::skills::SkillForage) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >= 12) ||
 			(GetClass() == DRUID && GetLevel() >= 5) ||
 			(GetClass() == RANGER && GetLevel() >= 3)
 			) {
-			SetSkill(EQEmu::skills::SkillForage, 1);
+			SetSkill(EQ::skills::SkillForage, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillSneak) == 0) {
+	if (GetSkill(EQ::skills::SkillSneak) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >= 17) ||
 			(GetClass() == MONK && GetLevel() >= 8) ||
 			(GetClass() == ROGUE && GetLevel() >= 1) ||
 			(GetClass() == RANGER && GetLevel() >= 10)
 			) {
-			SetSkill(EQEmu::skills::SkillSneak, 1);
+			SetSkill(EQ::skills::SkillSneak, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillSenseTraps) == 0) {
+	if (GetSkill(EQ::skills::SkillSenseTraps) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >= 15) ||
 			(GetClass() == ROGUE && GetLevel() >= 10)
 			) {
-			SetSkill(EQEmu::skills::SkillSenseTraps, 1);
+			SetSkill(EQ::skills::SkillSenseTraps, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillSafeFall) == 0) {
+	if (GetSkill(EQ::skills::SkillSafeFall) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >= 20) ||
 			(GetClass() == MONK && GetLevel() >= 3) ||
 			(GetClass() == ROGUE && GetLevel() >= 12)
 			) {
-			SetSkill(EQEmu::skills::SkillSafeFall, 1);
+			SetSkill(EQ::skills::SkillSafeFall, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillHide) == 0) {
+	if (GetSkill(EQ::skills::SkillHide) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >= 25) ||
 			(GetClass() == ROGUE && GetLevel() >= 3) ||
 			(GetClass() == RANGER && GetLevel() >= 25) ||
 			(GetClass() == SHADOWKNIGHT && GetLevel() >= 35)
 			) {
-			SetSkill(EQEmu::skills::SkillHide, 1);
+			SetSkill(EQ::skills::SkillHide, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillDisarmTraps) == 0) {
+	if (GetSkill(EQ::skills::SkillDisarmTraps) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >= 20) ||
 			(GetClass() == ROGUE && GetLevel() >= 21)
 			) {
-			SetSkill(EQEmu::skills::SkillDisarmTraps, 1);
+			SetSkill(EQ::skills::SkillDisarmTraps, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillTracking) == 0) {
+	if (GetSkill(EQ::skills::SkillTracking) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >= 35) ||
 			(GetClass() == DRUID && GetLevel() >= 20) ||
 			(GetClass() == RANGER && GetLevel() >= 1)
 			) {
-			SetSkill(EQEmu::skills::SkillTracking, 1);
+			SetSkill(EQ::skills::SkillTracking, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillPickLock) == 0) {
+	if (GetSkill(EQ::skills::SkillPickLock) == 0) {
 		if (
 			(GetClass() == BARD && GetLevel() >= 10) ||
 			(GetClass() == ROGUE && GetLevel() >= 6)
 			) {
-			SetSkill(EQEmu::skills::SkillPickLock, 1);
+			SetSkill(EQ::skills::SkillPickLock, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillDisarm) == 0) {
+	if (GetSkill(EQ::skills::SkillDisarm) == 0) {
 		if (
 			(GetClass() == MONK && GetLevel() >= 27) ||
 			(GetClass() == ROGUE && GetLevel() >= 27) ||
@@ -1259,19 +1309,19 @@ void Client::UpdateSkillsAndSpells() {
 			(GetClass() == RANGER && GetLevel() >= 35) ||
 			(GetClass() == SHADOWKNIGHT && GetLevel() >= 40)
 			) {
-			SetSkill(EQEmu::skills::SkillDisarm, 1);
+			SetSkill(EQ::skills::SkillDisarm, 1);
 		}
 	}
 
-	if (GetSkill(EQEmu::skills::SkillBackstab) == 0) {
+	if (GetSkill(EQ::skills::SkillBackstab) == 0) {
 		if (
 			(GetClass() == ROGUE && GetLevel() >= 10)
 			) {
-			SetSkill(EQEmu::skills::SkillBackstab, 1);
+			SetSkill(EQ::skills::SkillBackstab, 1);
 		}
 	}
 
-	if (GetSkill(EQEmu::skills::SkillTripleAttack) == 0) {
+	if (GetSkill(EQ::skills::SkillTripleAttack) == 0) {
 		if (
 			(GetClass() == SHADOWKNIGHT && GetLevel() >= 54) ||
 			(GetClass() == PALADIN && GetLevel() >= 54) ||
@@ -1281,26 +1331,26 @@ void Client::UpdateSkillsAndSpells() {
 			//(GetClass() == BARD && GetLevel() >= 46)
 			//(GetClass() == SHADOWKNIGHT && GetLevel() >= 54)
 			) {
-			SetSkill(EQEmu::skills::SkillTripleAttack, 1);
+			SetSkill(EQ::skills::SkillTripleAttack, 1);
 		}
 	}
 
-	if (GetSkill(EQEmu::skills::SkillApplyPoison) == 0) {
+	if (GetSkill(EQ::skills::SkillApplyPoison) == 0) {
 		if (
 			(GetClass() == ROGUE && GetLevel() >= 18)
 			) {
-			SetSkill(EQEmu::skills::SkillApplyPoison, 1);
+			SetSkill(EQ::skills::SkillApplyPoison, 1);
 		}
 	}
 
-	if (GetSkill(EQEmu::skills::SkillBlock) == 0) {
+	if (GetSkill(EQ::skills::SkillBlock) == 0) {
 		if (
 			(GetClass() == MONK && GetLevel() >= 12)
 			) {
-			SetSkill(EQEmu::skills::SkillBlock, 1);
+			SetSkill(EQ::skills::SkillBlock, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillDoubleAttack) == 0) {
+	if (GetSkill(EQ::skills::SkillDoubleAttack) == 0) {
 		if (
 			(GetClass() == MONK && GetLevel() >= 15) ||
 			(GetClass() == WARRIOR && GetLevel() >= 15) ||
@@ -1309,10 +1359,10 @@ void Client::UpdateSkillsAndSpells() {
 			(GetClass() == SHADOWKNIGHT && GetLevel() >= 20) ||
 			(GetClass() == RANGER && GetLevel() >= 20)
 			) {
-			SetSkill(EQEmu::skills::SkillDoubleAttack, 1);
+			SetSkill(EQ::skills::SkillDoubleAttack, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillRiposte) == 0) {
+	if (GetSkill(EQ::skills::SkillRiposte) == 0) {
 		if (
 			(GetClass() == MONK && GetLevel() >= 35) ||
 			(GetClass() == PALADIN && GetLevel() >= 30) ||
@@ -1323,49 +1373,49 @@ void Client::UpdateSkillsAndSpells() {
 			(GetClass() == RANGER && GetLevel() >= 35) ||
 			(GetClass() == BARD && GetLevel() >= 30)
 			) {
-			SetSkill(EQEmu::skills::SkillRiposte, 1);
+			SetSkill(EQ::skills::SkillRiposte, 1);
 		}
 	}
-	if (GetSkill(EQEmu::skills::SkillFeignDeath) == 0) {
+	if (GetSkill(EQ::skills::SkillFeignDeath) == 0) {
 		if (
 			(GetClass() == MONK && GetLevel() >= 1)
 			) {
-			SetSkill(EQEmu::skills::SkillFeignDeath, 1);
+			SetSkill(EQ::skills::SkillFeignDeath, 1);
 		}
 	}
 
 	//Bard Specific
-	if (GetSkill(EQEmu::skills::SkillPercussionInstruments) == 0 && GetClass() == BARD && GetLevel() >= 5) {
-		SetSkill(EQEmu::skills::SkillPercussionInstruments, 1);
+	if (GetSkill(EQ::skills::SkillPercussionInstruments) == 0 && GetClass() == BARD && GetLevel() >= 5) {
+		SetSkill(EQ::skills::SkillPercussionInstruments, 1);
 	}
-	if (GetSkill(EQEmu::skills::SkillStringedInstruments) == 0 && GetClass() == BARD && GetLevel() >= 5) {
-		SetSkill(EQEmu::skills::SkillStringedInstruments, 1);
+	if (GetSkill(EQ::skills::SkillStringedInstruments) == 0 && GetClass() == BARD && GetLevel() >= 5) {
+		SetSkill(EQ::skills::SkillStringedInstruments, 1);
 	}
-	if (GetSkill(EQEmu::skills::SkillBrassInstruments) == 0 && GetClass() == BARD && GetLevel() >= 5) {
-		SetSkill(EQEmu::skills::SkillBrassInstruments, 1);
+	if (GetSkill(EQ::skills::SkillBrassInstruments) == 0 && GetClass() == BARD && GetLevel() >= 5) {
+		SetSkill(EQ::skills::SkillBrassInstruments, 1);
 	}
-	if (GetSkill(EQEmu::skills::SkillWindInstruments) == 0 && GetClass() == BARD && GetLevel() >= 5) {
-		SetSkill(EQEmu::skills::SkillWindInstruments, 1);
+	if (GetSkill(EQ::skills::SkillWindInstruments) == 0 && GetClass() == BARD && GetLevel() >= 5) {
+		SetSkill(EQ::skills::SkillWindInstruments, 1);
 	}
 
 	//Monk Specific
-	if (GetSkill(EQEmu::skills::SkillRoundKick) == 0 && GetClass() == MONK && GetLevel() >= 5) {
-		SetSkill(EQEmu::skills::SkillRoundKick, 1);
+	if (GetSkill(EQ::skills::SkillRoundKick) == 0 && GetClass() == MONK && GetLevel() >= 5) {
+		SetSkill(EQ::skills::SkillRoundKick, 1);
 	}
-	if (GetSkill(EQEmu::skills::SkillTigerClaw) == 0 && GetClass() == MONK && GetLevel() >= 10) {
-		SetSkill(EQEmu::skills::SkillTigerClaw, 1);
+	if (GetSkill(EQ::skills::SkillTigerClaw) == 0 && GetClass() == MONK && GetLevel() >= 10) {
+		SetSkill(EQ::skills::SkillTigerClaw, 1);
 	}
-	if (GetSkill(EQEmu::skills::SkillEagleStrike) == 0 && GetClass() == MONK && GetLevel() >= 20) {
-		SetSkill(EQEmu::skills::SkillEagleStrike, 1);
+	if (GetSkill(EQ::skills::SkillEagleStrike) == 0 && GetClass() == MONK && GetLevel() >= 20) {
+		SetSkill(EQ::skills::SkillEagleStrike, 1);
 	}
-	if (GetSkill(EQEmu::skills::SkillDragonPunch) == 0 && GetRace() != IKSAR && GetClass() == MONK && GetLevel() >= 25) {
-		SetSkill(EQEmu::skills::SkillDragonPunch, 1);
+	if (GetSkill(EQ::skills::SkillDragonPunch) == 0 && GetRace() != IKSAR && GetClass() == MONK && GetLevel() >= 25) {
+		SetSkill(EQ::skills::SkillDragonPunch, 1);
 	}
-	if (GetSkill(EQEmu::skills::SkillTailRake) == 0 && GetRace() == IKSAR && GetClass() == MONK && GetLevel() >= 25) {
-		SetSkill(EQEmu::skills::SkillTailRake, 1);
+	if (GetSkill(EQ::skills::SkillTailRake) == 0 && GetRace() == IKSAR && GetClass() == MONK && GetLevel() >= 25) {
+		SetSkill(EQ::skills::SkillTailRake, 1);
 	}
-	if (GetSkill(EQEmu::skills::SkillFlyingKick) == 0 && GetClass() == MONK && GetLevel() >= 30) {
-		SetSkill(EQEmu::skills::SkillFlyingKick, 1);
+	if (GetSkill(EQ::skills::SkillFlyingKick) == 0 && GetClass() == MONK && GetLevel() >= 30) {
+		SetSkill(EQ::skills::SkillFlyingKick, 1);
 	}
 
 

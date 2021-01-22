@@ -1283,7 +1283,7 @@ void Corpse::LootItem(Client *client, const EQApplicationPacket *app)
 			if (client->IsTaskActivityActive(307, 16) && inst->GetItem()->ID == 100010) client->UpdateTaskActivity(FEAT_GETTINGSTARTED, 16, 1);
 			if (!client->KeyRingCheck(inst->GetItem()->ID)) {
 				client->KeyRingAdd(inst->GetItem()->ID);
-				client->Message(MT_Experience, "You have unlocked the ability to #teleport to %s!", zone->GetLongName());
+				client->Message(Chat::Experience, "You have unlocked the ability to #teleport to %s!", zone->GetLongName());
 			}
 			else {
 				client->Message(13, "As you reach for the fragment, it dissapears in your hands as you already have an affinity to it.");

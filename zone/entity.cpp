@@ -4185,7 +4185,7 @@ void Entity::BuildEcho(std::string message) {
 		return;
 	}
 	
-	CastToClient()->Message(MT_FocusEffect, message.c_str());
+	CastToClient()->Message(Chat::FocusEffect, message.c_str());
 }
 
 void Entity::DebugEcho(std::string message) {
@@ -4194,7 +4194,7 @@ void Entity::DebugEcho(std::string message) {
 		return;
 	}
 
-	CastToClient()->Message(MT_FocusEffect, message.c_str());
+	CastToClient()->Message(Chat::FocusEffect, message.c_str());
 }
 
 

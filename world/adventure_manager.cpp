@@ -2268,7 +2268,7 @@ void AdventureManager::Load()
 }
 
 void AdventureManager::RefreshItemScore() {
-	Log(Logs::General, Logs::World_Server, "Refreshing Itemscores...");
+	Log(Logs::General, Logs::WorldServer, "Refreshing Itemscores...");
 	std::vector<CharData_Struct*> chars;
 	std::map<int, int> itemScores;
 	if (!database.GetAllCharacters(chars)) {
@@ -2277,11 +2277,11 @@ void AdventureManager::RefreshItemScore() {
 		return;
 	}
 
-	const EQEmu::ItemInstance* item = nullptr;
+	const EQ::ItemInstance* item = nullptr;
 	int itemScore = 0;
 	int x;
 	int classId = 0;
-	EQEmu::InventoryProfile inv;
+	EQ::InventoryProfile inv;
 
 
 	//Create a table if it doesn't already exist for storing top charts.
@@ -2296,7 +2296,7 @@ void AdventureManager::RefreshItemScore() {
 		itemScore = 0;
 		
 		//iterate worn
-		for (x = EQEmu::invslot::EQUIPMENT_BEGIN; x < EQEmu::invslot::EQUIPMENT_END; x++) {
+		for (x = EQ::invslot::EQUIPMENT_BEGIN; x < EQ::invslot::EQUIPMENT_END; x++) {
 			item = inv.GetItem(x);
 			if (!item) continue;
 

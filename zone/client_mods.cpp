@@ -784,8 +784,7 @@ int32 Client::CalcManaRegen(bool bCombat)
 		auto max_mana = GetMaxMana();
 		int fast_regen = 6 * (max_mana / zone->newzone_data.FastRegenMana);
 		if (regen < fast_regen) // weird, but what the client is doing
-			regen = fast_regen;*/
-		regen += RestRegenMana;
+			regen = fast_regen;
 	}
 
 	regen += DoBuildManaRegen();
