@@ -6268,10 +6268,10 @@ NPCType* Mob::AdjustNPC(NPCType* npctype, bool keepSpells = true, bool isPet = f
 
 	//Encounter Triggers
 	if (isPet) { //lower max hp of pets.
-		npctype->max_hp /= 2;
-		npctype->current_hp /= 2;
-		npctype->min_dmg /= 2;
-		npctype->max_dmg /= 2;
+		//npctype->max_hp /= 2;
+		//npctype->current_hp /= 2;
+		//npctype->min_dmg /= 2;
+		//npctype->max_dmg /= 2;
 	}
 	
 	return npctype;
