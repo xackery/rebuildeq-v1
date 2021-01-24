@@ -246,6 +246,27 @@ XS(XS__spawn) {
 	XSRETURN(1);
 }
 
+XS(XS__encounterspawn);
+XS(XS__encounterspawn)
+{
+	dXSARGS;
+	if (items != 6)
+		Perl_croak(aTHX_ "Usage: encounterspawn(npc_type, level, x, y, z, heading)");
+
+	uint16		RETVAL;
+	dXSTARG;
+
+	int	npc_type = (int)SvIV(ST(0));
+	int level = (int)SvIV(ST(1));
+	auto position = glm::vec4((float)SvNV(ST(2)), (float)SvNV(ST(3)), (float)SvNV(ST(4)), (float)SvNV(ST(5)));
+
+	Mob *r = quest_manager.encounterspawn(npc_type, level, position);
+	RETVAL = (r != nullptr) ? r->GetID() : 0;
+	XSprePUSH; PUSHu((UV)RETVAL);
+
+	XSRETURN(1);
+}
+
 XS(XS__spawn2);
 XS(XS__spawn2) {
 	dXSARGS;
@@ -6633,6 +6654,7 @@ EXTERN_C XS(boot_quest) {
 	newXS(strcpy(buf, "signal"), XS__signal, file);
 	newXS(strcpy(buf, "signalwith"), XS__signalwith, file);
 	newXS(strcpy(buf, "snow"), XS__snow, file);
+	newXS(strcpy(buf, "encounterspawn"), XS__encounterspawn, file);
 	newXS(strcpy(buf, "spawn"), XS__spawn, file);
 	newXS(strcpy(buf, "spawn2"), XS__spawn2, file);
 	newXS(strcpy(buf, "spawn_condition"), XS__spawn_condition, file);
