@@ -14140,9 +14140,11 @@ void command_builds(Client *c, const Seperator *sep)
 			unspentMessage = StringFormat("<c \"#FFDF00\">You have %u point%s available to spend.</c><br>", unspent, (unspent == 1) ? "" : "s");
 		}
 
-
+		std::string site;
+		database.GetVariable("site", site);
 		// align=\"center\"
-		std::string windowText = StringFormat("<table align=\"center\" width=\"100%\"><tr><td><a href=\"http://rebuildeq.com/builds/%s/%s/\">Click To Review Your Build</a></td></tr></table>",
+		std::string windowText = StringFormat("<table align=\"center\" width=\"100%\"><tr><td><a href=\"%s/builds/%s/%s/\">Click To Review Your Build</a></td></tr></table>",
+			site.c_str(),
 			c->GetBaseClassName().c_str(),
 			c->GetSession()
 		);
