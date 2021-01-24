@@ -832,8 +832,9 @@ void command_resetaa(Client* c,const Seperator *sep) {
 		c->Message(Chat::White,"Usage: Target a client and use #resetaa to reset the AA data in their Profile.");
 }
 
-void command_help(Client *c, const Seperator *sep)
-{
+void command_help(Client *c, const Seperator *sep) {
+	if (!c->IsTaskCompleted(FEAT_GETTINGSTARTED) && !c->IsTaskActive(307)) c->AssignTask(FEAT_GETTINGSTARTED, 0);
+	if (c->IsTaskActivityActive(307, 0)) c->UpdateTaskActivity(FEAT_GETTINGSTARTED, 0, 1);
 	int commands_shown=0;
 
 	c->Message(Chat::White, "Available EQEMu commands:");
